@@ -1,0 +1,13 @@
+﻿swagger: '2.0'
+info:
+  title: "Some merge test"
+  version: "1.0"
+tags:
+- name: Global
+  description: Everything
+
+x-dependencies:
+- group: GROUPB
+  refs: 
+  - $ref: Merge2B.yaml
+    

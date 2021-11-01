@@ -1,0 +1,38 @@
+{
+  //----------------------------------------------------------------------
+  // FONT & DISPLAY
+  //----------------------------------------------------------------------
+  "editor.fontLigatures": true,
+  "editor.fontWeight": "normal",
+  "editor.rulers": [
+    140
+  ],
+  // https://shd101wyy.github.io/markdown-preview-enhanced/
+  "markdown-preview-enhanced.previewTheme": "github-light.css",
+  //----------------------------------------------------------------------
+  // FORMAT & LINTING
+  //----------------------------------------------------------------------
+  "editor.formatOnSave": true,
+  "rust-analyzer.checkOnSave.command": "clippy",
+  "files.eol": "\n",
+  "emmet.includeLanguages": {
+    "rust": "rs"
+  },
+  "emmet.extensionsPath": [
+    ""
+  ],
+  "editor.tabSize": 2,
+  "editor.detectIndentation": false,
+  "files.watcherExclude": {
+    "**/target/**": true,
+    "**/temp/**": true
+  },
+  "html.format.maxPreserveNewLines": 1,
+ 
+  //----------------------------------------------------------------------
+  // LANGUAGE SPECIFICS
+  //----------------------------------------------------------------------
+  "[handlebars]": {
+    "editor.formatOnSave": false
+  },
+}

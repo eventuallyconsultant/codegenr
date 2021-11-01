@@ -1,0 +1,3 @@
+﻿subSubValue:
+  value:
+    $ref: simple4.json#value

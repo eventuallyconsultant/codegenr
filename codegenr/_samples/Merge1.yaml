@@ -1,0 +1,13 @@
+﻿swagger: '2.0'
+info:
+  title: "Some merge test"
+  version: "1.0"
+tags:
+- name: Global
+  description: All global operations 
+
+x-dependencies:
+- group: OM - Subscription
+  refs: 
+  - $ref: Merge1_rest.json
+    

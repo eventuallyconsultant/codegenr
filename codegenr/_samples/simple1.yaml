@@ -1,0 +1,6 @@
+﻿test:
+  this: will load multiple files
+finalvalue:
+  value: this is the real final value
+value:
+  $ref: simple2.json

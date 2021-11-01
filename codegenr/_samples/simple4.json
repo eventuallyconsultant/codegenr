@@ -1,0 +1,5 @@
+﻿{
+    "value": {
+        "$ref": "simple1.yaml#finalvalue"
+    }
+}

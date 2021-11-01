@@ -1,0 +1,5 @@
+﻿{
+    "subvalue": {
+        "$ref": "simple3.yaml#/subSubValue/value"
+    }
+}
