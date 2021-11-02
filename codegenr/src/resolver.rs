@@ -1,4 +1,5 @@
 use serde_json::{Map, Value};
+use crate::loader::read_json_file;
 
 const REF: &str = "$ref";
 
@@ -14,9 +15,9 @@ fn load_refs(json: Value /* map<file_name, Value> */) -> Result<Value, anyhow::E
       for (key, value) in obj.into_iter() {
         map.insert(key, value);
          if key == REF {
-           if let String(value)  = value {
+           if let Value::String(value) = value {
               let ref_value = value;
-              value = resolve_reference();
+              //value = resolve_reference();
             } else {
               panic!("Should be a String");
            }
@@ -31,4 +32,16 @@ fn load_refs(json: Value /* map<file_name, Value> */) -> Result<Value, anyhow::E
 
 fn resolve_reference() -> Result<Value, anyhow::Error> {
   todo!();
+}
+
+#[cfg(test)]
+mod test {
+  use super::*;
+
+  #[test]
+  fn loading_refs_test() -> Result<(), anyhow::Error> {
+    let read = read_json_file("./_samples/simple2.json")?;
+    let result = load_refs(read);
+    Ok(())
+  }
 }
