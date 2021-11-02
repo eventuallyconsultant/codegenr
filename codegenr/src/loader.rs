@@ -14,7 +14,7 @@ pub fn read_yaml_file(file_path: &str) -> Result<Value, anyhow::Error> {
   let mut contents = String::new();
   file.read_to_string(&mut contents)?;
 
-  let yaml: serde_yaml::Value = serde_yaml::from_str(&contents)?;
+  let _yaml: serde_yaml::Value = serde_yaml::from_str(&contents)?;
 
   todo!("pouet")
 }
