@@ -26,7 +26,7 @@ fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, anyhow::Error> {
     serde_yaml::Value::String(s) => Value::String(s),
     serde_yaml::Value::Sequence(values) => Value::Array(values.into_iter().map(yaml_to_json).collect::<Result<Vec<_>, _>>()?),
     serde_yaml::Value::Mapping(map) => {
-      let mut json = Map::<String, Value>::new();
+      let mut json = Map::<String, Value>::with_capacity(map.len());
       for (key, value) in map {
         if let serde_yaml::Value::String(s) = key {
           json.insert(s, yaml_to_json(value)?);
