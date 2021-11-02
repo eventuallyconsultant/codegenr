@@ -5,7 +5,6 @@ pub fn read_json_file(file_path: &str) -> Result<Value, anyhow::Error> {
   let mut file = File::open(file_path)?;
   let mut contents = String::new();
   file.read_to_string(&mut contents)?;
-
   Ok(serde_json::from_str(&contents)?)
 }
 
@@ -13,22 +12,22 @@ pub fn read_yaml_file(file_path: &str) -> Result<Value, anyhow::Error> {
   let mut file = File::open(file_path)?;
   let mut contents = String::new();
   file.read_to_string(&mut contents)?;
-
   let yaml: serde_yaml::Value = serde_yaml::from_str(&contents)?;
   yaml_to_json(yaml)
 }
 
 fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, anyhow::Error> {
+  use serde_yaml::Value::*;
   Ok(match yaml {
-    serde_yaml::Value::Null => Value::Null,
-    serde_yaml::Value::Bool(b) => Value::Bool(b),
-    serde_yaml::Value::Number(n) => Value::Number(yaml_to_json_number(n)),
-    serde_yaml::Value::String(s) => Value::String(s),
-    serde_yaml::Value::Sequence(values) => Value::Array(values.into_iter().map(yaml_to_json).collect::<Result<Vec<_>, _>>()?),
-    serde_yaml::Value::Mapping(map) => {
-      let mut json = Map::<String, Value>::with_capacity(map.len());
+    Null => Value::Null,
+    Bool(b) => Value::Bool(b),
+    Number(n) => Value::Number(yaml_to_json_number(n)),
+    String(s) => Value::String(s),
+    Sequence(values) => Value::Array(values.into_iter().map(yaml_to_json).collect::<Result<Vec<_>, _>>()?),
+    Mapping(map) => {
+      let mut json = Map::<_, _>::with_capacity(map.len());
       for (key, value) in map {
-        if let serde_yaml::Value::String(s) = key {
+        if let String(s) = key {
           json.insert(s, yaml_to_json(value)?);
         } else {
           return Err(anyhow::anyhow!("Object keys should be strings."));
