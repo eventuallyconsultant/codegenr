@@ -16,7 +16,7 @@ pub fn read_yaml_file(file_path: &str) -> Result<Value, anyhow::Error> {
 
   let yaml: serde_yaml::Value = serde_yaml::from_str(&contents)?;
 
-  todo!("pouet!")
+  todo!("pouet")
 }
 
 #[cfg(test)]
