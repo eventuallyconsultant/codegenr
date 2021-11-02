@@ -1,5 +1,5 @@
-use serde_json::{Map, Value};
 use crate::loader::read_json_file;
+use serde_json::{Map, Value};
 
 const REF: &str = "$ref";
 
@@ -12,16 +12,15 @@ fn load_refs(json: Value /* map<file_name, Value> */) -> Result<Value, anyhow::E
     }
     Value::Object(obj) => {
       let mut map = Map::new();
-      for (key, value) in obj.into_iter() {
+      for (key, mut value) in obj.into_iter() {
+        if key == REF {
+          if let Value::String(val) = value {
+            value = resolve_reference(&json, &val)?; // #/components/TRUC
+          } else {
+            panic!("Should be a String");
+          }
+        };
         map.insert(key, value);
-         if key == REF {
-           if let Value::String(value) = value {
-              let ref_value = value;
-              //value = resolve_reference();
-            } else {
-              panic!("Should be a String");
-           }
-         }
       }
 
       Ok(Value::Object(map))
@@ -30,7 +29,7 @@ fn load_refs(json: Value /* map<file_name, Value> */) -> Result<Value, anyhow::E
   }
 }
 
-fn resolve_reference() -> Result<Value, anyhow::Error> {
+fn resolve_reference(json: &Value, path: &str) -> Result<Value, anyhow::Error> {
   todo!();
 }
 
