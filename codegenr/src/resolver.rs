@@ -49,13 +49,23 @@ mod test {
   fn loading_refs_test() -> Result<(), anyhow::Error> {
     // Verif structure + pretty print Json : https://jsonformatter.org/json-pretty-print
     let json = json!({
-      "test": { "$ref": "#/myref" },
-      "myref": { "data": "test" }
+      "test": {
+        "$ref": "#/myref"
+      },
+      "myref": {
+        "data": "test"
+      }
     });
 
     let expected = json!({
-      "test": { "data": "test", "x-fromRef": "#/myref", "x-refName": "myref" },
-      "myref": { "data": "test" }
+      "test": {
+        "data": "test",
+        "x-fromRef": "#/myref",
+        "x-refName": "myref"
+      },
+      "myref": {
+        "data": "test"
+      }
     });
 
     let loaded = load_refs(json)?;
@@ -68,13 +78,35 @@ mod test {
   #[test]
   fn loading_refs_test_2() -> Result<(), anyhow::Error> {
     let json = json!({
-      "test": { "data1": { "$ref": "#/myref" }, "data2": { "$ref": "#/myref" }},
-      "myref": { "data": "test" }
+      "test": {
+        "data1": {
+          "$ref": "#/myref"
+        },
+        "data2": {
+          "$ref": "#/myref"
+        }
+      },
+      "myref": {
+        "data": "test"
+      }
     });
 
     let expected = json!({
-      "test": { "data1": { "data": "test", "x-fromRef": "#/myref", "x-refName": "myref" }, "data2": { "data": "test", "x-fromRef": "#/myref", "x-refName": "myref" }},
-      "myref": { "data": "test" }
+      "test": {
+        "data1": {
+          "data": "test",
+          "x-fromRef": "#/myref",
+          "x-refName": "myref"
+        },
+        "data2": {
+          "data": "test",
+          "x-fromRef": "#/myref",
+          "x-refName": "myref"
+        }
+      },
+      "myref": {
+        "data": "test"
+      }
     });
 
     let loaded = load_refs(json)?;
@@ -87,16 +119,65 @@ mod test {
   #[test]
   fn loading_refs_test_3() -> Result<(), anyhow::Error> {
     let json = json!({
-      "test": { "data1": { "$ref": "#/myref" }, "data2": { "$ref": "#/myref" }},
-      "myref": { "data": { "$ref": "#/myref2" }},
-      "myref2": { "content": { "data": "test"}}
+      "test": {
+        "data1": {
+          "$ref": "#/myref"
+        },
+        "data2": {
+          "$ref": "#/myref"
+        }
+      },
+      "myref": {
+        "data": {
+          "$ref": "#/myref2"
+        }
+      },
+      "myref2": {
+        "content": {
+          "data": "test"
+        }
+      }
     });
 
     let expected = json!({
-      "test": { "data1": { "data": { "content": { "data": "test" }, "x-fromRef": "#/myref2", "x-refName": "myref2"}, "x-fromRef":"#/myref", "x-refName": "myref" },
-                "data2": { "data": { "content": { "data": "test" }, "x-fromRef": "#/myref2", "x-refName": "myref2"}, "x-fromRef":"#/myref", "x-refName": "myref" }},
-      "myref": { "data": { "content": { "data": "test" }, "x-fromRef": "#/myref2", "x-refName":"myref2" } },
-      "myref2": { "content": { "data": "test"} }
+      "test": {
+        "data1": {
+          "data": {
+            "content": {
+              "data": "test"
+            },
+            "x-fromRef": "#/myref2",
+            "x-refName": "myref2"
+          },
+          "x-fromRef": "#/myref",
+          "x-refName": "myref"
+        },
+        "data2": {
+          "data": {
+            "content": {
+              "data": "test"
+            },
+            "x-fromRef": "#/myref2",
+            "x-refName": "myref2"
+          },
+          "x-fromRef": "#/myref",
+          "x-refName": "myref"
+        }
+      },
+      "myref": {
+        "data": {
+          "content": {
+            "data": "test"
+          },
+          "x-fromRef": "#/myref2",
+          "x-refName": "myref2"
+        }
+      },
+      "myref2": {
+        "content": {
+          "data": "test"
+        }
+      }
     });
 
     let loaded = load_refs(json)?;
@@ -106,56 +187,74 @@ mod test {
     Ok(())
   }
 
-  // TODO: last test
-  //             yield return new[] // works with json
-  //            {
-  // @"{
-  //    ""test"": {
-  //       ""data1"": {
-  //          ""$ref"": ""#/myref""
-  //       },
-  //       ""data2"": {
-  //          ""$ref"": ""#/myref""
-  //       }
-  //    },
-  //    ""myref"": {
-  //       ""data"": {
-  //          ""$ref"": ""#/myref2""
-  //       }
-  //    },
-  //    ""myref2"": {
-  //       ""content"": {
-  //          ""data"": ""test""
-  //       }
-  //    }
-  // }
-  // ",
-  // @"test:
-  //   data1:
-  //     data:
-  //       content:
-  //         data: ""test""
-  //       x-fromRef: ""#/myref2""
-  //       x-refName: ""myref2""
-  //     x-fromRef: ""#/myref""
-  //     x-refName: ""myref""
-  //   data2:
-  //     data:
-  //       content:
-  //         data: ""test""
-  //       x-fromRef: ""#/myref2""
-  //       x-refName: ""myref2""
-  //     x-fromRef: ""#/myref""
-  //     x-refName: ""myref""
-  // myref:
-  //   data:
-  //     content:
-  //       data: ""test""
-  //     x-fromRef: ""#/myref2""
-  //     x-refName: ""myref2""
-  // myref2:
-  //   content:
-  //     data: ""test""
-  // "
-  //             };
+  #[test]
+  fn loading_refs_test_4() -> Result<(), anyhow::Error> {
+    let json = json!({
+        "test": {
+          "data1": {
+            "$ref": "#/myref"
+          },
+          "data2": {
+            "$ref": "#/myref"
+          }
+        },
+        "myref": {
+          "data": {
+            "$ref": "#/myref2"
+          }
+        },
+        "myref2": {
+          "content": {
+            "data": "test"
+          }
+        }
+    });
+
+    let expected = json!({
+        "test": {
+          "data1": {
+            "data": {
+              "content": {
+                "data": "test"
+              },
+              "x-fromRef": "#/myref2",
+              "x-refName": "myref2"
+            },
+            "x-fromRef": "#/myref",
+            "x-refName": "myref"
+          },
+          "data2": {
+            "data": {
+              "content": {
+                "data": "test"
+              },
+              "x-fromRef": "#/myref2",
+              "x-refName": "myref2"
+            },
+            "x-fromRef": "#/myref",
+            "x-refName": "myref"
+          },
+          "myref": {
+            "data": {
+              "content": {
+                "data": "test"
+              },
+              "x-fromRef": "#/myref2",
+              "x-refName": "myref2"
+            },
+            "myref2": {
+              "content": {
+                "data": "test"
+              }
+            }
+          }
+        }
+    });
+
+    let loaded = load_refs(json)?;
+    println!("{}", loaded.to_string());
+    println!("{}", expected.to_string());
+    assert_eq!(loaded, expected);
+    Ok(())
+  }
 }
