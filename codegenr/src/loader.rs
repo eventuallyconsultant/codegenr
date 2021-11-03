@@ -47,13 +47,42 @@ mod test {
   use super::*;
 
   #[test]
-  fn read_yaml_file_test() {
-    let result = read_yaml_file("./_samples/Merge1.yaml").expect("?");
+  fn read_yaml_file_test() -> Result<(), anyhow::Error> {
+    let result = read_yaml_file("./_samples/Merge1.yaml")?;
+    dbg!(result);
+    Ok(())
   }
 
   #[test]
   fn read_json_file_test() -> Result<(), anyhow::Error> {
     let result = read_json_file("./_samples/Merge1_rest.json")?;
+    dbg!(result);
+    Ok(())
+  }
+
+  #[test]
+  fn yaml_to_json_tests() -> Result<(), anyhow::Error> {
+    use serde_yaml::Value::*;
+    assert_eq!(yaml_to_json(Null)?, Value::Null);
+    assert_eq!(yaml_to_json(Bool(true))?, Value::Bool(true));
+    assert_eq!(yaml_to_json(Bool(false))?, Value::Bool(false));
+    // todo String / Number
+
+    assert_eq!(
+      yaml_to_json(Sequence(vec!(Null, Bool(true), String("test".into()))))?,
+      Value::Array(vec!(Value::Null, Value::Bool(true), Value::String("test".into())))
+    );
+
+    let mut map = serde_yaml::Mapping::new();
+    map.insert(String("key".into()), String("value".into()));
+    let mut expected = Map::new();
+    expected.insert("key".into(), Value::String("value".into()));
+
+    assert_eq!(yaml_to_json(Mapping(map))?, Value::Object(expected));
+
+    // Todo : fail when map key is not string
+    // yaml_to_json(Null).map_err(|e| e.to_string());
+
     Ok(())
   }
 }
