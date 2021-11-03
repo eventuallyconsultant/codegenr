@@ -1,6 +1,9 @@
 use serde_json::{Map, Value};
 
 const REF: &str = "$ref";
+const PATH_SEP: char = '/';
+const FROM_REF: &str = "x-fromRef";
+const REF_NAME: &str = "x-refName";
 
 // https://github.com/BeezUP/dotnet-codegen/tree/master/tests/CodegenUP.DocumentRefLoader.Tests
 
@@ -18,8 +21,10 @@ fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) 
       let mut map = Map::new();
       for (key, mut value) in obj.into_iter() {
         if key == REF {
-          if let Value::String(val) = value {
-            value = resolve_reference(original, &val)?; // #/components/TRUC
+          if let Value::String(path) = value {
+            map.insert(FROM_REF.into(), Value::String(path.clone()));
+            // map.insert( REF_NAME, get_ref_name(&path) )
+            value = resolve_reference(original, &path)?; // #/components/TRUC
           } else {
             return Err(anyhow::anyhow!("{} value should be a String", REF));
           }
@@ -35,8 +40,26 @@ fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) 
   }
 }
 
-fn resolve_reference(json: &Value, _path: &str) -> Result<Value, anyhow::Error> {
-  Ok(json.clone())
+// /test/ezgliuh/value -> value
+//
+// fn get_ref_name(path: &str) -> String {}
+
+fn resolve_reference(json: &Value, path: &str) -> Result<Value, anyhow::Error> {
+  let parts = path.split(PATH_SEP);
+
+  let mut part = json;
+
+  for p in parts.filter(|p| *p != "#") {
+    if let Value::Object(o) = part {
+      part = o
+        .get(p)
+        .ok_or_else(|| anyhow::format_err!("Key {} was not found in json part {}", p, part))?;
+    } else {
+      return Err(anyhow::anyhow!("Could not follow path {} as json part is not an object.", p));
+    }
+  }
+
+  Ok(part.clone())
 }
 
 #[cfg(test)]
@@ -44,7 +67,36 @@ mod test {
   use super::*;
   // use crate::loader::read_json_file;
   use serde_json::json;
- 
+
+  #[test]
+  fn resolve_reference_test() -> Result<(), anyhow::Error> {
+    let json = json!({
+      "test": {
+        "data1": {
+          "value": 42
+        },
+        "data2": [
+          1,2,3
+        ]
+      },
+      "myref": {
+        "data": "test"
+      }
+    });
+
+    assert_eq!(
+      resolve_reference(&json, "#/test/data1/value")?,
+      Value::Number(serde_json::Number::from(42))
+    );
+
+    assert_eq!(resolve_reference(&json, "#/test/data1")?, json!({ "value": 42 }));
+
+    // todo : error case
+    // assert_eq!(resolve_reference(&json, "#/test/not_existing_path")?, SHOULD BE ERROR
+
+    Ok(())
+  }
+
   #[test]
   fn loading_refs_test() -> Result<(), anyhow::Error> {
     // Verif structure + pretty print Json : https://jsonformatter.org/json-pretty-print
@@ -74,7 +126,7 @@ mod test {
     assert_eq!(loaded, expected);
     Ok(())
   }
-  
+
   #[test]
   fn loading_refs_test_2() -> Result<(), anyhow::Error> {
     let json = json!({
