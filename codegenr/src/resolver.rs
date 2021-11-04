@@ -335,35 +335,12 @@ mod test {
     Ok(())
   }
 
-  // [Fact]
-  // public async Task Should_resolve_nested_references()
-  // {
-  //     var sut = new ReferenceLoader("./_yamlSamples/petshop.yaml", ReferenceLoaderStrategy.CopyRefContent);
-  //     {
-  //         var yaml = await sut.GetRefResolvedYamlAsync();
-  //         _output.WriteLine(yaml);
-  //         yaml.Contains(Constants.REF_KEYWORD).ShouldBeFalse();
-  //     }
-  //     {
-  //         var json = await sut.GetRefResolvedJsonAsync();
-  //         _output.WriteLine(json);
-  //         json.Contains(Constants.REF_KEYWORD).ShouldBeFalse();
-  //     }
-  // }
-
-  // [Fact]
-  // public async Task Should_resolve_external_references()
-  // {
-  //     var sut = new ReferenceLoader("./_yamlSamples/petshop_with_external.yaml", ReferenceLoaderStrategy.CopyRefContent);
-  //     {
-  //         var yaml = await sut.GetRefResolvedYamlAsync();
-  //         _output.WriteLine(yaml);
-  //         yaml.Contains(Constants.REF_KEYWORD).ShouldBeFalse();
-  //     }
-  //     {
-  //         var json = await sut.GetRefResolvedJsonAsync();
-  //         _output.WriteLine(json);
-  //         json.Contains(Constants.REF_KEYWORD).ShouldBeFalse();
-  //     }
-  // }
+  #[test]
+  fn should_resolve_external_references() -> Result<(), anyhow::Error> {
+    let json = read_yaml_file("./_samples/petshop_with_external.yaml")?;
+    let json = load_refs(json)?;
+    let string = json.to_string();
+    assert!(!string.contains(REF));
+    Ok(())
+  }
 }
