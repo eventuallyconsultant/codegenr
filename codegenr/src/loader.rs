@@ -114,13 +114,10 @@ mod test {
     let f64_error = expected_failed_for_f64.expect_err("Should be an error");
     assert_eq!(f64_error.to_string(), "The number couldn't map to json.");
 
-    let _success_for_f64 = yaml_to_json_number(Number::from(256.2));
-
-    let _success_for_u64 = yaml_to_json_number(Number::from(-42));
-
-    let _success_for_i64 = yaml_to_json_number(Number::from(42));
-
-    let _success_for_neg_value = yaml_to_json_number(Number::from(-40285.5));
+    let _success_for_f64 = yaml_to_json_number(Number::from(256.2))?;
+    let _success_for_u64 = yaml_to_json_number(Number::from(-42))?;
+    let _success_for_i64 = yaml_to_json_number(Number::from(42))?;
+    let _success_for_neg_value = yaml_to_json_number(Number::from(-40285.5))?;
 
     Ok(())
   }

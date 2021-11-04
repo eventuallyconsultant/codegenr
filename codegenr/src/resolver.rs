@@ -19,19 +19,24 @@ fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) 
     }
     Value::Object(obj) => {
       let mut map = Map::new();
-      for (key, mut value) in obj.into_iter() {
-        if key == REF {
-          if let Value::String(path) = value {
-            map.insert(FROM_REF.into(), Value::String(path.clone()));
-            map.insert(REF_NAME.into(), Value::String(get_ref_name(&path)));
-            value = resolve_reference(original, &path)?; // #/components/TRUC
-          } else {
-            return Err(anyhow::anyhow!("{} value should be a String", REF));
+      for (key, value) in obj.into_iter() {
+        if key != REF {
+          map.insert(key, load_refs_recurse(value, original)?);
+        } else if let Value::String(path) = value {
+          let new = resolve_reference(original, &path)?;
+          match new {
+            Value::Object(m) => {
+              for (k, v) in m {
+                map.insert(k, v);
+              }
+              map.insert(FROM_REF.into(), Value::String(path.clone()));
+              map.insert(REF_NAME.into(), Value::String(get_ref_name(&path)));
+            }
+            v => return Ok(v),
           }
         } else {
-          value = load_refs_recurse(value, original)?;
+          return Err(anyhow::anyhow!("{} value should be a String", REF));
         }
-        map.insert(key, value);
       }
 
       Ok(Value::Object(map))
@@ -120,7 +125,7 @@ mod test {
       "test": {
         "data": "test",
         "x-fromRef": "#/myref",
-        "x-refName": "myref"
+        "x-refName": "myref",
       },
       "myref": {
         "data": "test"
