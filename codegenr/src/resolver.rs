@@ -43,6 +43,7 @@ fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) 
 // /test/ezgliuh/value -> value
 // split la path et récup la dernière
 fn get_ref_name(path: &str) -> String {
+  let split_value = path.split("/").last();
   todo!()
 }
 

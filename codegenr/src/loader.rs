@@ -109,12 +109,17 @@ mod test {
   fn yaml_to_json_number_tests() -> Result<(), anyhow::Error> {
     use serde_yaml::Number;
 
-    let expected_failed = yaml_to_json_number(Number::from(f64::INFINITY));
-    let e = expected_failed.expect_err("Should be an error");
-    assert_eq!(e.to_string(), "The number couldn't map to json.");
+    let expected_failed_for_f64 = yaml_to_json_number(Number::from(f64::INFINITY));
+    let f64_error = expected_failed_for_f64.expect_err("Should be an error");
+    assert_eq!(f64_error.to_string(), "The number couldn't map to json.");
 
-    // todo : ok tests with  Number::from() i64, u64, and non weird f64 ... and some negative values
-    //let expected = yaml_to_json_number(Number::from(i64::abs(42)));
+    let _success_for_f64 = yaml_to_json_number(Number::from(256.2));
+
+    let _success_for_u64 = yaml_to_json_number(Number::from(-42));
+    
+    let _success_for_i64 = yaml_to_json_number(Number::from(42));
+    
+    let _success_for_neg_value = yaml_to_json_number(Number::from(-40285.5));
 
     Ok(())
   }
