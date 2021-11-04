@@ -80,8 +80,10 @@ mod test {
     assert_eq!(yaml_to_json(Bool(true))?, Value::Bool(true));
     assert_eq!(yaml_to_json(Bool(false))?, Value::Bool(false));
     assert_eq!(yaml_to_json(String("test".into()))?, Value::String("test".into()));
-    //assert_eq!(yaml_to_json(Number)?, Value::Number());
-    // todo : Number (above)
+    assert_eq!(
+      yaml_to_json(Number(serde_yaml::from_str("2")?))?,
+      Value::Number(serde_json::from_str("2")?)
+    );
 
     assert_eq!(
       yaml_to_json(Sequence(vec!(Null, Bool(true), String("test".into()))))?,
@@ -94,8 +96,7 @@ mod test {
     expected.insert("key".into(), Value::String("value".into()));
 
     assert_eq!(yaml_to_json(Mapping(map))?, Value::Object(expected));
-    // yaml_to_json(Null).map_err(|e| e.to_string());
-    
+
     let mut map = serde_yaml::Mapping::new();
     map.insert(Null, String("value".into()));
     let expected_failed = yaml_to_json(Mapping(map));
@@ -116,9 +117,9 @@ mod test {
     let _success_for_f64 = yaml_to_json_number(Number::from(256.2));
 
     let _success_for_u64 = yaml_to_json_number(Number::from(-42));
-    
+
     let _success_for_i64 = yaml_to_json_number(Number::from(42));
-    
+
     let _success_for_neg_value = yaml_to_json_number(Number::from(-40285.5));
 
     Ok(())

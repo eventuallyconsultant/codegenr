@@ -23,13 +23,13 @@ fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) 
         if key == REF {
           if let Value::String(path) = value {
             map.insert(FROM_REF.into(), Value::String(path.clone()));
-            //map.insert(REF_NAME.into(), get_ref_name(&path) );
+            map.insert(REF_NAME.into(), Value::String(get_ref_name(&path)));
             value = resolve_reference(original, &path)?; // #/components/TRUC
           } else {
             return Err(anyhow::anyhow!("{} value should be a String", REF));
           }
         } else {
-          value = load_refs_recurse(value, original)?;  
+          value = load_refs_recurse(value, original)?;
         }
         map.insert(key, value);
       }
@@ -43,8 +43,7 @@ fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) 
 // /test/ezgliuh/value -> value
 // split la path et récup la dernière
 fn get_ref_name(path: &str) -> String {
-  let split_value = path.split("/").last();
-  todo!()
+  path.split('/').last().unwrap_or_default().to_string()
 }
 
 fn resolve_reference(json: &Value, path: &str) -> Result<Value, anyhow::Error> {
@@ -94,11 +93,13 @@ mod test {
 
     assert_eq!(resolve_reference(&json, "#/test/data1")?, json!({ "value": 42 }));
 
-    // todo : error case
     let path: &str = "#/test/not_existing_path";
     let failed_test = resolve_reference(&json, path);
     let err = failed_test.expect_err("Should be an error");
-    assert_eq!(err.to_string(), "Key not_existing_path was not found in json part {\"data1\":{\"value\":42},\"data2\":[1,2,3]}");
+    assert_eq!(
+      err.to_string(),
+      "Key not_existing_path was not found in json part {\"data1\":{\"value\":42},\"data2\":[1,2,3]}"
+    );
 
     Ok(())
   }
