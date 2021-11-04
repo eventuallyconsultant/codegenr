@@ -79,8 +79,9 @@ mod test {
     assert_eq!(yaml_to_json(Null)?, Value::Null);
     assert_eq!(yaml_to_json(Bool(true))?, Value::Bool(true));
     assert_eq!(yaml_to_json(Bool(false))?, Value::Bool(false));
-
-    // todo String / Number
+    assert_eq!(yaml_to_json(String("test".into()))?, Value::String("test".into()));
+    //assert_eq!(yaml_to_json(Number)?, Value::Number());
+    // todo : Number (above)
 
     assert_eq!(
       yaml_to_json(Sequence(vec!(Null, Bool(true), String("test".into()))))?,
@@ -93,9 +94,13 @@ mod test {
     expected.insert("key".into(), Value::String("value".into()));
 
     assert_eq!(yaml_to_json(Mapping(map))?, Value::Object(expected));
-
-    // Todo : fail when map key is not string
     // yaml_to_json(Null).map_err(|e| e.to_string());
+    
+    let mut map = serde_yaml::Mapping::new();
+    map.insert(Null, String("value".into()));
+    let expected_failed = yaml_to_json(Mapping(map));
+    let e = expected_failed.expect_err("Should be an error");
+    assert_eq!(e.to_string(), "Object keys should be strings.");
 
     Ok(())
   }
@@ -109,6 +114,7 @@ mod test {
     assert_eq!(e.to_string(), "The number couldn't map to json.");
 
     // todo : ok tests with  Number::from() i64, u64, and non weird f64 ... and some negative values
+    //let expected = yaml_to_json_number(Number::from(i64::abs(42)));
 
     Ok(())
   }
