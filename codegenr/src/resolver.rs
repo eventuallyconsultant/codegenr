@@ -14,8 +14,12 @@ pub fn load_refs(json: Value /* map<file_name, Value> */) -> Result<Value, anyho
 
 fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) -> Result<Value, anyhow::Error> {
   match json {
-    Value::Array(_) => {
-      todo!();
+    Value::Array(a) => {
+      let mut new = Vec::<_>::with_capacity(a.len());
+      for v in a {
+        new.push(load_refs_recurse(v, original)?);
+      }
+      Ok(Value::Array(new))
     }
     Value::Object(obj) => {
       let mut map = Map::new();
@@ -72,7 +76,7 @@ fn resolve_reference(json: &Value, path: &str) -> Result<Value, anyhow::Error> {
 #[cfg(test)]
 mod test {
   use super::*;
-  // use crate::loader::read_json_file;
+  use crate::loader::*;
   use serde_json::json;
 
   #[test]
@@ -314,16 +318,6 @@ mod test {
           }
        }
     });
-    // myref:
-    //   data:
-    //     content:
-    //       data: ""test""
-    //     x-fromRef: ""#/myref2""
-    //     x-refName: ""myref2""
-    // myref2:
-    //   content:
-    //     data: ""test""
-    // "
 
     let loaded = load_refs(json)?;
     println!("{}", loaded.to_string());
@@ -331,4 +325,45 @@ mod test {
     assert_eq!(loaded, expected);
     Ok(())
   }
+
+  #[test]
+  fn should_resolve_nested_references() -> Result<(), anyhow::Error> {
+    let json = read_yaml_file("./_samples/petshop.yaml")?;
+    let json = load_refs(json)?;
+    let string = json.to_string();
+    assert!(!string.contains(REF));
+    Ok(())
+  }
+
+  // [Fact]
+  // public async Task Should_resolve_nested_references()
+  // {
+  //     var sut = new ReferenceLoader("./_yamlSamples/petshop.yaml", ReferenceLoaderStrategy.CopyRefContent);
+  //     {
+  //         var yaml = await sut.GetRefResolvedYamlAsync();
+  //         _output.WriteLine(yaml);
+  //         yaml.Contains(Constants.REF_KEYWORD).ShouldBeFalse();
+  //     }
+  //     {
+  //         var json = await sut.GetRefResolvedJsonAsync();
+  //         _output.WriteLine(json);
+  //         json.Contains(Constants.REF_KEYWORD).ShouldBeFalse();
+  //     }
+  // }
+
+  // [Fact]
+  // public async Task Should_resolve_external_references()
+  // {
+  //     var sut = new ReferenceLoader("./_yamlSamples/petshop_with_external.yaml", ReferenceLoaderStrategy.CopyRefContent);
+  //     {
+  //         var yaml = await sut.GetRefResolvedYamlAsync();
+  //         _output.WriteLine(yaml);
+  //         yaml.Contains(Constants.REF_KEYWORD).ShouldBeFalse();
+  //     }
+  //     {
+  //         var json = await sut.GetRefResolvedJsonAsync();
+  //         _output.WriteLine(json);
+  //         json.Contains(Constants.REF_KEYWORD).ShouldBeFalse();
+  //     }
+  // }
 }
