@@ -1,0 +1,10 @@
+# https://doc.rust-lang.org/cargo/reference/workspaces.html
+
+[workspace]
+default-members = [
+  "codegenr"
+]
+
+members = [
+  "codegenr"
+]
