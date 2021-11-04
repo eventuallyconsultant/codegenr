@@ -27,12 +27,12 @@ fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) 
           match new {
             Value::Object(m) => {
               for (k, v) in m {
-                map.insert(k, v);
+                map.insert(k, load_refs_recurse(v, original)?);
               }
               map.insert(FROM_REF.into(), Value::String(path.clone()));
               map.insert(REF_NAME.into(), Value::String(get_ref_name(&path)));
             }
-            v => return Ok(v),
+            v => return load_refs_recurse(v, original),
           }
         } else {
           return Err(anyhow::anyhow!("{} value should be a String", REF));
