@@ -347,17 +347,17 @@ mod test {
   }
 
   #[rustfmt::skip]
-  #[test_case("_samples/petshop.yaml", "../test.json", false, true, "test.json", "")]
-  #[test_case("_samples/petshop.yaml", "test.json", false, true, "_samples/test.json", "")]
-  #[test_case("_samples/petshop.yaml", "#test", true, true, "_samples/petshop.yaml", "test")]
-  // #[test_case("_samples/petshop.yaml", "test.json#test", false, true, "_samples/test.json", "test")]
-  // #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, false, "http://google.com/test.json", "test")]
-  // #[test_case("test.yaml", "test.yaml#/path", true, true, "test.yaml", "/path")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, false, "https://petstore.swagger.io/v2/swagger.json", "/definitions/Pet")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, false, "http://google.com/test.json", "test")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, false, "http://google.com/test.json", "")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, false, "https://petstore.swagger.io/test.json", "")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, false, "https://petstore.swagger.io/test.json", "fragment")]
+  #[test_case("_samples/petshop.yaml", "../test.json", false, true, "test.json", None)]
+  #[test_case("_samples/petshop.yaml", "test.json", false, true, "_samples/test.json", None)]
+  #[test_case("_samples/petshop.yaml", "#test", true, true, "_samples/petshop.yaml", Some("test"))]
+  #[test_case("_samples/petshop.yaml", "test.json#test", false, true, "_samples/test.json", Some("test"))]
+  #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, false, "http://google.com/test.json", Some("test"))]
+  #[test_case("test.yaml", "test.yaml#/path", true, true, "test.yaml", Some("/path"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, false, "https://petstore.swagger.io/v2/swagger.json", Some("/definitions/Pet"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, false, "http://google.com/test.json", Some("test"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, false, "http://google.com/test.json", None)]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, false, "https://petstore.swagger.io/test.json", None)]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, false, "https://petstore.swagger.io/test.json", Some("fragment"))]
 
   // public void GetRefInfo(string document, string @ref, bool expectedIsNested, bool expectedIsLocal, string expectedUri, string expectedPath)
 
@@ -367,17 +367,17 @@ mod test {
     expected_is_nested: bool,
     _expected_is_local: bool,
     _expected_uri: &str,
-    expected_path: &str,
+    expected_path: Option<&str>,
   ) {
     let ref_info = RefInfo::parse(current_doc, ref_path);
-    assert_eq!(ref_info.in_doc_path, expected_path);
-    //todo!();
+    assert_eq!(ref_info.path, expected_path.map(|s| s.to_string()));
     assert_eq!(ref_info.is_nested, expected_is_nested);
   }
 
   struct RefInfo {
-    pub in_doc_path: String,
-    // True if the reference is nested in the same document
+    /// Path of the reference to import in the destination file
+    pub path: Option<String>,
+    /// True if the reference is nested in the same document
     pub is_nested: bool,
     // pub is_local: bool,
     // pub abs_doc_uri: Url,
@@ -389,7 +389,7 @@ mod test {
 
   impl RefInfo {
     pub fn parse(doc_path: &str, ref_path: &str) -> Self {
-      let mut in_doc_path = "".into();
+      let mut path = None;
       let mut is_nested: bool = false;
       let mut parts = ref_path.split('#');
       let splited_path = doc_path.split('/').last().unwrap();
@@ -397,23 +397,20 @@ mod test {
       match (parts.next(), parts.next(), parts.next()) {
         (_, _, Some(_)) => panic!("Should be no more than 2"),
         (Some(file), None, None) => {
-          // test.json
           is_nested = doc_path == file;
         }
-        (Some(""), Some(path), None) => {
-          // #/path/truc
+        (Some(""), Some(p), None) => {
           is_nested = true;
+          path = Some(p.to_string());
         }
-        (Some(file), Some(path), None) => {
-          // test.json#/path/truc
+        (Some(file), Some(p), None) => {
           is_nested = doc_path == file;
+          path = Some(p.to_string());
         }
-        _ => panic!("Did we forget something ?"),
+        _ => panic!("Did we forgot something ?"),
       };
-      //  parts[0] = splited_path.last().unwrap_or_default().to_string()
-      //   is_nested = true;
 
-      Self { in_doc_path, is_nested }
+      Self { path, is_nested }
     }
   }
 }
