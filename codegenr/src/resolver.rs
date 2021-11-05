@@ -348,10 +348,10 @@ mod test {
 
   #[rustfmt::skip]
   #[test_case("_samples/petshop.yaml", "../test.json", false, true, "test.json", "")]
-  #[test_case("_yamlSamples/petshop.yaml", "test.json", false, true, "_yamlSamples/test.json", "")]
-  #[test_case("_yamlSamples/petshop.yaml", "#test", true, true, "_yamlSamples/petshop.yaml", "test")]
-  #[test_case("_yamlSamples/petshop.yaml", "test.json#test", false, true, "_yamlSamples/test.json", "test")]
-  #[test_case("_yamlSamples/petshop.yaml", "http://google.com/test.json#test", false, false, "http://google.com/test.json", "test")]
+  #[test_case("_samples/petshop.yaml", "test.json", false, true, "_samples/test.json", "")]
+  #[test_case("_samples/petshop.yaml", "#test", true, true, "_samples/petshop.yaml", "test")]
+  #[test_case("_samples/petshop.yaml", "test.json#test", false, true, "_samples/test.json", "test")]
+  #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, false, "http://google.com/test.json", "test")]
   #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, false, "https://petstore.swagger.io/v2/swagger.json", "/definitions/Pet")]
   #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, false, "http://google.com/test.json", "test")]
   #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, false, "http://google.com/test.json", "")]
@@ -377,7 +377,7 @@ mod test {
   struct RefInfo {
     pub in_doc_path: String,
     // /// True if the reference is nested in the same document
-    // pub is_nested: bool,
+    //pub is_nested: bool,
     // pub is_local: bool,
     // pub abs_doc_uri: Url,
 
@@ -388,14 +388,10 @@ mod test {
 
   impl RefInfo {
     pub fn parse(doc_path: &str, ref_path: &str) -> Self {
-      // ex : "_samples/petshop.yaml", "../test.json",
-      // split on "#"
-      // si 2 parties : path = [1]
-      // si 1 partie : path = "".into()
       let mut in_doc_path = "".into();
-      let parts = ref_path.split('#').count();
-      if parts > 1 {
-        in_doc_path = ref_path.split('#').last().unwrap_or_default().to_string();
+      let parts = ref_path.split('#').collect::<Vec<_>>();
+      if parts.len() > 1 {
+        in_doc_path = parts.last().unwrap().to_string();
       }
         Self { in_doc_path }
     }
