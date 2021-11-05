@@ -1,4 +1,5 @@
 use serde_json::{Map, Value};
+use url::Url;
 
 const REF: &str = "$ref";
 const PATH_SEP: char = '/';
@@ -345,40 +346,54 @@ mod test {
     Ok(())
   }
 
-  // #[test_case("_yamlSamples/petshop.yaml", "../test.json", false, true, "test.json", "")]
-  // #[test_case("_yamlSamples/petshop.yaml", "test.json", false, true, "_yamlSamples/test.json", "")]
-  // #[test_case("_yamlSamples/petshop.yaml", "#test", true, true, "_yamlSamples/petshop.yaml", "test")]
-  // #[test_case("_yamlSamples/petshop.yaml", "test.json#test", false, true, "_yamlSamples/test.json", "test")]
-  // #[test_case("_yamlSamples/petshop.yaml", "http://google.com/test.json#test", false, false, "http://google.com/test.json", "test")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, false, "https://petstore.swagger.io/v2/swagger.json", "/definitions/Pet")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, false, "http://google.com/test.json", "test")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, false, "http://google.com/test.json", "")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, false, "https://petstore.swagger.io/test.json", "")]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, false, "https://petstore.swagger.io/test.json", "fragment")]
+  #[rustfmt::skip]
+  #[test_case("_samples/petshop.yaml", "../test.json", false, true, "test.json", "")]
+  #[test_case("_samples/petshop.yaml", "test.json", false, true, "_samples/test.json", "")]
+  #[test_case("_samples/petshop.yaml", "#test", true, true, "_samples/petshop.yaml", "test")]
+  #[test_case("_samples/petshop.yaml", "test.json#test", false, true, "_samples/test.json", "test")]
+  #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, false, "http://google.com/test.json", "test")]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, false, "https://petstore.swagger.io/v2/swagger.json", "/definitions/Pet")]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, false, "http://google.com/test.json", "test")]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, false, "http://google.com/test.json", "")]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, false, "https://petstore.swagger.io/test.json", "")]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, false, "https://petstore.swagger.io/test.json", "fragment")]
 
   // public void GetRefInfo(string document, string @ref, bool expectedIsNested, bool expectedIsLocal, string expectedUri, string expectedPath)
 
-  fn multiplication_tests(current_doc: &str, ref_path: &str, expected_is_nested: bool) {
-    let ref_info = RefInfo::parse(ref_path);
-    // assert_eq!(ref_info.is_nested, expected_is_nested);
-    todo!();
+  fn multiplication_tests(
+    current_doc: &str,
+    ref_path: &str,
+    _expected_is_nested: bool,
+    _expected_is_local: bool,
+    _expected_uri: &str,
+    expected_path: &str,
+  ) {
+    let ref_info = RefInfo::parse(current_doc, ref_path);
+    assert_eq!(ref_info.in_doc_path, expected_path);
+    //todo!();
     // assert_eq!(ref_info.is_nested, expected_is_nested);
   }
 
   struct RefInfo {
-    /// True if the reference is nested in the same document
-    pub is_nested: bool,
-    // public bool IsNestedInThisDocument { get; }
-    // public bool IsLocal { get; }
+    pub in_doc_path: String,
+    // /// True if the reference is nested in the same document
+    //pub is_nested: bool,
+    // pub is_local: bool,
+    // pub abs_doc_uri: Url,
+
+    // pub is_false_abs_ref: bool,
+    // pub ref_friendly_name: String
     // public Uri AbsoluteDocumentUri { get; }
-    // public string InDocumentPath { get; }
-    // public bool IsFalseAbsoluteRef { get; }
-    // public string RefFriendlyName { get; }
   }
 
   impl RefInfo {
-    pub fn parse(ref_path: &str) -> Self {
-      todo!()
+    pub fn parse(doc_path: &str, ref_path: &str) -> Self {
+      let mut in_doc_path = "".into();
+      let parts = ref_path.split('#').collect::<Vec<_>>();
+      if parts.len() > 1 {
+        in_doc_path = parts.last().unwrap().to_string();
+      }
+        Self { in_doc_path }
     }
   }
 }
