@@ -392,8 +392,12 @@ mod test {
       // split on "#"
       // si 2 parties : path = [1]
       // si 1 partie : path = "".into()
-      let in_doc_path = "".into();
-      Self { in_doc_path }
+      let mut in_doc_path = "".into();
+      let parts = ref_path.split('#').count();
+      if parts > 1 {
+        in_doc_path = ref_path.split('#').last().unwrap_or_default().to_string();
+      }
+        Self { in_doc_path }
     }
   }
 }
