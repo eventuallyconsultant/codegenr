@@ -1,3 +1,5 @@
+use path_dedot::*;
+use relative_path::RelativePath;
 use serde_json::{Map, Value};
 use url::Url;
 
@@ -75,12 +77,13 @@ fn resolve_reference(json: &Value, path: &str) -> Result<Value, anyhow::Error> {
 }
 
 #[derive(Debug)]
-struct RefInfo {
+pub struct RefInfo {
   /// Path of the reference to import in the destination file
   pub path: Option<String>,
   /// True if the reference is nested in the same document
   pub is_nested: bool,
-  // pub is_local: bool,
+  /// File path of the document containing the reference
+  pub document_path: DocumentPath,
   // pub abs_doc_uri: Url,
 
   // pub is_false_abs_ref: bool,
@@ -88,15 +91,23 @@ struct RefInfo {
   // public Uri AbsoluteDocumentUri { get; }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum DocumentPath {
+  Url(Url),
+  Local(String),
+}
+
 impl RefInfo {
   pub fn parse(doc_path: &str, ref_path: &str) -> Result<Self, anyhow::Error> {
     let mut path = None;
     let mut is_nested: bool = false;
     let mut parts = ref_path.split('#');
+    let mut target_document_path = doc_path.to_string();
 
     match (parts.next(), parts.next(), parts.next()) {
       (_, _, Some(_)) => return Err(anyhow::anyhow!("Should be no more than 2 parts separated by # in a reference path")),
       (Some(file), None, None) => {
+        target_document_path = file.to_string();
         is_nested = doc_path == file;
       }
       (Some(""), Some(p), None) => {
@@ -104,13 +115,35 @@ impl RefInfo {
         path = Some(p.to_string());
       }
       (Some(file), Some(p), None) => {
+        target_document_path = file.to_string();
         is_nested = doc_path == file;
         path = Some(p.to_string());
       }
-      (None, _, _) => todo!("nonono"),
+      (None, _, _) => unreachable!("Split always returns at least one element"),
     };
 
-    Ok(Self { path, is_nested })
+    let document_path = match Url::parse(&target_document_path) {
+      Ok(url) => DocumentPath::Url(url),
+      Err(_) => {
+        let dir = RelativePath::new(doc_path)
+          .parent()
+          .ok_or_else(|| anyhow::anyhow!("Should have a parent."))?;
+        let p = dir.join(target_document_path);
+        let p = p.to_path(".");
+        let x = p
+          .parse_dot_from(std::path::Path::new("."))?
+          .to_str()
+          .ok_or_else(|| anyhow::anyhow!("Should have a parent."))?
+          .to_string();
+        DocumentPath::Local(x)
+      }
+    };
+
+    Ok(Self {
+      path,
+      is_nested,
+      document_path,
+    })
   }
 }
 
@@ -387,29 +420,29 @@ mod test {
   }
 
   #[rustfmt::skip]
-  #[test_case("", "", true, true, "", None)]
-  #[test_case("_samples/petshop.yaml", "../test.json", false, true, "test.json", None)]
-  #[test_case("_samples/petshop.yaml", "test.json", false, true, "_samples/test.json", None)]
-  #[test_case("_samples/petshop.yaml", "#test", true, true, "_samples/petshop.yaml", Some("test"))]
-  #[test_case("_samples/petshop.yaml", "test.json#test", false, true, "_samples/test.json", Some("test"))]
-  #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, false, "http://google.com/test.json", Some("test"))]
-  #[test_case("test.yaml", "test.yaml#/path", true, true, "test.yaml", Some("/path"))]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, false, "https://petstore.swagger.io/v2/swagger.json", Some("/definitions/Pet"))]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, false, "http://google.com/test.json", Some("test"))]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, false, "http://google.com/test.json", None)]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, false, "https://petstore.swagger.io/test.json", None)]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, false, "https://petstore.swagger.io/test.json", Some("fragment"))]
+  // #[test_case("", "", true, "", None)]
+  #[test_case("_samples/petshop.yaml", "../test.json", false, DocumentPath::Local("test.json".into()), None)]
+  // #[test_case("_samples/petshop.yaml", "test.json", false, DocumentPath::Local("_samples/test.json".into()), None)]
+  // #[test_case("_samples/petshop.yaml", "#test", true, DocumentPath::Local("_samples/petshop.yaml".into()), Some("test"))]
+  // #[test_case("_samples/petshop.yaml", "test.json#test", false, DocumentPath::Local("_samples/test.json".into()), Some("test"))]
+  // #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), Some("test"))]
+  // #[test_case("test.yaml", "test.yaml#/path", true, DocumentPath::Local("test.yaml".into()), Some("/path"))]
+  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, DocumentPath::Url(Url::parse("https://petstore.swagger.io/v2/swagger.json").expect("")), Some("/definitions/Pet"))]
+  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), Some("test"))]
+  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), None)]
+  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, DocumentPath::Url(Url::parse("https://petstore.swagger.io/test.json").expect("")), None)]
+  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, DocumentPath::Url(Url::parse("https://petstore.swagger.io/test.json").expect("")), Some("fragment"))]
   fn multiplication_tests(
     current_doc: &str,
     ref_path: &str,
     expected_is_nested: bool,
-    _expected_is_local: bool,
-    _expected_uri: &str,
+    expected_document_path: DocumentPath,
     expected_path: Option<&str>,
   ) {
     let ref_info = RefInfo::parse(current_doc, ref_path).expect("Should work");
     assert_eq!(ref_info.path, expected_path.map(|s| s.to_string()));
     assert_eq!(ref_info.is_nested, expected_is_nested);
+    assert_eq!(ref_info.document_path, expected_document_path);
   }
 
   #[test]
@@ -417,6 +450,20 @@ mod test {
     let failed = RefInfo::parse("", "you.shall#not#path");
     let err = failed.expect_err("Should be an error");
     assert_eq!(err.to_string(), "Should be no more than 2 parts separated by # in a reference path");
+  }
+
+  #[test]
+  fn test() {
+    // Url::
+    // let url = Url::parse("pouet://test.com/test.html").expect("azegiouh");
+    // assert_eq!(url.scheme(), "pouet");
+    // assert!(url.cannot_be_a_base());
+
+    use std::path::Path;
+    Path::new("./foo/bar.txt");
+    let p = Path::new("http://test.com/foo/bar.txt/../test");
+    dbg!(p.parent());
+    // let can = p.canonicalize().expect("");
   }
 }
 /*
