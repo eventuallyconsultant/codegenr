@@ -74,6 +74,46 @@ fn resolve_reference(json: &Value, path: &str) -> Result<Value, anyhow::Error> {
   Ok(part.clone())
 }
 
+#[derive(Debug)]
+struct RefInfo {
+  /// Path of the reference to import in the destination file
+  pub path: Option<String>,
+  /// True if the reference is nested in the same document
+  pub is_nested: bool,
+  // pub is_local: bool,
+  // pub abs_doc_uri: Url,
+
+  // pub is_false_abs_ref: bool,
+  // pub ref_friendly_name: String
+  // public Uri AbsoluteDocumentUri { get; }
+}
+
+impl RefInfo {
+  pub fn parse(doc_path: &str, ref_path: &str) -> Result<Self, anyhow::Error> {
+    let mut path = None;
+    let mut is_nested: bool = false;
+    let mut parts = ref_path.split('#');
+
+    match (parts.next(), parts.next(), parts.next()) {
+      (_, _, Some(_)) => return Err(anyhow::anyhow!("Should be no more than 2 parts separated by # in a reference path")),
+      (Some(file), None, None) => {
+        is_nested = doc_path == file;
+      }
+      (Some(""), Some(p), None) => {
+        is_nested = true;
+        path = Some(p.to_string());
+      }
+      (Some(file), Some(p), None) => {
+        is_nested = doc_path == file;
+        path = Some(p.to_string());
+      }
+      (None, _, _) => todo!("nonono"),
+    };
+
+    Ok(Self { path, is_nested })
+  }
+}
+
 #[cfg(test)]
 mod test {
   use super::*;
@@ -348,17 +388,17 @@ mod test {
 
   #[rustfmt::skip]
   #[test_case("", "", true, true, "", None)]
-  // #[test_case("_samples/petshop.yaml", "../test.json", false, true, "test.json", None)]
-  // #[test_case("_samples/petshop.yaml", "test.json", false, true, "_samples/test.json", None)]
-  // #[test_case("_samples/petshop.yaml", "#test", true, true, "_samples/petshop.yaml", Some("test"))]
-  // #[test_case("_samples/petshop.yaml", "test.json#test", false, true, "_samples/test.json", Some("test"))]
-  // #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, false, "http://google.com/test.json", Some("test"))]
-  // #[test_case("test.yaml", "test.yaml#/path", true, true, "test.yaml", Some("/path"))]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, false, "https://petstore.swagger.io/v2/swagger.json", Some("/definitions/Pet"))]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, false, "http://google.com/test.json", Some("test"))]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, false, "http://google.com/test.json", None)]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, false, "https://petstore.swagger.io/test.json", None)]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, false, "https://petstore.swagger.io/test.json", Some("fragment"))]
+  #[test_case("_samples/petshop.yaml", "../test.json", false, true, "test.json", None)]
+  #[test_case("_samples/petshop.yaml", "test.json", false, true, "_samples/test.json", None)]
+  #[test_case("_samples/petshop.yaml", "#test", true, true, "_samples/petshop.yaml", Some("test"))]
+  #[test_case("_samples/petshop.yaml", "test.json#test", false, true, "_samples/test.json", Some("test"))]
+  #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, false, "http://google.com/test.json", Some("test"))]
+  #[test_case("test.yaml", "test.yaml#/path", true, true, "test.yaml", Some("/path"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, false, "https://petstore.swagger.io/v2/swagger.json", Some("/definitions/Pet"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, false, "http://google.com/test.json", Some("test"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, false, "http://google.com/test.json", None)]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, false, "https://petstore.swagger.io/test.json", None)]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, false, "https://petstore.swagger.io/test.json", Some("fragment"))]
   fn multiplication_tests(
     current_doc: &str,
     ref_path: &str,
@@ -378,48 +418,7 @@ mod test {
     let err = failed.expect_err("Should be an error");
     assert_eq!(err.to_string(), "Should be no more than 2 parts separated by # in a reference path");
   }
-
-  #[derive(Debug)]
-  struct RefInfo {
-    /// Path of the reference to import in the destination file
-    pub path: Option<String>,
-    /// True if the reference is nested in the same document
-    pub is_nested: bool,
-    // pub is_local: bool,
-    // pub abs_doc_uri: Url,
-
-    // pub is_false_abs_ref: bool,
-    // pub ref_friendly_name: String
-    // public Uri AbsoluteDocumentUri { get; }
-  }
-
-  impl RefInfo {
-    pub fn parse(doc_path: &str, ref_path: &str) -> Result<Self, anyhow::Error> {
-      let mut path = None;
-      let mut is_nested: bool = false;
-      let mut parts = ref_path.split('#');
-
-      match (parts.next(), parts.next(), parts.next()) {
-        (_, _, Some(_)) => return Err(anyhow::anyhow!("Should be no more than 2 parts separated by # in a reference path")),
-        (Some(file), None, None) => {
-          is_nested = doc_path == file;
-        }
-        (Some(""), Some(p), None) => {
-          is_nested = true;
-          path = Some(p.to_string());
-        }
-        (Some(file), Some(p), None) => {
-          is_nested = doc_path == file;
-          path = Some(p.to_string());
-        }
-        (None, _, _) => todo!("nonono"),
-      };
-
-      Ok(Self { path, is_nested })
-    }
-  }
 }
-
 /*
   [Theory]
 
