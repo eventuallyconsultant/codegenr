@@ -91,17 +91,46 @@ pub struct RefInfo {
   // public Uri AbsoluteDocumentUri { get; }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum DocumentPath {
+  /// Full url to a file : https://mywebsite/api.yaml
   Url(Url),
-  Local(String),
+  /// File name or relative file name
+  FileName(String),
+  None,
+}
+
+impl DocumentPath {
+  pub fn parse(ref_path: &str) -> Result<Self, anyhow::Error> {
+    Ok(if ref_path.trim() == "" {
+      Self::None
+    } else {
+      match Url::parse(ref_path) {
+        Ok(url) => DocumentPath::Url(url),
+        Err(_) => DocumentPath::FileName(ref_path.into()),
+      }
+    })
+  }
+
+  pub fn relate_from(self, refed_from: &Self) -> Result<Self, anyhow::Error> {
+    use DocumentPath::*;
+    Ok(match (refed_from, self) {
+      (Url(_url_from), Url(_url_to)) => todo!(),
+      (Url(_url_from), FileName(_path_to)) => todo!(),
+      (Url(_url_from), None) => refed_from.clone(),
+      (FileName(_path_from), FileName(_path_to)) => todo!(),
+      (FileName(_path_from), Url(_url_to)) => todo!(),
+      (FileName(_path_from), None) => refed_from.clone(),
+      (None, s) => s,
+    })
+  }
 }
 
 impl RefInfo {
-  pub fn parse(doc_path: &str, ref_path: &str) -> Result<Self, anyhow::Error> {
+  pub fn parse(doc_path: &str, ref_value: &str) -> Result<Self, anyhow::Error> {
     let mut path = None;
     let mut is_nested: bool = false;
-    let mut parts = ref_path.split('#');
+    let mut parts = ref_value.split('#');
     let mut target_document_path = doc_path.to_string();
 
     match (parts.next(), parts.next(), parts.next()) {
@@ -135,7 +164,7 @@ impl RefInfo {
           .to_str()
           .ok_or_else(|| anyhow::anyhow!("Should have a parent."))?
           .to_string();
-        DocumentPath::Local(x)
+        DocumentPath::FileName(x)
       }
     };
 
@@ -421,7 +450,7 @@ mod test {
 
   #[rustfmt::skip]
   // #[test_case("", "", true, "", None)]
-  #[test_case("_samples/petshop.yaml", "../test.json", false, DocumentPath::Local("test.json".into()), None)]
+  #[test_case("_samples/petshop.yaml", "../test.json", false, DocumentPath::FileName("test.json".into()), None)]
   // #[test_case("_samples/petshop.yaml", "test.json", false, DocumentPath::Local("_samples/test.json".into()), None)]
   // #[test_case("_samples/petshop.yaml", "#test", true, DocumentPath::Local("_samples/petshop.yaml".into()), Some("test"))]
   // #[test_case("_samples/petshop.yaml", "test.json#test", false, DocumentPath::Local("_samples/test.json".into()), Some("test"))]
@@ -432,7 +461,7 @@ mod test {
   // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), None)]
   // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, DocumentPath::Url(Url::parse("https://petstore.swagger.io/test.json").expect("")), None)]
   // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, DocumentPath::Url(Url::parse("https://petstore.swagger.io/test.json").expect("")), Some("fragment"))]
-  fn multiplication_tests(
+  fn refinfo_parse_tests(
     current_doc: &str,
     ref_path: &str,
     expected_is_nested: bool,
@@ -450,6 +479,17 @@ mod test {
     let failed = RefInfo::parse("", "you.shall#not#path");
     let err = failed.expect_err("Should be an error");
     assert_eq!(err.to_string(), "Should be no more than 2 parts separated by # in a reference path");
+  }
+
+  #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
+  // #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "", DocumentPath::Url(Url::parse("h://f").expect("?")))]
+  // #[test_case(DocumentPath::FileName("f".into()), "", DocumentPath::FileName("f".into()))]
+  // #[test_case(DocumentPath::None, "f", DocumentPath::FileName("f".into()))]
+  // #[test_case(DocumentPath::None, "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
+  fn relate_test(doc_path: DocumentPath, ref_path: &str, expected_related: DocumentPath) {
+    let r_path = DocumentPath::parse(ref_path).expect("?");
+    let related = r_path.relate_from(&doc_path).expect("?");
+    assert_eq!(related, expected_related);
   }
 
   #[test]
