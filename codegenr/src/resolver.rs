@@ -1,6 +1,6 @@
 use path_dedot::*;
-use relative_path::RelativePath;
 use serde_json::{Map, Value};
+use std::path::Path;
 use url::Url;
 
 const REF: &str = "$ref";
@@ -115,11 +115,27 @@ impl DocumentPath {
   pub fn relate_from(self, refed_from: &Self) -> Result<Self, anyhow::Error> {
     use DocumentPath::*;
     Ok(match (refed_from, self) {
-      (Url(_url_from), Url(_url_to)) => todo!(),
-      (Url(_url_from), FileName(_path_to)) => todo!(),
-      (Url(_url_from), None) => refed_from.clone(),
-      (FileName(_path_from), FileName(_path_to)) => todo!(),
-      (FileName(_path_from), Url(_url_to)) => todo!(),
+      (Url(_), Url(url)) => Url(url),
+      (Url(url_from), FileName(path_to)) => {
+        let mut url = url_from.clone();
+        url
+          .path_segments_mut()
+          .map_err(|_| anyhow::anyhow!("Url cannot be a base."))?
+          .pop()
+          .push(&path_to);
+        Url(url)
+      }
+      (Url(_), None) => refed_from.clone(),
+      (FileName(path_from), FileName(path_to)) => {
+        let folder = Path::new(path_from)
+          .parent()
+          .ok_or_else(|| anyhow::anyhow!("The origin path should be a file and have parent."))?;
+        folder
+          .join(path_to)
+          .parse_dot()
+          .map(|p| p.to_str().map(|s| FileName(s.to_owned())).ok_or_else(|| anyhow::anyhow!("")))??
+      }
+      (FileName(_), Url(url)) => Url(url),
       (FileName(_path_from), None) => refed_from.clone(),
       (None, s) => s,
     })
@@ -158,17 +174,18 @@ impl RefInfo {
     let document_path = match Url::parse(&target_document_path) {
       Ok(url) => DocumentPath::Url(url),
       Err(_) => {
-        let dir = RelativePath::new(doc_path)
-          .parent()
-          .ok_or_else(|| anyhow::anyhow!("Should have a parent."))?;
-        let p = dir.join(target_document_path);
-        let p = p.to_path(".");
-        let x = p
-          .parse_dot_from(std::path::Path::new("."))?
-          .to_str()
-          .ok_or_else(|| anyhow::anyhow!("Should have a parent."))?
-          .to_string();
-        DocumentPath::FileName(x)
+        todo!()
+        // let dir = RelativePath::new(doc_path)
+        //   .parent()
+        //   .ok_or_else(|| anyhow::anyhow!("Should have a parent."))?;
+        // let p = dir.join(target_document_path);
+        // let p = p.to_path(".");
+        // let x = p
+        //   .parse_dot_from(std::path::Path::new("."))?
+        //   .to_str()
+        //   .ok_or_else(|| anyhow::anyhow!("Should have a parent."))?
+        //   .to_string();
+        // DocumentPath::FileName(x)
       }
     };
 
@@ -489,14 +506,31 @@ mod test {
   }
 
   #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
-  // #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "", DocumentPath::Url(Url::parse("h://f").expect("?")))]
-  // #[test_case(DocumentPath::FileName("f".into()), "", DocumentPath::FileName("f".into()))]
-  // #[test_case(DocumentPath::None, "f", DocumentPath::FileName("f".into()))]
-  // #[test_case(DocumentPath::None, "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
+  #[test_case(DocumentPath::Url(Url::parse("h://w.com/api.yaml").expect("?")), "components.yaml", DocumentPath::Url(Url::parse("h://w.com/components.yaml").expect("?")))]
+  #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "", DocumentPath::Url(Url::parse("h://f").expect("?")))]
+  #[test_case(DocumentPath::FileName("file.yaml".into()), "other.json", DocumentPath::FileName("other.json".into()))]
+  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "other.json", DocumentPath::FileName("test/other.json".into()))]
+  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "./other2.json", DocumentPath::FileName("test/other2.json".into()))]
+  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "../other3.json", DocumentPath::FileName("other3.json".into()))]
+  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "plop/other.json", DocumentPath::FileName("test/plop/other.json".into()))]
+  #[test_case(DocumentPath::FileName("file.yaml".into()), "http://w.com/other.json", DocumentPath::Url(Url::parse("http://w.com/other.json").expect("?")))]
+  #[test_case(DocumentPath::FileName("file.json".into()), "", DocumentPath::FileName("file.json".into()))]
+  #[test_case(DocumentPath::None, "f", DocumentPath::FileName("f".into()))]
+  #[test_case(DocumentPath::None, "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
   fn relate_test(doc_path: DocumentPath, ref_path: &str, expected_related: DocumentPath) {
     let r_path = DocumentPath::parse(ref_path).expect("?");
     let related = r_path.relate_from(&doc_path).expect("?");
     assert_eq!(related, expected_related);
+  }
+
+  #[test_case("h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
+  #[test_case("file.json", DocumentPath::FileName("file.json".into()))]
+  #[test_case("./file2.json", DocumentPath::FileName("./file2.json".into()))]
+  #[test_case("../file3.json", DocumentPath::FileName("../file3.json".into()))]
+  #[test_case(" ", DocumentPath::None)]
+  fn path_parse(ref_path: &str, expected: DocumentPath) {
+    let r_path = DocumentPath::parse(ref_path).expect("?");
+    assert_eq!(r_path, expected);
   }
 
   #[test]
