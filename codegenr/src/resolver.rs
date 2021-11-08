@@ -134,7 +134,11 @@ impl RefInfo {
     let mut target_document_path = doc_path.to_string();
 
     match (parts.next(), parts.next(), parts.next()) {
-      (_, _, Some(_)) => return Err(anyhow::anyhow!("Should be no more than 2 parts separated by # in a reference path")),
+      (_, _, Some(_)) => {
+        return Err(anyhow::anyhow!(
+          "There should be no more than 2 parts separated by # in a reference path."
+        ))
+      }
       (Some(file), None, None) => {
         target_document_path = file.to_string();
         is_nested = doc_path == file;
@@ -478,7 +482,10 @@ mod test {
   fn reference_with_more_than_1_sharp_should_fail() {
     let failed = RefInfo::parse("", "you.shall#not#path");
     let err = failed.expect_err("Should be an error");
-    assert_eq!(err.to_string(), "Should be no more than 2 parts separated by # in a reference path");
+    assert_eq!(
+      err.to_string(),
+      "There should be no more than 2 parts separated by # in a reference path."
+    );
   }
 
   #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
