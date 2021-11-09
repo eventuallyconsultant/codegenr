@@ -118,11 +118,14 @@ impl DocumentPath {
       (Url(_), Url(url)) => Url(url),
       (Url(url_from), FileName(path_to)) => {
         let mut url = url_from.clone();
-        url
-          .path_segments_mut()
-          .map_err(|_| anyhow::anyhow!("Url cannot be a base."))?
-          .pop()
-          .push(&path_to);
+        url.path_segments_mut().map_err(|_| anyhow::anyhow!("Url cannot be a base."))?.pop();
+        let path = url.path();
+        let new_path = Path::new(path).join(&path_to);
+        let new_path = new_path.parse_dot()?;
+        let new_path = new_path
+          .to_str()
+          .ok_or_else(|| anyhow::anyhow!("Unable to append path '{}' to '{}'", path_to, url_from))?;
+        url.set_path(new_path);
         Url(url)
       }
       (Url(_), None) => refed_from.clone(),
@@ -131,9 +134,11 @@ impl DocumentPath {
           .parent()
           .ok_or_else(|| anyhow::anyhow!("The origin path should be a file and have parent."))?;
         folder
-          .join(path_to)
-          .parse_dot()
-          .map(|p| p.to_str().map(|s| FileName(s.to_owned())).ok_or_else(|| anyhow::anyhow!("")))??
+          .join(&path_to)
+          .parse_dot()?
+          .to_str()
+          .map(|s| FileName(s.to_owned()))
+          .ok_or_else(|| anyhow::anyhow!("Unable to append path '{}' to '{}'", path_to, path_from))?
       }
       (FileName(_), Url(url)) => Url(url),
       (FileName(_path_from), None) => refed_from.clone(),
@@ -143,56 +148,27 @@ impl DocumentPath {
 }
 
 impl RefInfo {
-  pub fn parse(doc_path: &str, ref_value: &str) -> Result<Self, anyhow::Error> {
-    let mut path = None;
-    let mut is_nested: bool = false;
+  pub fn parse(doc_path: &DocumentPath, ref_value: &str) -> Result<Self, anyhow::Error> {
     let mut parts = ref_value.split('#');
-    let mut target_document_path = doc_path.to_string();
 
-    match (parts.next(), parts.next(), parts.next()) {
+    let (ref_doc_path, path) = match (parts.next(), parts.next(), parts.next()) {
       (_, _, Some(_)) => {
         return Err(anyhow::anyhow!(
           "There should be no more than 2 parts separated by # in a reference path."
         ))
       }
-      (Some(file), None, None) => {
-        target_document_path = file.to_string();
-        is_nested = doc_path == file;
-      }
-      (Some(""), Some(p), None) => {
-        is_nested = true;
-        path = Some(p.to_string());
-      }
-      (Some(file), Some(p), None) => {
-        target_document_path = file.to_string();
-        is_nested = doc_path == file;
-        path = Some(p.to_string());
-      }
+      (Some(file), None, None) => (DocumentPath::parse(file)?.relate_from(doc_path)?, None),
+      (Some(""), Some(p), None) => (doc_path.clone(), Some(p.to_string())),
+      (Some(file), Some(p), None) => (DocumentPath::parse(file)?.relate_from(doc_path)?, Some(p.to_string())),
       (None, _, _) => unreachable!("Split always returns at least one element"),
     };
 
-    let document_path = match Url::parse(&target_document_path) {
-      Ok(url) => DocumentPath::Url(url),
-      Err(_) => {
-        todo!()
-        // let dir = RelativePath::new(doc_path)
-        //   .parent()
-        //   .ok_or_else(|| anyhow::anyhow!("Should have a parent."))?;
-        // let p = dir.join(target_document_path);
-        // let p = p.to_path(".");
-        // let x = p
-        //   .parse_dot_from(std::path::Path::new("."))?
-        //   .to_str()
-        //   .ok_or_else(|| anyhow::anyhow!("Should have a parent."))?
-        //   .to_string();
-        // DocumentPath::FileName(x)
-      }
-    };
+    let is_nested: bool = doc_path == &ref_doc_path;
 
     Ok(Self {
       path,
       is_nested,
-      document_path,
+      document_path: ref_doc_path,
     })
   }
 }
@@ -470,18 +446,18 @@ mod test {
   }
 
   #[rustfmt::skip]
-  // #[test_case("", "", true, "", None)]
+  #[test_case("", "", true, DocumentPath::None, None)]
   #[test_case("_samples/petshop.yaml", "../test.json", false, DocumentPath::FileName("test.json".into()), None)]
-  // #[test_case("_samples/petshop.yaml", "test.json", false, DocumentPath::Local("_samples/test.json".into()), None)]
-  // #[test_case("_samples/petshop.yaml", "#test", true, DocumentPath::Local("_samples/petshop.yaml".into()), Some("test"))]
-  // #[test_case("_samples/petshop.yaml", "test.json#test", false, DocumentPath::Local("_samples/test.json".into()), Some("test"))]
-  // #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), Some("test"))]
-  // #[test_case("test.yaml", "test.yaml#/path", true, DocumentPath::Local("test.yaml".into()), Some("/path"))]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, DocumentPath::Url(Url::parse("https://petstore.swagger.io/v2/swagger.json").expect("")), Some("/definitions/Pet"))]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), Some("test"))]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), None)]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, DocumentPath::Url(Url::parse("https://petstore.swagger.io/test.json").expect("")), None)]
-  // #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, DocumentPath::Url(Url::parse("https://petstore.swagger.io/test.json").expect("")), Some("fragment"))]
+  #[test_case("_samples/petshop.yaml", "test.json", false, DocumentPath::FileName("_samples/test.json".into()), None)]
+  #[test_case("_samples/petshop.yaml", "#test", true, DocumentPath::FileName("_samples/petshop.yaml".into()), Some("test"))]
+  #[test_case("_samples/petshop.yaml", "test.json#test", false, DocumentPath::FileName("_samples/test.json".into()), Some("test"))]
+  #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), Some("test"))]
+  #[test_case("test.yaml", "test.yaml#/path", true, DocumentPath::FileName("test.yaml".into()), Some("/path"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, DocumentPath::Url(Url::parse("https://petstore.swagger.io/v2/swagger.json").expect("")), Some("/definitions/Pet"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), Some("test"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, DocumentPath::Url(Url::parse("http://google.com/test.json").expect("")), None)]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, DocumentPath::Url(Url::parse("https://petstore.swagger.io/test.json").expect("")), None)]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, DocumentPath::Url(Url::parse("https://petstore.swagger.io/test.json").expect("")), Some("fragment"))]
   fn refinfo_parse_tests(
     current_doc: &str,
     ref_path: &str,
@@ -489,7 +465,8 @@ mod test {
     expected_document_path: DocumentPath,
     expected_path: Option<&str>,
   ) {
-    let ref_info = RefInfo::parse(current_doc, ref_path).expect("Should work");
+    let current_doc = DocumentPath::parse(current_doc).expect("?");
+    let ref_info = RefInfo::parse(&current_doc, ref_path).expect("Should work");
     assert_eq!(ref_info.path, expected_path.map(|s| s.to_string()));
     assert_eq!(ref_info.is_nested, expected_is_nested);
     assert_eq!(ref_info.document_path, expected_document_path);
@@ -497,7 +474,7 @@ mod test {
 
   #[test]
   fn reference_with_more_than_1_sharp_should_fail() {
-    let failed = RefInfo::parse("", "you.shall#not#path");
+    let failed = RefInfo::parse(&DocumentPath::None, "you.shall#not#path");
     let err = failed.expect_err("Should be an error");
     assert_eq!(
       err.to_string(),
@@ -507,6 +484,7 @@ mod test {
 
   #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
   #[test_case(DocumentPath::Url(Url::parse("h://w.com/api.yaml").expect("?")), "components.yaml", DocumentPath::Url(Url::parse("h://w.com/components.yaml").expect("?")))]
+  #[test_case(DocumentPath::Url(Url::parse("h://w.com/v1/api.yaml").expect("?")), "../v2/components.yaml", DocumentPath::Url(Url::parse("h://w.com/v2/components.yaml").expect("?")))]
   #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "", DocumentPath::Url(Url::parse("h://f").expect("?")))]
   #[test_case(DocumentPath::FileName("file.yaml".into()), "other.json", DocumentPath::FileName("other.json".into()))]
   #[test_case(DocumentPath::FileName("test/file.yaml".into()), "other.json", DocumentPath::FileName("test/other.json".into()))]
