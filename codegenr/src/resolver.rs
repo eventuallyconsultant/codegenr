@@ -1,5 +1,6 @@
 use path_dedot::*;
 use serde_json::{Map, Value};
+use std::collections::HashMap;
 use std::path::Path;
 use url::Url;
 
@@ -8,19 +9,39 @@ const PATH_SEP: char = '/';
 const FROM_REF: &str = "x-fromRef";
 const REF_NAME: &str = "x-refName";
 
-// https://github.com/BeezUP/dotnet-codegen/tree/master/tests/CodegenUP.DocumentRefLoader.Tests
+type DocumentsHash = HashMap<DocumentPath, Value>;
 
-pub fn load_refs(json: Value /* map<file_name, Value> */) -> Result<Value, anyhow::Error> {
-  let json2 = json.clone();
-  load_refs_recurse(json, &json2)
+pub struct RefResolver {
+  hash: DocumentsHash,
 }
 
-fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) -> Result<Value, anyhow::Error> {
+// impl RefResolver {
+//   pub fn resolve_from_value(json: Value) -> Result<Value, anyhow::Error> {
+//     todo!()
+//   }
+
+//   pub fn resolve_document(document_path: &str) -> Result<Value, anyhow::Error> {
+//     todo!()
+//   }
+// }
+
+// https://github.com/BeezUP/dotnet-codegen/tree/master/tests/CodegenUP.DocumentRefLoader.Tests
+
+pub fn resolve_refs_raw(json: Value) -> Result<Value, anyhow::Error> {
+  let json2 = json.clone();
+  resolve_refs_recurse(json, &json2, &mut Default::default())
+}
+
+pub fn resolve_refs(document: DocumentPath) -> Result<Value, anyhow::Error> {
+  todo!()
+}
+
+fn resolve_refs_recurse(json: Value, original: &Value, cache: &mut DocumentsHash) -> Result<Value, anyhow::Error> {
   match json {
     Value::Array(a) => {
       let mut new = Vec::<_>::with_capacity(a.len());
       for v in a {
-        new.push(load_refs_recurse(v, original)?);
+        new.push(resolve_refs_recurse(v, original, cache)?);
       }
       Ok(Value::Array(new))
     }
@@ -28,18 +49,18 @@ fn load_refs_recurse(json: Value, original: &Value /* map<file_name, Value> */) 
       let mut map = Map::new();
       for (key, value) in obj.into_iter() {
         if key != REF {
-          map.insert(key, load_refs_recurse(value, original)?);
+          map.insert(key, resolve_refs_recurse(value, original, cache)?);
         } else if let Value::String(path) = value {
           let new = resolve_reference(original, &path)?;
           match new {
             Value::Object(m) => {
               for (k, v) in m {
-                map.insert(k, load_refs_recurse(v, original)?);
+                map.insert(k, resolve_refs_recurse(v, original, cache)?);
               }
               map.insert(FROM_REF.into(), Value::String(path.clone()));
               map.insert(REF_NAME.into(), Value::String(get_ref_name(&path)));
             }
-            v => return load_refs_recurse(v, original),
+            v => return resolve_refs_recurse(v, original, cache),
           }
         } else {
           return Err(anyhow::anyhow!("{} value should be a String", REF));
@@ -215,7 +236,7 @@ mod test {
   }
 
   #[test]
-  fn loading_refs_test() -> Result<(), anyhow::Error> {
+  fn resolve_refs_test() -> Result<(), anyhow::Error> {
     // Verif structure + pretty print Json : https://jsonformatter.org/json-pretty-print
     let json = json!({
       "test": {
@@ -237,15 +258,15 @@ mod test {
       }
     });
 
-    let loaded = load_refs(json)?;
-    println!("{}", loaded.to_string());
+    let resolved = resolve_refs_raw(json)?;
+    println!("{}", resolved.to_string());
     println!("{}", expected.to_string());
-    assert_eq!(loaded, expected);
+    assert_eq!(resolved, expected);
     Ok(())
   }
 
   #[test]
-  fn loading_refs_test_2() -> Result<(), anyhow::Error> {
+  fn resolve_refs_test_2() -> Result<(), anyhow::Error> {
     let json = json!({
       "test": {
         "data1": {
@@ -278,15 +299,15 @@ mod test {
       }
     });
 
-    let loaded = load_refs(json)?;
-    println!("{}", loaded.to_string());
+    let resolved = resolve_refs_raw(json)?;
+    println!("{}", resolved.to_string());
     println!("{}", expected.to_string());
-    assert_eq!(loaded, expected);
+    assert_eq!(resolved, expected);
     Ok(())
   }
 
   #[test]
-  fn loading_refs_test_3() -> Result<(), anyhow::Error> {
+  fn resolve_refs_test_3() -> Result<(), anyhow::Error> {
     let json = json!({
       "test": {
         "data1": {
@@ -349,15 +370,15 @@ mod test {
       }
     });
 
-    let loaded = load_refs(json)?;
-    println!("{}", loaded.to_string());
+    let resolved = resolve_refs_raw(json)?;
+    println!("{}", resolved.to_string());
     println!("{}", expected.to_string());
-    assert_eq!(loaded, expected);
+    assert_eq!(resolved, expected);
     Ok(())
   }
 
   #[test]
-  fn loading_refs_test_4() -> Result<(), anyhow::Error> {
+  fn resolve_refs_test_4() -> Result<(), anyhow::Error> {
     let json = json!({
         "test": {
           "data1": {
@@ -420,17 +441,17 @@ mod test {
        }
     });
 
-    let loaded = load_refs(json)?;
-    println!("{}", loaded.to_string());
+    let resolved = resolve_refs_raw(json)?;
+    println!("{}", resolved.to_string());
     println!("{}", expected.to_string());
-    assert_eq!(loaded, expected);
+    assert_eq!(resolved, expected);
     Ok(())
   }
 
   #[test]
   fn should_resolve_nested_references() -> Result<(), anyhow::Error> {
     let json = read_yaml_file("./_samples/petshop.yaml")?;
-    let json = load_refs(json)?;
+    let json = resolve_refs_raw(json)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
     Ok(())
@@ -439,7 +460,7 @@ mod test {
   #[test]
   fn should_resolve_external_references() -> Result<(), anyhow::Error> {
     let json = read_yaml_file("./_samples/petshop_with_external.yaml")?;
-    let json = load_refs(json)?;
+    let json = resolve_refs_raw(json)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
     Ok(())
