@@ -2,11 +2,9 @@
 
 A rewrite of the C# [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 
-
-
-
 ## Les grosses étapes :
-- [ ] Charger un yaml ou un json
+
+- [x] Charger un yaml ou un json
 
 - [ ] Résoudre les $ref
 
