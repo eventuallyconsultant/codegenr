@@ -1,5 +1,64 @@
+use path_dedot::ParseDot;
 use serde_json::{Map, Value};
-use std::{fs::File, io::Read};
+use std::{fs::File, io::Read, path::Path};
+use url::Url;
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum DocumentPath {
+  /// Full url to a file : https://mywebsite/api.yaml
+  Url(Url),
+  /// File name or relative file name
+  FileName(String),
+  /// json or yaml out of thin silicon
+  None,
+}
+
+impl DocumentPath {
+  pub fn parse(ref_path: &str) -> Result<Self, anyhow::Error> {
+    Ok(if ref_path.trim() == "" {
+      Self::None
+    } else {
+      match Url::parse(ref_path) {
+        Ok(url) => DocumentPath::Url(url),
+        Err(_) => DocumentPath::FileName(ref_path.into()),
+      }
+    })
+  }
+
+  pub fn relate_from(self, refed_from: &Self) -> Result<Self, anyhow::Error> {
+    use DocumentPath::*;
+    Ok(match (refed_from, self) {
+      (Url(_), Url(url)) => Url(url),
+      (Url(url_from), FileName(path_to)) => {
+        let mut url = url_from.clone();
+        url.path_segments_mut().map_err(|_| anyhow::anyhow!("Url cannot be a base."))?.pop();
+        let path = url.path();
+        let new_path = Path::new(path).join(&path_to);
+        let new_path = new_path.parse_dot()?;
+        let new_path = new_path
+          .to_str()
+          .ok_or_else(|| anyhow::anyhow!("Unable to append path '{}' to '{}'", path_to, url_from))?;
+        url.set_path(new_path);
+        Url(url)
+      }
+      (Url(_), None) => refed_from.clone(),
+      (FileName(path_from), FileName(path_to)) => {
+        let folder = Path::new(path_from)
+          .parent()
+          .ok_or_else(|| anyhow::anyhow!("The origin path should be a file and have parent."))?;
+        folder
+          .join(&path_to)
+          .parse_dot()?
+          .to_str()
+          .map(|s| FileName(s.to_owned()))
+          .ok_or_else(|| anyhow::anyhow!("Unable to append path '{}' to '{}'", path_to, path_from))?
+      }
+      (FileName(_), Url(url)) => Url(url),
+      (FileName(_path_from), None) => refed_from.clone(),
+      (None, s) => s,
+    })
+  }
+}
 
 pub fn read_json_file(file_path: &str) -> Result<Value, anyhow::Error> {
   let mut file = File::open(file_path)?;
@@ -58,6 +117,26 @@ fn yaml_to_json_number(n: serde_yaml::Number) -> Result<serde_json::Number, anyh
 #[cfg(test)]
 mod test {
   use super::*;
+  use test_case::test_case;
+
+  #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
+  #[test_case(DocumentPath::Url(Url::parse("h://w.com/api.yaml").expect("?")), "components.yaml", DocumentPath::Url(Url::parse("h://w.com/components.yaml").expect("?")))]
+  #[test_case(DocumentPath::Url(Url::parse("h://w.com/v1/api.yaml").expect("?")), "../v2/components.yaml", DocumentPath::Url(Url::parse("h://w.com/v2/components.yaml").expect("?")))]
+  #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "", DocumentPath::Url(Url::parse("h://f").expect("?")))]
+  #[test_case(DocumentPath::FileName("file.yaml".into()), "other.json", DocumentPath::FileName("other.json".into()))]
+  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "other.json", DocumentPath::FileName("test/other.json".into()))]
+  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "./other2.json", DocumentPath::FileName("test/other2.json".into()))]
+  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "../other3.json", DocumentPath::FileName("other3.json".into()))]
+  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "plop/other.json", DocumentPath::FileName("test/plop/other.json".into()))]
+  #[test_case(DocumentPath::FileName("file.yaml".into()), "http://w.com/other.json", DocumentPath::Url(Url::parse("http://w.com/other.json").expect("?")))]
+  #[test_case(DocumentPath::FileName("file.json".into()), "", DocumentPath::FileName("file.json".into()))]
+  #[test_case(DocumentPath::None, "f", DocumentPath::FileName("f".into()))]
+  #[test_case(DocumentPath::None, "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
+  fn relate_test(doc_path: DocumentPath, ref_path: &str, expected_related: DocumentPath) {
+    let r_path = DocumentPath::parse(ref_path).expect("?");
+    let related = r_path.relate_from(&doc_path).expect("?");
+    assert_eq!(related, expected_related);
+  }
 
   #[test]
   fn read_yaml_file_test() -> Result<(), anyhow::Error> {
