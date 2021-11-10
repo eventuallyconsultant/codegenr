@@ -87,7 +87,8 @@ impl DocumentPath {
     let hint = self.guess_format();
     match self {
       DocumentPath::Url(url) => {
-        todo!()
+        let body = reqwest::blocking::get(url.clone())?.text()?;
+        json_from_string(&body, hint)
       }
       DocumentPath::FileName(file_name) => {
         let mut file = File::open(file_name)?;
@@ -171,6 +172,13 @@ mod test {
   }
 
   #[test]
+  fn read_json_file_test() -> Result<(), anyhow::Error> {
+    let result = DocumentPath::parse("./_samples/Merge1_rest.json")?.load_raw()?;
+    dbg!(result);
+    Ok(())
+  }
+
+  #[test]
   fn read_yaml_file_test() -> Result<(), anyhow::Error> {
     let result = DocumentPath::parse("./_samples/Merge1.yaml")?.load_raw()?;
     dbg!(result);
@@ -178,8 +186,8 @@ mod test {
   }
 
   #[test]
-  fn read_json_file_test() -> Result<(), anyhow::Error> {
-    let result = DocumentPath::parse("./_samples/Merge1_rest.json")?.load_raw()?;
+  fn read_beezup_openapi() -> Result<(), anyhow::Error> {
+    let result = DocumentPath::parse("https://api-docs.beezup.com/swagger.json")?.load_raw()?;
     dbg!(result);
     Ok(())
   }
