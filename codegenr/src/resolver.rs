@@ -392,7 +392,7 @@ mod test {
 
   #[test]
   fn should_resolve_nested_references() -> Result<(), anyhow::Error> {
-    let json = read_yaml_file("./_samples/petshop.yaml")?;
+    let json = DocumentPath::parse("./_samples/petshop.yaml")?.load_raw()?;
     let json = resolve_refs_raw(json)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
@@ -401,7 +401,7 @@ mod test {
 
   #[test]
   fn should_resolve_external_references() -> Result<(), anyhow::Error> {
-    let json = read_yaml_file("./_samples/petshop_with_external.yaml")?;
+    let json = DocumentPath::parse("./_samples/petshop_with_external.yaml")?.load_raw()?;
     let json = resolve_refs_raw(json)?;
     let string = json.to_string();
     assert!(!string.contains(REF));

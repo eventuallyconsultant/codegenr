@@ -13,6 +13,15 @@ pub enum DocumentPath {
   None,
 }
 
+pub(crate) enum FormatHint {
+  /// The content should be json
+  Json,
+  /// The content should be yaml
+  Yaml,
+  /// We have no f.....g idea
+  NoIdea,
+}
+
 impl DocumentPath {
   pub fn parse(ref_path: &str) -> Result<Self, anyhow::Error> {
     Ok(if ref_path.trim() == "" {
@@ -58,21 +67,44 @@ impl DocumentPath {
       (None, s) => s,
     })
   }
+
+  pub(crate) fn guess_format(&self) -> FormatHint {
+    let s = match self {
+      DocumentPath::Url(url) => url.as_str(),
+      DocumentPath::FileName(s) => s,
+      DocumentPath::None => return FormatHint::NoIdea,
+    };
+    if s.ends_with(".json") {
+      FormatHint::Json
+    } else if s.ends_with(".yaml") || s.ends_with(".yml") {
+      FormatHint::Yaml
+    } else {
+      FormatHint::NoIdea
+    }
+  }
+
+  pub fn load_raw(&self) -> Result<Value, anyhow::Error> {
+    let hint = self.guess_format();
+    match self {
+      DocumentPath::Url(url) => {
+        todo!()
+      }
+      DocumentPath::FileName(file_name) => {
+        let mut file = File::open(file_name)?;
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+        json_from_string(&content, hint)
+      }
+      DocumentPath::None => unreachable!("This is a non sense to try loading a 'None' document path."),
+    }
+  }
 }
 
-pub fn read_json_file(file_path: &str) -> Result<Value, anyhow::Error> {
-  let mut file = File::open(file_path)?;
-  let mut contents = String::new();
-  file.read_to_string(&mut contents)?;
-  Ok(serde_json::from_str(&contents)?)
-}
-
-pub fn read_yaml_file(file_path: &str) -> Result<Value, anyhow::Error> {
-  let mut file = File::open(file_path)?;
-  let mut contents = String::new();
-  file.read_to_string(&mut contents)?;
-  let yaml: serde_yaml::Value = serde_yaml::from_str(&contents)?;
-  yaml_to_json(yaml)
+fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, anyhow::Error> {
+  Ok(match hint {
+    FormatHint::Json | FormatHint::NoIdea => serde_json::from_str(content).or_else(|_| yaml_to_json(serde_yaml::from_str(content)?))?,
+    FormatHint::Yaml => yaml_to_json(serde_yaml::from_str(content)?).or_else(|_| serde_json::from_str(content))?,
+  })
 }
 
 fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, anyhow::Error> {
@@ -140,14 +172,14 @@ mod test {
 
   #[test]
   fn read_yaml_file_test() -> Result<(), anyhow::Error> {
-    let result = read_yaml_file("./_samples/Merge1.yaml")?;
+    let result = DocumentPath::parse("./_samples/Merge1.yaml")?.load_raw()?;
     dbg!(result);
     Ok(())
   }
 
   #[test]
   fn read_json_file_test() -> Result<(), anyhow::Error> {
-    let result = read_json_file("./_samples/Merge1_rest.json")?;
+    let result = DocumentPath::parse("./_samples/Merge1_rest.json")?.load_raw()?;
     dbg!(result);
     Ok(())
   }
