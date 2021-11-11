@@ -103,10 +103,10 @@ pub struct RefInfo {
   pub is_nested: bool,
   /// File path of the document containing the reference
   pub document_path: DocumentPath,
+  /// Last part of the $ref value
+  pub ref_friendly_name: Option<String>,
   // pub abs_doc_uri: Url,
-
   // pub is_false_abs_ref: bool,
-  // pub ref_friendly_name: String
   // public Uri AbsoluteDocumentUri { get; }
 }
 
@@ -127,11 +127,13 @@ impl RefInfo {
     };
 
     let is_nested: bool = doc_path == &ref_doc_path;
+    let ref_friendly_name = path.as_ref().map(|p| p.split('/').last().unwrap_or_default().to_string());
 
     Ok(Self {
       path,
       is_nested,
       document_path: ref_doc_path,
+      ref_friendly_name,
     })
   }
 }
@@ -409,30 +411,32 @@ mod test {
   }
 
   #[rustfmt::skip]
-  #[test_case("", "", true, "", None)]
-  #[test_case("_samples/petshop.yaml", "../test.json", false, "test.json", None)]
-  #[test_case("_samples/petshop.yaml", "test.json", false, "_samples/test.json", None)]
-  #[test_case("_samples/petshop.yaml", "#test", true, "_samples/petshop.yaml", Some("test"))]
-  #[test_case("_samples/petshop.yaml", "test.json#test", false, "_samples/test.json", Some("test"))]
-  #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, "http://google.com/test.json", Some("test"))]
-  #[test_case("test.yaml", "test.yaml#/path", true, "test.yaml", Some("/path"))]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, "https://petstore.swagger.io/v2/swagger.json", Some("/definitions/Pet"))]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, "http://google.com/test.json", Some("test"))]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, "http://google.com/test.json", None)]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, "https://petstore.swagger.io/test.json", None)]
-  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, "https://petstore.swagger.io/test.json", Some("fragment"))]
+  #[test_case("", "", true, "", None, None)]
+  #[test_case("_samples/petshop.yaml", "../test.json", false, "test.json", None, None)]
+  #[test_case("_samples/petshop.yaml", "test.json", false, "_samples/test.json", None, None)]
+  #[test_case("_samples/petshop.yaml", "#test", true, "_samples/petshop.yaml", Some("test"), Some("test"))]
+  #[test_case("_samples/petshop.yaml", "test.json#test", false, "_samples/test.json", Some("test"), Some("test"))]
+  #[test_case("_samples/petshop.yaml", "http://google.com/test.json#test", false, "http://google.com/test.json", Some("test"), Some("test"))]
+  #[test_case("test.yaml", "test.yaml#/path", true, "test.yaml", Some("/path"), Some("path"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "#/definitions/Pet", true, "https://petstore.swagger.io/v2/swagger.json", Some("/definitions/Pet"), Some("Pet"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json#test", false, "http://google.com/test.json", Some("test"), Some("test"))]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "http://google.com/test.json", false, "http://google.com/test.json", None, None)]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json", false, "https://petstore.swagger.io/test.json", None, None)]
+  #[test_case("https://petstore.swagger.io/v2/swagger.json", "../test.json#fragment", false, "https://petstore.swagger.io/test.json", Some("fragment"), Some("fragment"))]
   fn refinfo_parse_tests(
     current_doc: &str,
     ref_path: &str,
     expected_is_nested: bool,
     expected_document_path: &str,
     expected_path: Option<&str>,
+    expected_ref_friendly_name: Option<&str>,
   ) {
     let current_doc = DocumentPath::parse(current_doc).expect("?");
     let ref_info = RefInfo::parse(&current_doc, ref_path).expect("Should work");
     assert_eq!(ref_info.path, expected_path.map(|s| s.to_string()));
     assert_eq!(ref_info.is_nested, expected_is_nested);
     assert_eq!(ref_info.document_path, DocumentPath::parse(expected_document_path).expect("?"));
+    assert_eq!(ref_info.ref_friendly_name, expected_ref_friendly_name.map(|s| s.to_string()));
   }
 
   #[test]
