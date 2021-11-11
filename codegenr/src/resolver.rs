@@ -26,12 +26,12 @@ pub struct RefResolver {
 // https://github.com/BeezUP/dotnet-codegen/tree/master/tests/CodegenUP.DocumentRefLoader.Tests
 
 pub fn resolve_refs_raw(json: Value) -> Result<Value, anyhow::Error> {
-  let json2 = json.clone();
-  resolve_refs_recurse(json, &json2, &mut Default::default())
+  resolve_refs_recurse(json.clone(), &json, &mut Default::default())
 }
 
 pub fn resolve_refs(document: DocumentPath) -> Result<Value, anyhow::Error> {
-  todo!()
+  let json = document.load_raw()?;
+  resolve_refs_recurse(json.clone(), &json, &mut Default::default())
 }
 
 fn resolve_refs_recurse(json: Value, original: &Value, cache: &mut DocumentsHash) -> Result<Value, anyhow::Error> {
