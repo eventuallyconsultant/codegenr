@@ -500,4 +500,32 @@ mod test {
       "There should be no more than 2 parts separated by # in a reference path."
     );
   }
+
+  #[test]
+  fn very_tricky_test() {
+    todo!();
+    /*
+            [Fact]
+            public async Task VeryTrickyTest()
+            {
+                var sut = new ReferenceLoader("./_yamlSamples/simple1.yaml", ReferenceLoaderStrategy.CopyRefContent);
+                var yaml = await sut.GetRefResolvedYamlAsync();
+
+                yaml.InvariantNewline().ShouldBe(
+    @"test:
+      this: ""will load multiple files""
+    finalvalue:
+      value: ""this is the real final value""
+    value:
+      subvalue:
+        value: ""this is the real final value""
+        x-fromRef: ""simple3.yaml#/subSubValue/value""
+        x-refName: ""value""
+      x-fromRef: ""simple2.json""
+      x-refName: """"
+    ".InvariantNewline());
+            }
+        }
+      */
+  }
 }
