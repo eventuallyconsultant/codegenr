@@ -14,6 +14,41 @@ pub struct RefResolver {
   hash: DocumentsHash,
 }
 
+impl RefResolver {
+  fn new() -> Self {
+    Self { hash: Default::default() }
+  }
+
+  fn jump<'a>(&'a mut self, parent_document_path: DocumentPath, parent_json: Value) -> RefResolverJump<'a> {
+    self.hash.insert(parent_document_path.clone(), parent_json);
+    RefResolverJump {
+      ref_resolver: self,
+      parent_document_path,
+    }
+  }
+}
+
+pub struct RefResolverJump<'a> {
+  pub ref_resolver: &'a RefResolver,
+  pub parent_document_path: DocumentPath,
+}
+
+impl<'a> Drop for RefResolverJump<'a> {
+  fn drop(&mut self) {}
+}
+
+#[cfg(test)]
+mod test2 {
+  use super::*;
+  #[test]
+  fn test() {
+    let mut rr = RefResolver::new();
+    let jump = rr.jump(DocumentPath::None, Value::Null);
+    drop(jump);
+    let jump = rr.jump(DocumentPath::None, Value::Null);
+  }
+}
+
 // impl RefResolver {
 //   pub fn resolve_from_value(json: Value) -> Result<Value, anyhow::Error> {
 //     todo!()
@@ -27,19 +62,19 @@ pub struct RefResolver {
 // https://github.com/BeezUP/dotnet-codegen/tree/master/tests/CodegenUP.DocumentRefLoader.Tests
 
 pub fn resolve_refs_raw(json: Value) -> Result<Value, anyhow::Error> {
-  resolve_refs_recurse(&DocumentPath::None, json.clone(), &json, &mut Default::default())
+  resolve_refs_recurse(&DocumentPath::None, json.clone(), &json, &mut RefResolver::new())
 }
 
 pub fn resolve_refs(document: DocumentPath) -> Result<Value, anyhow::Error> {
   let json = document.load_raw()?;
-  resolve_refs_recurse(&document, json.clone(), &json, &mut Default::default())
+  resolve_refs_recurse(&document, json.clone(), &json, &mut RefResolver::new())
 }
 
 fn resolve_refs_recurse(
   current_doc: &DocumentPath,
   json: Value,
   original: &Value,
-  cache: &mut DocumentsHash,
+  cache: &mut RefResolver,
 ) -> Result<Value, anyhow::Error> {
   match json {
     Value::Array(a) => {
@@ -56,23 +91,31 @@ fn resolve_refs_recurse(
           map.insert(key, resolve_refs_recurse(current_doc, value, original, cache)?);
         } else if let Value::String(ref_value) = value {
           let ref_info = RefInfo::parse(current_doc, &ref_value)?;
-          dbg!(&ref_info);
-          let new = resolve_reference(original, &ref_info.path)?;
-          match new {
+
+          let new_value = if ref_info.document_path != *current_doc {
+            let doc_path = ref_info.document_path;
+            let json = doc_path.load_raw()?;
+            let v = fetch_reference_value(&json, &ref_info.path)?;
+            resolve_refs_recurse(&doc_path, v, &json, cache)?
+          } else {
+            let v = fetch_reference_value(original, &ref_info.path)?;
+            resolve_refs_recurse(current_doc, v, original, cache)?
+          };
+
+          match new_value {
             Value::Object(m) => {
               for (k, v) in m {
-                map.insert(k, resolve_refs_recurse(current_doc, v, original, cache)?);
+                map.insert(k, v);
               }
               map.insert(FROM_REF.into(), Value::String(ref_value.clone()));
               map.insert(REF_NAME.into(), Value::String(get_ref_name(&ref_value)));
             }
-            v => return resolve_refs_recurse(current_doc, v, original, cache),
+            v => return Ok(v),
           }
         } else {
           return Err(anyhow::anyhow!("{} value should be a String", REF));
         }
       }
-
       Ok(Value::Object(map))
     }
     _ => Ok(json),
@@ -85,7 +128,7 @@ fn get_ref_name(path: &str) -> String {
   path.split(PATH_SEP).last().unwrap_or_default().to_string()
 }
 
-fn resolve_reference(json: &Value, path: &Option<String>) -> Result<Value, anyhow::Error> {
+fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, anyhow::Error> {
   match path {
     Some(p) => {
       let parts = p.split(PATH_SEP);
@@ -94,9 +137,9 @@ fn resolve_reference(json: &Value, path: &Option<String>) -> Result<Value, anyho
         if let Value::Object(o) = part {
           part = o
             .get(p)
-            .ok_or_else(|| anyhow::format_err!("Key {} was not found in json part {}", p, part))?;
+            .ok_or_else(|| anyhow::format_err!("Key '{}' was not found in json part '{}'", p, part))?;
         } else {
-          return Err(anyhow::anyhow!("Could not follow path {} as json part is not an object.", p));
+          return Err(anyhow::anyhow!("Could not follow path '{}' as json part is not an object.", p));
         }
       }
       Ok(part.clone())
@@ -172,18 +215,18 @@ mod test {
     });
 
     assert_eq!(
-      resolve_reference(&json, &Some("/test/data1/value".into()))?,
+      fetch_reference_value(&json, &Some("/test/data1/value".into()))?,
       Value::Number(serde_json::Number::from(42))
     );
 
-    assert_eq!(resolve_reference(&json, &Some("/test/data1".into()))?, json!({ "value": 42 }));
+    assert_eq!(fetch_reference_value(&json, &Some("/test/data1".into()))?, json!({ "value": 42 }));
 
     let path: &str = "/test/not_existing_path";
-    let failed_test = resolve_reference(&json, &Some(path.into()));
+    let failed_test = fetch_reference_value(&json, &Some(path.into()));
     let err = failed_test.expect_err("Should be an error");
     assert_eq!(
       err.to_string(),
-      "Key not_existing_path was not found in json part {\"data1\":{\"value\":42},\"data2\":[1,2,3]}"
+      "Key 'not_existing_path' was not found in json part '{\"data1\":{\"value\":42},\"data2\":[1,2,3]}'"
     );
 
     Ok(())
@@ -191,7 +234,6 @@ mod test {
 
   #[test]
   fn resolve_refs_test() -> Result<(), anyhow::Error> {
-    // Verif structure + pretty print Json : https://jsonformatter.org/json-pretty-print
     let json = json!({
       "test": {
         "$ref": "#/myref"
@@ -404,7 +446,7 @@ mod test {
 
   #[test]
   fn should_resolve_nested_references() -> Result<(), anyhow::Error> {
-    let json = DocumentPath::parse("./_samples/petshop.yaml")?.load_raw()?;
+    let json = DocumentPath::parse("_samples/petshop.yaml")?.load_raw()?;
     let json = resolve_refs_raw(json)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
@@ -412,10 +454,9 @@ mod test {
   }
 
   #[test]
-  #[ignore]
   fn should_resolve_external_references() -> Result<(), anyhow::Error> {
-    let json = DocumentPath::parse("./_samples/petshop_with_external.yaml")?.load_raw()?;
-    let json = resolve_refs_raw(json)?;
+    let document = DocumentPath::parse("_samples/petshop_with_external.yaml")?;
+    let json = resolve_refs(document)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
     Ok(())

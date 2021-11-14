@@ -3,7 +3,7 @@ use serde_json::{Map, Value};
 use std::{fs::File, io::Read, path::Path};
 use url::Url;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum DocumentPath {
   /// Full url to a file : https://mywebsite/api.yaml
   Url(Url),
@@ -152,21 +152,28 @@ mod test {
   use super::*;
   use test_case::test_case;
 
-  #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
-  #[test_case(DocumentPath::Url(Url::parse("h://w.com/api.yaml").expect("?")), "components.yaml", DocumentPath::Url(Url::parse("h://w.com/components.yaml").expect("?")))]
-  #[test_case(DocumentPath::Url(Url::parse("h://w.com/v1/api.yaml").expect("?")), "../v2/components.yaml", DocumentPath::Url(Url::parse("h://w.com/v2/components.yaml").expect("?")))]
-  #[test_case(DocumentPath::Url(Url::parse("h://f").expect("?")), "", DocumentPath::Url(Url::parse("h://f").expect("?")))]
-  #[test_case(DocumentPath::FileName("file.yaml".into()), "other.json", DocumentPath::FileName("other.json".into()))]
-  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "other.json", DocumentPath::FileName("test/other.json".into()))]
-  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "./other2.json", DocumentPath::FileName("test/other2.json".into()))]
-  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "../other3.json", DocumentPath::FileName("other3.json".into()))]
-  #[test_case(DocumentPath::FileName("test/file.yaml".into()), "plop/other.json", DocumentPath::FileName("test/plop/other.json".into()))]
-  #[test_case(DocumentPath::FileName("file.yaml".into()), "http://w.com/other.json", DocumentPath::Url(Url::parse("http://w.com/other.json").expect("?")))]
-  #[test_case(DocumentPath::FileName("file.json".into()), "", DocumentPath::FileName("file.json".into()))]
-  #[test_case(DocumentPath::None, "f", DocumentPath::FileName("f".into()))]
-  #[test_case(DocumentPath::None, "h://f", DocumentPath::Url(Url::parse("h://f").expect("?")))]
-  fn relate_test(doc_path: DocumentPath, ref_path: &str, expected_related: DocumentPath) {
+  #[test_case("h://f", "h://f", "h://f")]
+  #[test_case("h://w.com/api.yaml", "components.yaml", "h://w.com/components.yaml")]
+  #[test_case("h://w.com/v1/api.yaml", "../v2/components.yaml", "h://w.com/v2/components.yaml")]
+  #[test_case("file.yaml", "other.json", "other.json")]
+  #[test_case("test/file.yaml", "other.json", "test/other.json")]
+  #[test_case("test/file.yaml", "./other2.json", "test/other2.json")]
+  #[test_case("test/file.yaml", "../other3.json", "other3.json")]
+  #[test_case("test/file.yaml", "plop/other.json", "test/plop/other.json")]
+  #[test_case("file.yaml", "http://w.com/other.json", "http://w.com/other.json")]
+  #[test_case("file.json", "", "file.json")]
+  #[test_case("", "f", "f")]
+  #[test_case("", "h://f", "h://f")]
+  #[test_case("_samples/petshop_with_external.yaml", "petshop_externals.yaml", "_samples/petshop_externals.yaml")]
+  // #[test_case(
+  //   "./_samples/petshop_with_external.yaml",
+  //   "petshop_externals.yaml",
+  //   "./_samples/petshop_externals.yaml"
+  // )]
+  fn relate_test(doc_path: &str, ref_path: &str, expected_related: &str) {
+    let doc_path = DocumentPath::parse(doc_path).expect("?");
     let r_path = DocumentPath::parse(ref_path).expect("?");
+    let expected_related = DocumentPath::parse(expected_related).expect("?");
     let related = r_path.relate_from(&doc_path).expect("?");
     assert_eq!(related, expected_related);
   }
