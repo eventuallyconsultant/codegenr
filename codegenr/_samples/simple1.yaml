@@ -1,4 +1,4 @@
-﻿test:
+test:
   this: will load multiple files
 finalvalue:
   value: this is the real final value
