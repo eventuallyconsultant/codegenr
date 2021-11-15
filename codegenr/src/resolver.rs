@@ -45,7 +45,7 @@ mod test2 {
     let mut rr = RefResolver::new();
     let jump = rr.jump(DocumentPath::None, Value::Null);
     drop(jump);
-    let jump = rr.jump(DocumentPath::None, Value::Null);
+    let _jump = rr.jump(DocumentPath::None, Value::Null);
   }
 }
 
@@ -91,15 +91,16 @@ fn resolve_refs_recurse(
           map.insert(key, resolve_refs_recurse(current_doc, value, original, cache)?);
         } else if let Value::String(ref_value) = value {
           let ref_info = RefInfo::parse(current_doc, &ref_value)?;
+          let is_nested = ref_info.document_path == *current_doc;
 
-          let new_value = if ref_info.document_path != *current_doc {
+          let new_value = if is_nested {
+            let v = fetch_reference_value(original, &ref_info.path)?;
+            resolve_refs_recurse(current_doc, v, original, cache)?
+          } else {
             let doc_path = ref_info.document_path;
             let json = doc_path.load_raw()?;
             let v = fetch_reference_value(&json, &ref_info.path)?;
             resolve_refs_recurse(&doc_path, v, &json, cache)?
-          } else {
-            let v = fetch_reference_value(original, &ref_info.path)?;
-            resolve_refs_recurse(current_doc, v, original, cache)?
           };
 
           match new_value {
@@ -108,7 +109,10 @@ fn resolve_refs_recurse(
                 map.insert(k, v);
               }
               map.insert(FROM_REF.into(), Value::String(ref_value.clone()));
-              map.insert(REF_NAME.into(), Value::String(get_ref_name(&ref_value)));
+              map.insert(
+                REF_NAME.into(),
+                Value::String(ref_info.path.map(|p| get_ref_name(&p)).unwrap_or_default()),
+              );
             }
             v => return Ok(v),
           }
@@ -122,8 +126,6 @@ fn resolve_refs_recurse(
   }
 }
 
-// /test/ezgliuh/value -> value
-// split la path et récup la dernière
 fn get_ref_name(path: &str) -> String {
   path.split(PATH_SEP).last().unwrap_or_default().to_string()
 }
@@ -144,7 +146,7 @@ fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, a
       }
       Ok(part.clone())
     }
-    None => todo!("This should not happen in the same document"),
+    None => Ok(json.clone()),
   }
 }
 
@@ -233,7 +235,7 @@ mod test {
   }
 
   #[test]
-  fn resolve_refs_test() -> Result<(), anyhow::Error> {
+  fn resolve_refs_test_0() -> Result<(), anyhow::Error> {
     let json = json!({
       "test": {
         "$ref": "#/myref"
@@ -247,6 +249,35 @@ mod test {
       "test": {
         "data": "test",
         "x-fromRef": "#/myref",
+        "x-refName": "myref",
+      },
+      "myref": {
+        "data": "test"
+      }
+    });
+
+    let resolved = resolve_refs_raw(json)?;
+    println!("{}", resolved.to_string());
+    println!("{}", expected.to_string());
+    assert_eq!(resolved, expected);
+    Ok(())
+  }
+
+  #[test]
+  fn resolve_refs_test_1() -> Result<(), anyhow::Error> {
+    let json = json!({
+      "test": {
+        "$ref": "#myref"
+      },
+      "myref": {
+        "data": "test"
+      }
+    });
+
+    let expected = json!({
+      "test": {
+        "data": "test",
+        "x-fromRef": "#myref",
         "x-refName": "myref",
       },
       "myref": {
@@ -502,30 +533,54 @@ mod test {
   }
 
   #[test]
-  fn very_tricky_test() {
-    todo!();
-    /*
-            [Fact]
-            public async Task VeryTrickyTest()
-            {
-                var sut = new ReferenceLoader("./_yamlSamples/simple1.yaml", ReferenceLoaderStrategy.CopyRefContent);
-                var yaml = await sut.GetRefResolvedYamlAsync();
+  fn very_tricky_test() -> Result<(), anyhow::Error> {
+    let document = DocumentPath::parse("_samples/simple1.yaml")?;
+    let json = resolve_refs(document)?;
+    let string = json.to_string();
+    assert!(!string.contains(REF));
 
-                yaml.InvariantNewline().ShouldBe(
-    @"test:
-      this: ""will load multiple files""
-    finalvalue:
-      value: ""this is the real final value""
-    value:
-      subvalue:
-        value: ""this is the real final value""
-        x-fromRef: ""simple3.yaml#/subSubValue/value""
-        x-refName: ""value""
-      x-fromRef: ""simple2.json""
-      x-refName: """"
-    ".InvariantNewline());
-            }
-        }
-      */
+    let expected = json!({
+      "test": {
+        "this": "will load multiple files"
+      },
+      "finalvalue": {
+        "value": "this is the real final value"
+      },
+      "value": {
+        "subvalue": {
+          "value": "this is the real final value",
+          "x-fromRef": "simple3.yaml#/subSubValue/value",
+          "x-refName": "value"
+        },
+        "x-fromRef": "simple2.json",
+        "x-refName": ""
+      }
+    });
+    assert_eq!(json, expected);
+
+    Ok(())
   }
+  /*
+          [Fact]
+          public async Task VeryTrickyTest()
+          {
+              var sut = new ReferenceLoader("./_yamlSamples/simple1.yaml", ReferenceLoaderStrategy.CopyRefContent);
+              var yaml = await sut.GetRefResolvedYamlAsync();
+
+              yaml.InvariantNewline().ShouldBe(
+  @"test:
+    this: ""will load multiple files""
+  finalvalue:
+    value: ""this is the real final value""
+  value:
+    subvalue:
+      value: ""this is the real final value""
+      x-fromRef: ""simple3.yaml#/subSubValue/value""
+      x-refName: ""value""
+    x-fromRef: ""simple2.json""
+    x-refName: """"
+  ".InvariantNewline());
+          }
+      }
+    */
 }

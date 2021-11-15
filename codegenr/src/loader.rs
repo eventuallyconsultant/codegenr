@@ -13,6 +13,7 @@ pub enum DocumentPath {
   None,
 }
 
+#[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub(crate) enum FormatHint {
   /// The content should be json
   Json,
@@ -102,10 +103,42 @@ impl DocumentPath {
 }
 
 fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, anyhow::Error> {
-  Ok(match hint {
-    FormatHint::Json | FormatHint::NoIdea => serde_json::from_str(content).or_else(|_| yaml_to_json(serde_yaml::from_str(content)?))?,
-    FormatHint::Yaml => yaml_to_json(serde_yaml::from_str(content)?).or_else(|_| serde_json::from_str(content))?,
-  })
+  match hint {
+    FormatHint::Json | FormatHint::NoIdea => {
+      let json_error = match serde_json::from_str(content) {
+        Ok(json) => return Ok(json),
+        Err(e) => e,
+      };
+
+      let yaml_error = match serde_yaml::from_str(content) {
+        Ok(yaml) => return yaml_to_json(yaml),
+        Err(e) => e,
+      };
+
+      Err(anyhow::anyhow!(
+        "Could not read file content as json:\n-json_error: '{}'\n-yaml_error:'{}'",
+        json_error,
+        yaml_error,
+      ))
+    }
+    FormatHint::Yaml => {
+      let yaml_error = match serde_yaml::from_str(content) {
+        Ok(yaml) => return yaml_to_json(yaml),
+        Err(e) => e,
+      };
+
+      let json_error = match serde_json::from_str(content) {
+        Ok(json) => return Ok(json),
+        Err(e) => e,
+      };
+
+      Err(anyhow::anyhow!(
+        "Could not read file content as json:\n-yaml_error:'{}'\n-json_error: '{}'",
+        yaml_error,
+        json_error,
+      ))
+    }
+  }
 }
 
 fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, anyhow::Error> {
@@ -180,22 +213,19 @@ mod test {
 
   #[test]
   fn read_json_file_test() -> Result<(), anyhow::Error> {
-    let result = DocumentPath::parse("./_samples/Merge1_rest.json")?.load_raw()?;
-    dbg!(result);
+    let _result = DocumentPath::parse("./_samples/Merge1_rest.json")?.load_raw()?;
     Ok(())
   }
 
   #[test]
   fn read_yaml_file_test() -> Result<(), anyhow::Error> {
-    let result = DocumentPath::parse("./_samples/Merge1.yaml")?.load_raw()?;
-    dbg!(result);
+    let _result = DocumentPath::parse("./_samples/Merge1.yaml")?.load_raw()?;
     Ok(())
   }
 
   #[test]
   fn read_beezup_openapi() -> Result<(), anyhow::Error> {
-    let result = DocumentPath::parse("https://api-docs.beezup.com/swagger.json")?.load_raw()?;
-    dbg!(result);
+    let _result = DocumentPath::parse("https://api-docs.beezup.com/swagger.json")?.load_raw()?;
     Ok(())
   }
 
