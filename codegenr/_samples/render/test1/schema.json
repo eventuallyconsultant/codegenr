@@ -1,0 +1,6 @@
+﻿{
+    "names": {
+        "test1.txt": "content1",
+        "test2.csv": "content2; content3"
+    }
+}

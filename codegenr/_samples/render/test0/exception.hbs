@@ -1,0 +1,33 @@
+{{#each definitions}}
+### FILE {{uppercase_first_letter @key}}.cs
+
+using System;
+using System.Net;
+using System.Runtime.Serialization;
+using BeezUP2.Framework.Exceptions;
+using BeezUP2.Framework.Globalization;
+using BeezUP2.Framework.System;
+using BeezUP2.Framework.Business;
+using JetBrains.Annotations;
+using BeezUP2.Framework.Messaging;
+
+{{#each ../x-beezup-ops.using}}
+using {{this}};
+{{/each}}
+
+namespace {{../x-beezup-ops.namespace}}
+{
+    [ErrorTranslation("{{../x-beezup-ops.appRoot}}", "Exceptions", "{{this.description}}")]
+    [Serializable]
+    public class {{uppercase_first_letter @key}} : BeezUPException<{{uppercase_first_letter @key}}>
+    {{#if this.x-transient}}, ITransient{{/if}}{{#unless this.x.-technical}}, IBusinessException{{/unless}}
+    {
+        [BusinessExceptionConstructor]
+        public {{uppercase_first_letter @key}}({{#each this.properties}}{{is_required @key}}[NotNull]{{else}}[CanBeNull]{{/is_required}} {{#each this}}{{this}}{{/each}} {{@key}}{{#is_last_object_property @key}}{{else}}, {{/is_last_object_property}}{{/each}}) : base ()
+        {}
+    
+        protected {{uppercase_first_letter @key}}(SerializationInfo info, StreamingContext context) : base(info, context)
+        {}
+    }
+}
+{{/each}}

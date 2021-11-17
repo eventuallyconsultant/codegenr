@@ -477,7 +477,7 @@ mod test {
 
   #[test]
   fn should_resolve_nested_references() -> Result<(), anyhow::Error> {
-    let json = DocumentPath::parse("_samples/petshop.yaml")?.load_raw()?;
+    let json = DocumentPath::parse("_samples/resolver/petshop.yaml")?.load_raw()?;
     let json = resolve_refs_raw(json)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
@@ -486,7 +486,7 @@ mod test {
 
   #[test]
   fn should_resolve_external_references() -> Result<(), anyhow::Error> {
-    let document = DocumentPath::parse("_samples/petshop_with_external.yaml")?;
+    let document = DocumentPath::parse("_samples/resolver/petshop_with_external.yaml")?;
     let json = resolve_refs(document)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
@@ -534,7 +534,7 @@ mod test {
 
   #[test]
   fn very_tricky_test() -> Result<(), anyhow::Error> {
-    let document = DocumentPath::parse("_samples/simple1.yaml")?;
+    let document = DocumentPath::parse("_samples/resolver/simple1.yaml")?;
     let json = resolve_refs(document)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
@@ -560,27 +560,4 @@ mod test {
 
     Ok(())
   }
-  /*
-          [Fact]
-          public async Task VeryTrickyTest()
-          {
-              var sut = new ReferenceLoader("./_yamlSamples/simple1.yaml", ReferenceLoaderStrategy.CopyRefContent);
-              var yaml = await sut.GetRefResolvedYamlAsync();
-
-              yaml.InvariantNewline().ShouldBe(
-  @"test:
-    this: ""will load multiple files""
-  finalvalue:
-    value: ""this is the real final value""
-  value:
-    subvalue:
-      value: ""this is the real final value""
-      x-fromRef: ""simple3.yaml#/subSubValue/value""
-      x-refName: ""value""
-    x-fromRef: ""simple2.json""
-    x-refName: """"
-  ".InvariantNewline());
-          }
-      }
-    */
 }

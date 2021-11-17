@@ -1,0 +1,14 @@
+{{#each definitions}}{{is_enum this}}
+### FILE {{uppercase_first_letter @key}}.cs
+using System.Runtime.Serialization;
+
+namespace {{@root.x-beezup-ops.namespace}}
+{
+    public enum {{uppercase_first_letter @key}}
+    {
+{{#each this.enum}}
+        [EnumMember(Value = "{{this.Value}}")]
+        {{uppercase_first_letter this.Value}}{{is_enum_default this.Value}} = 0{{else}}{{/is_enum_default}}{{#unless @last}},{{/unless}}
+{{/each}}
+    }
+}{{/is_enum}}{{/each}}

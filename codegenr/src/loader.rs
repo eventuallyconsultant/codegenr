@@ -213,13 +213,13 @@ mod test {
 
   #[test]
   fn read_json_file_test() -> Result<(), anyhow::Error> {
-    let _result = DocumentPath::parse("./_samples/Merge1_rest.json")?.load_raw()?;
+    let _result = DocumentPath::parse("./_samples/resolver/Merge1_rest.json")?.load_raw()?;
     Ok(())
   }
 
   #[test]
   fn read_yaml_file_test() -> Result<(), anyhow::Error> {
-    let _result = DocumentPath::parse("./_samples/Merge1.yaml")?.load_raw()?;
+    let _result = DocumentPath::parse("./_samples/resolver/Merge1.yaml")?.load_raw()?;
     Ok(())
   }
 
