@@ -1,9 +1,52 @@
 use handlebars::Handlebars;
 use serde_json::json;
+use std::collections::HashMap;
 use walkdir::WalkDir;
 
 const PARTIAL_TEMPLATE_PREFIX: &str = "_";
 const HANDLEBARS_TEMPLATE_EXTENSION: &str = ".hbs";
+
+pub struct TemplateCollection {
+  main: Template,
+  partials: HashMap<String, Template>,
+}
+
+impl TemplateCollection {
+  pub fn from_list(templates: impl IntoIterator<Item = Template>) -> Result<TemplateCollection, anyhow::Error> {
+    let mut main: Option<Template> = None;
+    let mut partials = HashMap::<String, Template>::new();
+
+    for t in templates {
+      match t.template_type() {
+        TemplateType::Main => {
+          if let Some(existing) = main.as_ref() {
+            return Err(anyhow::anyhow!(
+              "2 main templates are found : \n-{}\n-{}\nTheir should be only one in all the template directories",
+              existing.file_path(),
+              t.file_path()
+            ));
+          };
+          main = Some(t);
+        }
+        TemplateType::Partial => {
+          if let Some(existing) = partials.get(t.template_name()) {
+            return Err(anyhow::anyhow!(
+              "2 partial templates are named '{}' : \n-{}\n-{}\nThey should have unique names",
+              existing.template_name(),
+              existing.file_path(),
+              t.file_path()
+            ));
+          };
+          partials.insert(t.template_name().into(), t);
+        }
+      }
+    }
+
+    let main = main.ok_or_else(|| anyhow::anyhow!("No main template has been detected, we don't know what to execute..."))?;
+
+    Ok(Self { main, partials })
+  }
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TemplateType {
