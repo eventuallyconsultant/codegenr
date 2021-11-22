@@ -6,6 +6,7 @@ use walkdir::WalkDir;
 const PARTIAL_TEMPLATE_PREFIX: &str = "_";
 const HANDLEBARS_TEMPLATE_EXTENSION: &str = ".hbs";
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct TemplateCollection {
   main: Template,
   partials: HashMap<String, Template>,
@@ -147,6 +148,31 @@ mod test {
 
     let first = templates.get(0).expect("?");
     assert_eq!(first.template_name(), "other_partial");
+    Ok(())
+  }
+  
+  //#[rustfmt::skip]
+  //#[test_case()]
+
+  #[test]
+  fn from_list_tests() -> Result<(), anyhow::Error> {
+    let double_main_err = vec![
+      Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
+      Template::new(TemplateType::Main, "test.hbs", "./_samples/render/templates/test.hbs"),
+    ];
+    
+    let test = TemplateCollection::from_list(double_main_err);
+    let err = test.expect_err("Should be an error");
+    assert_eq!( err.to_string(), "2 main templates are found : \n-{}\n-{}\nTheir should be only one in all the template directories");
+
+    let double_partial_err = vec![
+      Template::new(TemplateType::Partial,"_other_partial.hbs","./_samples/render/templates/_other_partial.hbs"),
+      Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
+      Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates/sub/_plop.hbs"),
+    ];
+
+    let partial_test = TemplateCollection::from_list(double_partial_err);
+
     Ok(())
   }
 }
