@@ -22,7 +22,7 @@ impl TemplateCollection {
         TemplateType::Main => {
           if let Some(existing) = main.as_ref() {
             return Err(anyhow::anyhow!(
-              "2 main templates are found : \n-{}\n-{}\nTheir should be only one in all the template directories",
+              "2 main templates were found : \n-{}\n-{}\nTheir should be only one in all the template directories",
               existing.file_path(),
               t.file_path()
             ));
@@ -150,29 +150,34 @@ mod test {
     assert_eq!(first.template_name(), "other_partial");
     Ok(())
   }
-  
-  //#[rustfmt::skip]
-  //#[test_case()]
 
   #[test]
-  fn from_list_tests() -> Result<(), anyhow::Error> {
-    let double_main_err = vec![
+  fn from_list_fails_with_double_main() {
+    let list = vec![
       Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
       Template::new(TemplateType::Main, "test.hbs", "./_samples/render/templates/test.hbs"),
     ];
-    
-    let test = TemplateCollection::from_list(double_main_err);
-    let err = test.expect_err("Should be an error");
-    assert_eq!( err.to_string(), "2 main templates are found : \n-{}\n-{}\nTheir should be only one in all the template directories");
 
-    let double_partial_err = vec![
-      Template::new(TemplateType::Partial,"_other_partial.hbs","./_samples/render/templates/_other_partial.hbs"),
+    let test = TemplateCollection::from_list(list);
+    let err = test.expect_err("Should be an error");
+    assert!(err.to_string().starts_with("2 main templates were found"));
+  }
+
+  #[test]
+  fn from_list_fails_with_same_names_partials() {
+    let list = vec![
+      Template::new(
+        TemplateType::Partial,
+        "_other_partial.hbs",
+        "./_samples/render/templates/_other_partial.hbs",
+      ),
       Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
       Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates/sub/_plop.hbs"),
+      Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates/sub2/_plop.hbs"),
     ];
 
-    let partial_test = TemplateCollection::from_list(double_partial_err);
-
-    Ok(())
+    let test = TemplateCollection::from_list(list);
+    let err = test.expect_err("Should be an error");
+    assert!(err.to_string().starts_with("2 partial templates are named 'plop'"));
   }
 }
