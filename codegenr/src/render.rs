@@ -180,4 +180,46 @@ mod test {
     let err = test.expect_err("Should be an error");
     assert!(err.to_string().starts_with("2 partial templates are named 'plop'"));
   }
+
+  #[test]
+  fn from_list_fails_with_no_main_found() {
+    let list = vec![
+      Template::new(
+        TemplateType::Partial,
+        "_other_partial.hbs",
+        "./_samples/render/templates/_other_partial.hbs",
+      ),
+      Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
+      Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates/sub/_plop.hbs"),
+    ];
+
+    let test = TemplateCollection::from_list(list);
+    let err = test.expect_err("Should be an error");
+    assert!(err.to_string().starts_with("No main template has been detected, we don't know what to execute..."));
+  }
+
+  #[test]
+  fn from_list_success_main_only() {
+    let list = vec![
+      Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
+      Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
+    ];
+    let test = TemplateCollection::from_list(list).expect("?");
+    let expected = TemplateCollection {      
+      main: Template {
+          template_type: crate::render::TemplateType::Main,
+          file_name: "plop.hbs".to_string(),
+          file_path: "./_samples/render/templates/sub/plop.hbs".to_string(),
+      },
+      partials: {
+          "partial": render::Template {
+              template_type: Partial,
+              file_name: "_partial.hbs".to_string(),
+              file_path: "./_samples/render/templates/_partial.hbs".to_string(),
+          }
+      },
+  };
+    dbg!(test);
+    //assert_eq!(test, expected);
+  }
 }
