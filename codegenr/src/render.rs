@@ -201,7 +201,7 @@ mod test {
   }
 
   #[test]
-  fn from_list_success_main_only() {
+  fn from_list_success() {
     let list = vec![
       Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
       Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
@@ -210,9 +210,8 @@ mod test {
     let mut map = HashMap::new();
     map.insert(
       "partial".into(),
-      Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
+      Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
     );
-
     let expected = TemplateCollection {
       main: Template {
         template_type: crate::render::TemplateType::Main,
@@ -221,8 +220,7 @@ mod test {
       },
       partials: map,
     };
-    dbg!(test);
 
-    //assert_eq!(test, expected);
+    assert_eq!(test, expected);
   }
 }
