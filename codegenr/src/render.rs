@@ -1,3 +1,4 @@
+use crate::custom_helpers::register_custom_helpers;
 use crate::loader::DocumentPath;
 use crate::resolver::resolve_refs;
 use handlebars::Handlebars;
@@ -115,6 +116,7 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, any
 
 fn render_collection(templates: TemplateCollection, json: &Value) -> Result<String, anyhow::Error> {
   let mut reg = Handlebars::new();
+  register_custom_helpers(&mut reg);
   // for each template ->( main puis partials ) register
   //templates.main.template_name()
   reg.register_template_file("main", templates.main.file_path())?;
@@ -136,7 +138,7 @@ mod test {
     let list = get_templates_from_directory("_samples/render/test_denis")?;
     let collection = TemplateCollection::from_list(list)?;
 
-    println!("{:?}", json);
+    // println!("{:?}", json);
 
     let result = render_collection(collection, &json)?;
     dbg!(result);
