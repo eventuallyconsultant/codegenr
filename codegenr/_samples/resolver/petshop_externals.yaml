@@ -1,4 +1,4 @@
-﻿swagger: "2.0"
+swagger: "2.0"
 securityDefinitions:
   petstore_auth:
     type: oauth2

@@ -1,7 +1,6 @@
 use crate::loader::DocumentPath;
 use crate::resolver::resolve_refs;
 use handlebars::Handlebars;
-use serde_json::json;
 use serde_json::Value;
 use std::collections::HashMap;
 use walkdir::WalkDir;
@@ -136,6 +135,8 @@ mod test {
     let json = resolve_refs(document)?;
     let list = get_templates_from_directory("_samples/render/test_denis")?;
     let collection = TemplateCollection::from_list(list)?;
+
+    println!("{:?}", json);
 
     let result = render_collection(collection, &json)?;
     dbg!(result);
