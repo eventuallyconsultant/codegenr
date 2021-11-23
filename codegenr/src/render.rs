@@ -1,5 +1,8 @@
+use crate::loader::DocumentPath;
+use crate::resolver::resolve_refs;
 use handlebars::Handlebars;
 use serde_json::json;
+use serde_json::Value;
 use std::collections::HashMap;
 use walkdir::WalkDir;
 
@@ -111,19 +114,34 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, any
   Ok(result)
 }
 
+fn render_collection(templates: TemplateCollection, json: &Value) -> Result<String, anyhow::Error> {
+  let mut reg = Handlebars::new();
+  // for each template ->( main puis partials ) register
+  //templates.main.template_name()
+  reg.register_template_file("main", templates.main.file_path())?;
+  for (_, value) in templates.partials {
+    reg.register_template_file(value.template_name(), value.file_path())?
+  }
+
+  Ok(reg.render("main", json)?)
+}
+
 #[cfg(test)]
 mod test {
   use super::*;
 
   #[test]
-  fn some_handlebars_first_test() -> Result<(), anyhow::Error> {
-    let mut reg = Handlebars::new();
-    // render without register
-    println!("{}", reg.render_template("Hello {{name}}", &json!({"name": "foo"}))?);
+  fn handlebars_loading_test() -> Result<(), anyhow::Error> {
+    let document = DocumentPath::parse("_samples/resolver/petshop_with_external.yaml")?;
+    let json = resolve_refs(document)?;
+    let list = get_templates_from_directory("_samples/render/test_denis")?;
+    let collection = TemplateCollection::from_list(list)?;
 
-    // register template using given name
-    reg.register_template_string("tpl_1", "Good afternoon, {{name}}")?;
-    println!("{}", reg.render("tpl_1", &json!({"name": "foo"}))?);
+    let result = render_collection(collection, &json)?;
+    dbg!(result);
+    // let mut reg = Handlebars::new();
+    // reg.register_template_string("tpl_1", "Good afternoon, {{name}}")?;
+    // println!("{}", reg.render("tpl_1", &json)?);
 
     Ok(())
   }
@@ -213,11 +231,7 @@ mod test {
       Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
     );
     let expected = TemplateCollection {
-      main: Template {
-        template_type: crate::render::TemplateType::Main,
-        file_name: "plop.hbs".to_string(),
-        file_path: "./_samples/render/templates/sub/plop.hbs".to_string(),
-      },
+      main: Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
       partials: map,
     };
 
