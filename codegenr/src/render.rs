@@ -195,7 +195,9 @@ mod test {
 
     let test = TemplateCollection::from_list(list);
     let err = test.expect_err("Should be an error");
-    assert!(err.to_string().starts_with("No main template has been detected, we don't know what to execute..."));
+    assert!(err
+      .to_string()
+      .starts_with("No main template has been detected, we don't know what to execute..."));
   }
 
   #[test]
@@ -205,21 +207,22 @@ mod test {
       Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
     ];
     let test = TemplateCollection::from_list(list).expect("?");
-    let expected = TemplateCollection {      
+    let mut map = HashMap::new();
+    map.insert(
+      "partial".into(),
+      Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
+    );
+
+    let expected = TemplateCollection {
       main: Template {
-          template_type: crate::render::TemplateType::Main,
-          file_name: "plop.hbs".to_string(),
-          file_path: "./_samples/render/templates/sub/plop.hbs".to_string(),
+        template_type: crate::render::TemplateType::Main,
+        file_name: "plop.hbs".to_string(),
+        file_path: "./_samples/render/templates/sub/plop.hbs".to_string(),
       },
-      partials: {
-          "partial": render::Template {
-              template_type: Partial,
-              file_name: "_partial.hbs".to_string(),
-              file_path: "./_samples/render/templates/_partial.hbs".to_string(),
-          }
-      },
-  };
+      partials: map,
+    };
     dbg!(test);
+
     //assert_eq!(test, expected);
   }
 }
