@@ -20,3 +20,7 @@ A rewrite of the C# [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 - [ ] Allow multiple swagger2 documents merging
 - [ ] Allow multiple swagger3 documents merging
 - [ ] Transform the json to an [OpenApi Generator](https://openapi-generator.tech/) model, and be able to use all the `OpenApi Generator` templates ?
+
+## Some command lines
+
+- `cargo doc --open` to open the documentation for `codegenr`

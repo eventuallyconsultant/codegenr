@@ -39,3 +39,10 @@ pub fn register_custom_helpers(handlebars: &mut Handlebars) {
   handlebars.register_helper("ToLowerCase", Box::new(ToLowerCase));
   handlebars.register_helper("StartWith", Box::new(StartWith));
 }
+
+/// # Examples
+///
+/// ```
+/// let x = 5;
+/// ```
+fn test() {}
