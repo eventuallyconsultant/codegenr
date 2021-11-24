@@ -13,15 +13,15 @@ handlebars_helper!(ToLowerCase: |v: String| v.to_lowercase());
 
 handlebars_helper!(IfNotEmpty: |v: String| check_if_not_empty(v));
 
-handlebars_helper!(StartWith: |v: String| check_if_start_with(v).expect("?"));
+handlebars_helper!(StartWith: |v: String| check_if_start_with(v));
 
 // handlebars_helper!();
 
-pub fn check_if_not_empty(v: String) {
+pub fn check_if_not_empty(v: String) -> String {
   todo!()
 }
 
-pub fn check_if_start_with(v: String) {
+pub fn check_if_start_with(v: String) -> String {
   todo!()
 }
 
