@@ -3,7 +3,7 @@ use handlebars::Handlebars;
 
 pub fn register_custom_helpers(handlebars: &mut Handlebars) {
   handlebars.register_helper("hex", Box::new(Hex));
-  handlebars.register_helper("trim", Box::new(trim));
+  handlebars.register_helper("trim", Box::new(Trim));
   handlebars.register_helper("UppercaseFirstLetter", Box::new(UppercaseFirstLetter));
   handlebars.register_helper("ToLowerCase", Box::new(ToLowerCase));
   handlebars.register_helper("StartWith", Box::new(StartWith));
@@ -25,13 +25,46 @@ pub fn register_custom_helpers(handlebars: &mut Handlebars) {
 pub fn hex(v: i64) -> String {
   format!("0x{:x}", v)
 }
-
 handlebars_helper!(Hex: |v: i64| hex(v));
 
-handlebars_helper!(trim: |v: String| v.trim());
+/// Returns a string slice with leading and trailing whitespace removed.
+/// ```
+/// # use codegenr::custom_helpers::*;
+/// # use serde_json::json;
+/// let x = " test ".to_string();
+/// assert_eq!(trim(x), "test");
+/// assert_eq!(
+///   test_helper(json!({ "value": " test " }), "{{trim value}}"),
+///   "test"
+/// );
+/// ```
+pub fn trim(v: String) -> String {
+  v.trim().to_string()
+}
+handlebars_helper!(Trim: |v: String| v.trim() );
 
-handlebars_helper!(UppercaseFirstLetter: |v: String| captitalize_first_letter(v));
+/// Returns a string in Pascal case
+/// ```
+/// # use codegenr::custom_helpers::*;
+/// # use serde_json::json;
+/// let x = "test".to_string();
+/// assert_eq!(uppercase_first_letter(x), "Test");
+/// assert_eq!(
+///   test_helper(json!({ "value": "tEsT" }), "{{trim value}}"),
+///   "Test"
+/// );
+/// ```
+pub fn uppercase_frist_letter(v: String) -> String {
+  let mut ve: Vec<char> = v.to_lowercase().chars().collect();
+  ve[0] = ve[0].to_uppercase().next().unwrap();
+  let result: String = ve.into_iter().collect();
+  result
+}
+handlebars_helper!(UppercaseFirstLetter: |v: String| uppercase_frist_letter(v));
 
+pub fn to_lower_case(v: String) -> String {
+  v.to_lowercase()
+}
 handlebars_helper!(ToLowerCase: |v: String| v.to_lowercase());
 
 //handlebars_helper!(IfEmpty: |v: String| CheckIfEmpty(v));
@@ -48,13 +81,6 @@ pub fn check_if_not_empty(v: String) -> String {
 
 pub fn check_if_start_with(v: String) -> String {
   todo!()
-}
-
-pub fn captitalize_first_letter(v: String) -> String {
-  let mut ve: Vec<char> = v.chars().collect();
-  ve[0] = ve[0].to_uppercase().next().unwrap();
-  let result: String = ve.into_iter().collect();
-  result
 }
 
 // #[cfg(doctest)]
