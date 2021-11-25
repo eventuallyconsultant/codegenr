@@ -7,6 +7,8 @@ pub fn register_custom_helpers(handlebars: &mut Handlebars) {
   handlebars.register_helper("UppercaseFirstLetter", Box::new(UppercaseFirstLetter));
   handlebars.register_helper("ToLowerCase", Box::new(ToLowerCase));
   handlebars.register_helper("StartWith", Box::new(StartWith));
+  handlebars.register_helper("SplitGetFirst", Box::new(SplitGetFirst));
+  handlebars.register_helper("SplitGetLast", Box::new(SplitGetLast));
 }
 
 /// Return the hexadecimal representation of the integer value
@@ -72,6 +74,36 @@ handlebars_helper!(ToLowerCase: |v: String| v.to_lowercase());
 handlebars_helper!(IfNotEmpty: |v: String| check_if_not_empty(v));
 
 handlebars_helper!(StartWith: |v: String| check_if_start_with(v));
+
+/// Return the first value of a String splited by a choosen parametter
+///
+/// # Exemple
+/// ```
+/// # use codegenr::custom_helpers::*;
+/// # use serde_json::json;
+/// let x = "test/lol/notme".to_string();
+/// let y = "/".to_string();
+/// assert_eq!(split_get_first(x, y), "test");
+/// ```
+pub fn split_get_first(v: String, w: String) -> String {
+  v.split(&w).next().unwrap().to_string()
+}
+handlebars_helper!(SplitGetFirst: |v: String, w: String| split_get_first(v, w));
+
+/// Return the value value of a String splited by a choosen parametter
+///
+/// # Exemple
+/// ```
+/// # use codegenr::custom_helpers::*;
+/// # use serde_json::json;
+/// let x = "test/notme/me".to_string();
+/// let y = "/".to_string();
+/// assert_eq!(split_get_last(x, y), "me");
+/// ```
+pub fn split_get_last(v: String, w: String) -> String {
+  v.split(&w).last().unwrap().to_string()
+}
+handlebars_helper!(SplitGetLast: |v: String, w: String| split_get_last(v, w));
 
 // handlebars_helper!();
 
