@@ -85,8 +85,16 @@ handlebars_helper!(StartWith: |v: String| check_if_start_with(v));
 /// let y = "/".to_string();
 /// assert_eq!(split_get_first(x, y), "test");
 /// ```
-pub fn split_get_first(v: String, w: String) -> String {
-  v.split(&w).next().unwrap().to_string()
+pub fn split_get_first(mut v: String, w: String) -> String {
+  for res in v.split(&w) {
+    if res.is_empty() || res.contains(char::is_whitespace) || !res.contains(char::is_alphanumeric) {
+      continue;
+    }
+    v = res.to_string();
+    break;
+  }
+  v
+  // todo: check if result == empty/whitespace => result.next(), or equals NotALetter
 }
 handlebars_helper!(SplitGetFirst: |v: String, w: String| split_get_first(v, w));
 
