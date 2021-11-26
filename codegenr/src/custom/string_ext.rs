@@ -6,9 +6,9 @@ pub trait StringExt {
 
   // TODO :
   // trim() functions (not named 'trim' to avoid messing with already existing trim() func)
-  fn trim_char(&self, trimmer: Option<String>) -> String;
-  fn trim_start_char(&self, trimmer: Option<String>) -> String;
-  fn trim_end_char(&self, trimmer: Option<String>) -> String;
+  fn del_char(&self, trimmer: Option<String>) -> String;
+  fn del_start_char(&self, trimmer: Option<String>) -> String;
+  fn del_end_char(&self, trimmer: Option<String>) -> String;
 
   fn uppercase_first_letter(&self) -> String;
   fn lowercase_first_letter(&self) -> String;
@@ -34,16 +34,16 @@ impl StringExt for Option<String> {
     self.as_ref().and_then(|s| s.get_first_char())
   }
 
-  fn trim_char(&self, trimmer: Option<String>) -> String {
-    self.as_ref().map_or(Default::default(), |s| s.trim_char(trimmer))
+  fn del_char(&self, trimmer: Option<String>) -> String {
+    self.as_ref().map_or(Default::default(), |s| s.del_char(trimmer))
   }
 
-  fn trim_start_char(&self, trimmer: Option<String>) -> String {
-    self.as_ref().map_or(Default::default(), |s| s.trim_start_char(trimmer))
+  fn del_start_char(&self, trimmer: Option<String>) -> String {
+    self.as_ref().map_or(Default::default(), |s| s.del_start_char(trimmer))
   }
 
-  fn trim_end_char(&self, trimmer: Option<String>) -> String {
-    self.as_ref().map_or(Default::default(), |s| s.trim_end_char(trimmer))
+  fn del_end_char(&self, trimmer: Option<String>) -> String {
+    self.as_ref().map_or(Default::default(), |s| s.del_end_char(trimmer))
   }
 
   fn uppercase_first_letter(&self) -> String {
@@ -84,16 +84,16 @@ impl StringExt for String {
     self.as_str().get_first_char()
   }
 
-  fn trim_char(&self, trimmer: Option<String>) -> String {
-    self.as_str().trim_char(trimmer)
+  fn del_char(&self, trimmer: Option<String>) -> String {
+    self.as_str().del_char(trimmer)
   }
 
-  fn trim_start_char(&self, trimmer: Option<String>) -> String {
-    self.as_str().trim_start_char(trimmer)
+  fn del_start_char(&self, trimmer: Option<String>) -> String {
+    self.as_str().del_start_char(trimmer)
   }
 
-  fn trim_end_char(&self, trimmer: Option<String>) -> String {
-    self.as_str().trim_end_char(trimmer)
+  fn del_end_char(&self, trimmer: Option<String>) -> String {
+    self.as_str().del_end_char(trimmer)
   }
 
   fn uppercase_first_letter(&self) -> String {
@@ -141,28 +141,49 @@ impl StringExt for &str {
     self.chars().next()
   }
 
-  fn trim_char(&self, trimmer: Option<String>) -> String {
-    todo!()
+  fn del_char(&self, trimmer: Option<String>) -> String {
+    let trimmer = trimmer.unwrap_or_else(|| " ".to_string()).chars().next().unwrap_or(' ');
+    self.trim_matches(trimmer).to_string()
   }
 
-  fn trim_start_char(&self, trimmer: Option<String>) -> String {
-    todo!()
+  fn del_start_char(&self, trimmer: Option<String>) -> String {
+    let trimmer = trimmer.unwrap_or_else(|| " ".to_string()).chars().next().unwrap_or(' ');
+    self.trim_start_matches(trimmer).to_string()
   }
 
-  fn trim_end_char(&self, trimmer: Option<String>) -> String {
-    todo!()
+  fn del_end_char(&self, trimmer: Option<String>) -> String {
+    let trimmer = trimmer.unwrap_or_else(|| " ".to_string()).chars().next().unwrap_or(' ');
+    self.trim_end_matches(trimmer).to_string()
   }
 
   fn uppercase_first_letter(&self) -> String {
-    todo!()
+    if self.is_empty_or_whitespaces() {
+      return String::default();
+    }
+    let mut ve: Vec<char> = self.chars().collect();
+    ve[0] = ve[0].to_uppercase().next().unwrap();
+    let result: String = ve.into_iter().collect();
+    result
   }
 
   fn lowercase_first_letter(&self) -> String {
-    todo!()
+    if self.is_empty_or_whitespaces() {
+      return String::default();
+    }
+    let mut ve: Vec<char> = self.chars().collect();
+    ve[0] = ve[0].to_lowercase().next().unwrap();
+    let result: String = ve.into_iter().collect();
+    result
   }
 
   fn pascal_case(&self) -> String {
-    todo!()
+    if self.is_empty_or_whitespaces() {
+      return String::default();
+    }
+    let mut ve: Vec<char> = self.to_lowercase().chars().collect();
+    ve[0] = ve[0].to_uppercase().next().unwrap();
+    let result: String = ve.into_iter().collect();
+    result
   }
 
   fn camel_case(&self) -> String {
