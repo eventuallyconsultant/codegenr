@@ -1,5 +1,5 @@
 mod debug;
-mod string_ext;
+pub mod string_ext;
 pub use debug::*;
 mod empty;
 pub use empty::*;

@@ -1,3 +1,4 @@
+use crate::custom::string_ext::StringExt;
 use crate::custom::*;
 use handlebars::handlebars_helper;
 use handlebars::Handlebars;
@@ -126,7 +127,7 @@ handlebars_helper!(SplitGetFirst: |v: String, w: String| split_get_first(v, w));
 /// assert_eq!(split_get_last(x, y), "me");
 /// ```
 pub fn split_get_last(v: String, w: String) -> String {
-  v.split(&w).last().unwrap().to_string()
+  v.split_get_last(Some(w))
 }
 handlebars_helper!(SplitGetLast: |v: String, w: String| split_get_last(v, w));
 
