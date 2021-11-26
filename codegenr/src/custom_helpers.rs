@@ -1,4 +1,4 @@
-use crate::custom::DebugHelper;
+use crate::custom::*;
 use handlebars::handlebars_helper;
 use handlebars::Handlebars;
 
@@ -8,6 +8,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
     handlebars.set_dev_mode(true);
   }
   handlebars.register_helper("debug", Box::new(DebugHelper));
+  handlebars.register_helper("debug_ctx", Box::new(DebugCtxHelper));
   handlebars.register_helper("hex", Box::new(Hex));
   handlebars.register_helper("trim", Box::new(Trim));
   handlebars.register_helper("UppercaseFirstLetter", Box::new(UppercaseFirstLetter));

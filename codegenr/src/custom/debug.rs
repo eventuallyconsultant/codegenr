@@ -1,4 +1,4 @@
-use handlebars::HelperDef;
+use handlebars::{HelperDef, ScopedJson};
 use serde_json::{json, Value};
 
 /// A debug helper that output a json representation of input parameters
@@ -21,7 +21,6 @@ impl HelperDef for DebugHelper {
     _rc: &mut handlebars::RenderContext<'reg, 'rc>,
     out: &mut dyn handlebars::Output,
   ) -> handlebars::HelperResult {
-    // dbg!(_helper, _handlebars, _context, _render_context);
     let params: Vec<_> = h
       .params()
       .iter()
@@ -37,5 +36,32 @@ impl HelperDef for DebugHelper {
     println!("{}", json);
     out.write(&json)?;
     Ok(())
+  }
+}
+
+/// Does not rendre anythin but outputs the internal handlebars contexts to the commad line
+/// ```
+/// # use codegenr::custom_helpers::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   test_helper(json!({"plop": "plop"}), "{{debug_ctx 42 \"42\" plop non_existing}}"),
+///   ""
+/// );
+/// ```
+pub struct DebugCtxHelper;
+
+impl HelperDef for DebugCtxHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
+    &self,
+    helper: &handlebars::Helper<'reg, 'rc>,
+    handlebars: &'reg handlebars::Handlebars<'reg>,
+    context: &'rc handlebars::Context,
+    render_context: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    println!("helper:\n{:?}", helper);
+    println!("handlebars:\n{:?}", handlebars);
+    println!("context:\n{:?}", context);
+    println!("render_context:\n{:?}", render_context);
+    Ok(ScopedJson::Derived(Value::Null))
   }
 }
