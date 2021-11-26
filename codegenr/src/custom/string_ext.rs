@@ -4,8 +4,6 @@ pub trait StringExt {
   fn split_get_last(&self, splitter: Option<String>) -> String;
   fn get_first_char(&self) -> Option<char>;
 
-  // TODO :
-  // trim() functions (not named 'trim' to avoid messing with already existing trim() func)
   fn del_char(&self, trimmer: Option<String>) -> String;
   fn del_start_char(&self, trimmer: Option<String>) -> String;
   fn del_end_char(&self, trimmer: Option<String>) -> String;
@@ -198,7 +196,6 @@ impl StringExt for &str {
 #[cfg(test)]
 mod test {
   use super::*;
-  use serde::de::Expected;
   use test_case::test_case;
 
   #[test_case(" ", true)]
@@ -245,5 +242,59 @@ mod test {
       Some(trimmer.to_string())
     };
     assert_eq!(v.del_char(trimmer), expected);
+  }
+
+  #[test_case("", "e", "")]
+  #[test_case(" leave ", "", "leave ")]
+  #[test_case("elle", "e", "lle")]
+  #[test_case("-test_", "_", "-test_")]
+  #[test_case("leel", "e", "leel")]
+  fn del_char_start_tests(v: &str, trimmer: &str, expected: &str) {
+    let trimmer = if trimmer.is_empty_or_whitespaces() {
+      None
+    } else {
+      Some(trimmer.to_string())
+    };
+    assert_eq!(v.del_start_char(trimmer), expected);
+  }
+
+  #[test_case("", "e", "")]
+  #[test_case(" leave ", "", " leave")]
+  #[test_case("elle", "e", "ell")]
+  #[test_case("-test_", "-", "-test_")]
+  #[test_case("leel", "e", "leel")]
+  fn del_char_end_tests(v: &str, trimmer: &str, expected: &str) {
+    let trimmer = if trimmer.is_empty_or_whitespaces() {
+      None
+    } else {
+      Some(trimmer.to_string())
+    };
+    assert_eq!(v.del_end_char(trimmer), expected);
+  }
+
+  #[test_case("leave", "Leave")]
+  #[test_case("eLlE", "Elle")]
+  #[test_case("/test", "/test")]
+  #[test_case("42lol", "42lol")]
+  fn pascal_case_tests(v: &str, expected: &str) {
+    assert_eq!(v.pascal_case(), expected);
+  }
+
+  // todo: rewrite tests
+  // #[test_case("leave", "Leave")]
+  // #[test_case("eLlE", "Elle")]
+  // #[test_case("/test", "/test")]
+  // #[test_case("42lol", "42lol")]
+  fn camel_case_tests(v: &str, expected: &str) {
+    assert_eq!(v.camel_case(), expected);
+  }
+
+  // todo: rewrite tests
+  // #[test_case("leave", "Leave")]
+  // #[test_case("eLlE", "Elle")]
+  // #[test_case("/test", "/test")]
+  // #[test_case("42lol", "42lol")]
+  fn snake_case_tests(v: &str, expected: &str) {
+    assert_eq!(v.snake_case(), expected);
   }
 }
