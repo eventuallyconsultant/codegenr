@@ -198,6 +198,7 @@ impl StringExt for &str {
 #[cfg(test)]
 mod test {
   use super::*;
+  use serde::de::Expected;
   use test_case::test_case;
 
   #[test_case(" ", true)]
@@ -230,5 +231,19 @@ mod test {
     assert_eq!(v.split_get_last(splitter.clone()), expected);
     assert_eq!(v.to_string().split_get_last(splitter.clone()), expected);
     assert_eq!(Some(v.to_string()).split_get_last(splitter), expected);
+  }
+
+  #[test_case("", "e", "")]
+  #[test_case(" leave ", "", "leave")]
+  #[test_case("elle", "e", "ll")]
+  #[test_case("-test_", "-", "test_")]
+  #[test_case("leel", "e", "leel")]
+  fn del_char_tests(v: &str, trimmer: &str, expected: &str) {
+    let trimmer = if trimmer.is_empty_or_whitespaces() {
+      None
+    } else {
+      Some(trimmer.to_string())
+    };
+    assert_eq!(v.del_char(trimmer), expected);
   }
 }
