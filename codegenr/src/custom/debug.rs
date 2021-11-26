@@ -39,7 +39,7 @@ impl HelperDef for DebugHelper {
   }
 }
 
-/// Does not rendre anythin but outputs the internal handlebars contexts to the commad line
+/// Does not render anything but outputs the internal handlebars contexts to the commad line
 /// ```
 /// # use codegenr::custom_helpers::*;
 /// # use serde_json::json;
