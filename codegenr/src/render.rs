@@ -1,6 +1,4 @@
 use crate::custom_helpers::handlebars_setup;
-use crate::loader::DocumentPath;
-use crate::resolver::resolve_refs;
 use handlebars::Handlebars;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -114,6 +112,7 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, any
   Ok(result)
 }
 
+#[allow(dead_code)] //todo: remove when used
 fn render_collection(templates: TemplateCollection, json: &Value) -> Result<String, anyhow::Error> {
   let mut reg = Handlebars::new();
   handlebars_setup(&mut reg);
@@ -130,6 +129,8 @@ fn render_collection(templates: TemplateCollection, json: &Value) -> Result<Stri
 #[cfg(test)]
 mod test {
   use super::*;
+  use crate::loader::DocumentPath;
+  use crate::resolver::resolve_refs;
 
   #[test]
   fn handlebars_loading_test() -> Result<(), anyhow::Error> {

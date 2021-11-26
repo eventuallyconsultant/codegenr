@@ -11,43 +11,43 @@ const REF_NAME: &str = "x-refName";
 type DocumentsHash = HashMap<DocumentPath, Value>;
 
 pub struct RefResolver {
-  hash: DocumentsHash,
+  _hash: DocumentsHash,
 }
 
 impl RefResolver {
   fn new() -> Self {
-    Self { hash: Default::default() }
+    Self { _hash: Default::default() }
   }
 
-  fn jump<'a>(&'a mut self, parent_document_path: DocumentPath, parent_json: Value) -> RefResolverJump<'a> {
-    self.hash.insert(parent_document_path.clone(), parent_json);
-    RefResolverJump {
-      ref_resolver: self,
-      parent_document_path,
-    }
-  }
+  // fn jump<'a>(&'a mut self, parent_document_path: DocumentPath, parent_json: Value) -> RefResolverJump<'a> {
+  //   self.hash.insert(parent_document_path.clone(), parent_json);
+  //   RefResolverJump {
+  //     ref_resolver: self,
+  //     parent_document_path,
+  //   }
+  // }
 }
 
-pub struct RefResolverJump<'a> {
-  pub ref_resolver: &'a RefResolver,
-  pub parent_document_path: DocumentPath,
-}
+// pub struct RefResolverJump<'a> {
+//   pub ref_resolver: &'a RefResolver,
+//   pub parent_document_path: DocumentPath,
+// }
 
-impl<'a> Drop for RefResolverJump<'a> {
-  fn drop(&mut self) {}
-}
+// impl<'a> Drop for RefResolverJump<'a> {
+//   fn drop(&mut self) {}
+// }
 
-#[cfg(test)]
-mod test2 {
-  use super::*;
-  #[test]
-  fn test() {
-    let mut rr = RefResolver::new();
-    let jump = rr.jump(DocumentPath::None, Value::Null);
-    drop(jump);
-    let _jump = rr.jump(DocumentPath::None, Value::Null);
-  }
-}
+// #[cfg(test)]
+// mod test2 {
+//   use super::*;
+//   #[test]
+//   fn test() {
+//     let mut rr = RefResolver::new();
+//     let jump = rr.jump(DocumentPath::None, Value::Null);
+//     drop(jump);
+//     let _jump = rr.jump(DocumentPath::None, Value::Null);
+//   }
+// }
 
 // impl RefResolver {
 //   pub fn resolve_from_value(json: Value) -> Result<Value, anyhow::Error> {
