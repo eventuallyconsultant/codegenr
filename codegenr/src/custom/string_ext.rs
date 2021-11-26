@@ -1,3 +1,5 @@
+use std::ascii::AsciiExt;
+
 pub trait StringExt {
   fn is_empty_or_whitespaces(&self) -> bool;
   fn split_get_first(&self, splitter: Option<String>) -> String;
@@ -185,14 +187,55 @@ impl StringExt for &str {
   }
 
   fn camel_case(&self) -> String {
-    todo!()
+    let (_, camel) = self
+      .trim()
+      .chars()
+      .fold((Some(false), String::with_capacity(self.len())), |acc, x| {
+        let (upper_next, mut s) = acc;
+        if is_out_of_case(x) {
+          return (Some(true), s);
+        }
+
+        match upper_next {
+          Some(up) => {
+            let c = if up {
+              x.to_uppercase().next().unwrap_or(x)
+            } else {
+              x.to_lowercase().next().unwrap_or(x)
+            };
+            s.push(c);
+          }
+          None => s.push(x),
+        }
+        (None, s)
+      });
+    camel
   }
 
+  // [HandlebarsHelperSpecification("{ test: 42 }", "{{snake_case test}}", "42")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello ' }", "{{snake_case test}}", "hello")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello world' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello_world' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello-world' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello--world' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello__World' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello-World' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello _ world' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello - world' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: 'HelloWorld' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: 'hello _WORLD' }", "{{snake_case test}}", "hello_world")]
+  //   [HandlebarsHelperSpecification("{ test: ' HELLO' }", "{{snake_case test}}", "hello")]
+  //   [HandlebarsHelperSpecification("{ test: 'Hello ' }", "{{snake_case test}}", "hello")]
+  //   [HandlebarsHelperSpecification("{ test: '2Hello2 ' }", "{{snake_case test}}", "2_hello2")]
+  //   [HandlebarsHelperSpecification("{ test: 'HelloWorld_42LongName ' }", "{{snake_case test}}", "hello_world_42_long_name")]
   fn snake_case(&self) -> String {
     todo!()
   }
 }
 
+fn is_out_of_case(c: char) -> bool {
+  c == ' ' || c == '_' || c == '-' || c == '\\' || c == '|' || c == '/'
+}
 #[cfg(test)]
 mod test {
   use super::*;
@@ -235,6 +278,7 @@ mod test {
   #[test_case("elle", "e", "ll")]
   #[test_case("-test_", "-", "test_")]
   #[test_case("leel", "e", "leel")]
+  #[test_case("test", " t", "es")]
   fn del_char_tests(v: &str, trimmer: &str, expected: &str) {
     let trimmer = if trimmer.is_empty_or_whitespaces() {
       None
@@ -280,11 +324,22 @@ mod test {
     assert_eq!(v.pascal_case(), expected);
   }
 
-  // todo: rewrite tests
-  // #[test_case("leave", "Leave")]
-  // #[test_case("eLlE", "Elle")]
-  // #[test_case("/test", "/test")]
-  // #[test_case("42lol", "42lol")]
+  // [HandlebarsHelperSpecification("{ test: 42 }", "{{camel_case test}}", "42")]
+  // [HandlebarsHelperSpecification("{ test: 'HELLO' }", "{{camel_case test}}", "hELLO")]
+  // [HandlebarsHelperSpecification("{ test: 'hello' }", "{{camel_case test}}", "hello")]
+  // [HandlebarsHelperSpecification("{ test: 'heLlo wOrld' }", "{{camel_case test}}", "heLloWOrld")]
+  // [HandlebarsHelperSpecification("{ test: 'hello_world' }", "{{camel_case test}}", "helloWorld")]
+  // [HandlebarsHelperSpecification("{ test: 'hello-world' }", "{{camel_case test}}", "helloWorld")]
+  // [HandlebarsHelperSpecification("{ test: 'hello-WORLD' }", "{{camel_case test}}", "helloWORLD")]
+  // [HandlebarsHelperSpecification("{ test: 'HelloWorld' }", "{{camel_case test}}", "helloWorld")]
+  #[test_case("42", "42")]
+  #[test_case("HELLO", "hELLO")]
+  #[test_case("hey", "hey")]
+  #[test_case("heLlo wOrld", "heLloWOrld")]
+  #[test_case("hey_world", "heyWorld")]
+  #[test_case("helo-world", "heloWorld")]
+  #[test_case("helloo-WORLD", "hellooWORLD")]
+  #[test_case("HelooWorld", "helooWorld")]
   fn camel_case_tests(v: &str, expected: &str) {
     assert_eq!(v.camel_case(), expected);
   }
