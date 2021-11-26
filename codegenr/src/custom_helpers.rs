@@ -1,7 +1,13 @@
+use crate::custom::DebugHelper;
 use handlebars::handlebars_helper;
 use handlebars::Handlebars;
 
-pub fn register_custom_helpers(handlebars: &mut Handlebars) {
+pub fn handlebars_setup(handlebars: &mut Handlebars) {
+  #[cfg(debug_assertions)]
+  {
+    handlebars.set_dev_mode(true);
+  }
+  handlebars.register_helper("debug", Box::new(DebugHelper));
   handlebars.register_helper("hex", Box::new(Hex));
   handlebars.register_helper("trim", Box::new(Trim));
   handlebars.register_helper("UppercaseFirstLetter", Box::new(UppercaseFirstLetter));
@@ -41,7 +47,7 @@ handlebars_helper!(Hex: |v: i64| hex(v));
 /// //  test_helper(json!({ "value": "-test-" }), "{{trim value \"-\"}}"),
 /// //  "test"
 /// //);
-/// ``m`
+/// ```
 pub fn trim(v: String) -> String {
   trim_vnext(v, None)
 }
@@ -154,7 +160,7 @@ pub fn check_if_start_with(v: String) -> String {
 // #[cfg(doctest)]
 pub fn test_helper(json: serde_json::Value, template: &str) -> String {
   let mut h = Handlebars::new();
-  register_custom_helpers(&mut h);
+  handlebars_setup(&mut h);
   h.register_template_string("test", template).expect("OK!");
   h.render("test", &json).unwrap()
 }
