@@ -11,11 +11,11 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper("debug_ctx", Box::new(DebugCtxHelper));
   handlebars.register_helper("hex", Box::new(Hex));
   handlebars.register_helper("trim", Box::new(Trim));
-  handlebars.register_helper("UppercaseFirstLetter", Box::new(UppercaseFirstLetter));
-  handlebars.register_helper("ToLowerCase", Box::new(ToLowerCase));
-  handlebars.register_helper("StartWith", Box::new(StartWith));
-  handlebars.register_helper("SplitGetFirst", Box::new(SplitGetFirst));
-  handlebars.register_helper("SplitGetLast", Box::new(SplitGetLast));
+  handlebars.register_helper("lower_case", Box::new(LowerCase));
+  handlebars.register_helper("upper_case", Box::new(UpperCase));
+  handlebars.register_helper("uppercase_first_letter", Box::new(UppercaseFirstLetter));
+  handlebars.register_helper("split_get_first", Box::new(SplitGetFirst));
+  handlebars.register_helper("split_get_last", Box::new(SplitGetLast));
 }
 
 /// Return the hexadecimal representation of the integer value
@@ -84,16 +84,15 @@ pub fn uppercase_first_letter(v: String) -> String {
 }
 handlebars_helper!(UppercaseFirstLetter: |v: String| uppercase_first_letter(v));
 
-pub fn to_lower_case(v: String) -> String {
+pub fn lower_case(v: String) -> String {
   v.to_lowercase()
 }
-handlebars_helper!(ToLowerCase: |v: String| v.to_lowercase());
+handlebars_helper!(LowerCase: |v: String| lower_case(v));
 
-//handlebars_helper!(IfEmpty: |v: String| CheckIfEmpty(v));
-
-handlebars_helper!(IfNotEmpty: |v: String| check_if_not_empty(v));
-
-handlebars_helper!(StartWith: |v: String| check_if_start_with(v));
+pub fn upper_case(v: String) -> String {
+  v.to_uppercase()
+}
+handlebars_helper!(UpperCase: |v: String| upper_case(v));
 
 /// Return the first value of a String splited by a choosen parametter
 ///
@@ -149,14 +148,6 @@ handlebars_helper!(TrimStart: |v: String| trim_start(v) );
 
 //pub fn trim_end(v: String) -> String {}
 //handlebars_helper!(TrimEnd: |v: String| trim_end(v));
-
-pub fn check_if_not_empty(v: String) -> String {
-  todo!()
-}
-
-pub fn check_if_start_with(v: String) -> String {
-  todo!()
-}
 
 // #[cfg(doctest)]
 pub fn test_helper(json: serde_json::Value, template: &str) -> String {
