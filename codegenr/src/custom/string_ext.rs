@@ -316,8 +316,19 @@ mod test {
 
   #[test_case("leave", "Leave")]
   #[test_case("eLlE", "Elle")]
-  #[test_case("/test", "/test")]
+  #[test_case("/test", "Test")]
   #[test_case("42lol", "42lol")]
+  // more tests
+  #[test_case("42", "42")]
+  #[test_case("HELLO", "Hello")]
+  #[test_case("HelloWorld", "HelloWorld")]
+  #[test_case("helloo", "Helloo")]
+  #[test_case("heLlo wOrld", "HeLloWOrld")]
+  #[test_case("hello_wwrld", "HelloWwrld")]
+  #[test_case("hello-worldd", "HelloWorldd")]
+  #[test_case("helo-WORLD", "Helo-WORLD")]
+  #[test_case("hello/WOOLD", "helloWOOLD")]
+  #[test_case("hello\\\\WORD", "HelloWORLD")]
   fn pascal_case_tests(v: &str, expected: &str) {
     assert_eq!(v.pascal_case(), expected);
   }
