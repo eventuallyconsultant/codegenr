@@ -1,5 +1,3 @@
-use std::ascii::AsciiExt;
-
 pub trait StringExt {
   fn is_empty_or_whitespaces(&self) -> bool;
   fn split_get_first(&self, splitter: Option<String>) -> String;
@@ -324,14 +322,6 @@ mod test {
     assert_eq!(v.pascal_case(), expected);
   }
 
-  // [HandlebarsHelperSpecification("{ test: 42 }", "{{camel_case test}}", "42")]
-  // [HandlebarsHelperSpecification("{ test: 'HELLO' }", "{{camel_case test}}", "hELLO")]
-  // [HandlebarsHelperSpecification("{ test: 'hello' }", "{{camel_case test}}", "hello")]
-  // [HandlebarsHelperSpecification("{ test: 'heLlo wOrld' }", "{{camel_case test}}", "heLloWOrld")]
-  // [HandlebarsHelperSpecification("{ test: 'hello_world' }", "{{camel_case test}}", "helloWorld")]
-  // [HandlebarsHelperSpecification("{ test: 'hello-world' }", "{{camel_case test}}", "helloWorld")]
-  // [HandlebarsHelperSpecification("{ test: 'hello-WORLD' }", "{{camel_case test}}", "helloWORLD")]
-  // [HandlebarsHelperSpecification("{ test: 'HelloWorld' }", "{{camel_case test}}", "helloWorld")]
   #[test_case("42", "42")]
   #[test_case("HELLO", "hELLO")]
   #[test_case("hey", "hey")]
