@@ -18,6 +18,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   }
   handlebars.register_helper("debug", Box::new(DebugHelper));
   handlebars.register_helper("debug_ctx", Box::new(DebugCtxHelper));
+  handlebars.register_helper("if_empty", Box::new(IfEmptyHelper));
   handlebars.register_helper("if_not_empty", Box::new(IfNotEmptyHelper));
   handlebars.register_helper("hex", Box::new(Hex));
   handlebars.register_helper("trim", Box::new(Trim));
