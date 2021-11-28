@@ -3,7 +3,7 @@ use handlebars::{HelperDef, Renderable};
 
 /// Call the template if a non empty or whitespaces string is passed as parameter
 /// ```
-/// # use codegenr::custom_helpers::*;
+/// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   test_helper(json!({}), "{{#if_not_empty \"42\"}}OK{{else}}NOK{{/if_not_empty}}"),
