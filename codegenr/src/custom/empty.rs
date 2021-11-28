@@ -1,3 +1,4 @@
+use super::handlebars_ext::HandlebarsExt;
 use super::string_ext::StringExt;
 use handlebars::{HelperDef, Renderable};
 
@@ -45,11 +46,7 @@ impl HelperDef for IfNotEmptyHelper {
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
     out: &mut dyn handlebars::Output,
   ) -> handlebars::HelperResult {
-    let is_empty = if let Some(Some(s)) = h.param(0).map(|p| p.value().as_str()) {
-      s.is_empty_or_whitespaces()
-    } else {
-      true
-    };
+    let is_empty = h.get_param_as_str(0).map(|s| s.is_empty_or_whitespaces()).unwrap_or(true);
 
     let temp = if !is_empty { h.template() } else { h.inverse() };
     match temp {
@@ -103,11 +100,7 @@ impl HelperDef for IfEmptyHelper {
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
     out: &mut dyn handlebars::Output,
   ) -> handlebars::HelperResult {
-    let is_empty = if let Some(Some(s)) = h.param(0).map(|p| p.value().as_str()) {
-      s.is_empty_or_whitespaces()
-    } else {
-      true
-    };
+    let is_empty = h.get_param_as_str(0).map(|s| s.is_empty_or_whitespaces()).unwrap_or(true);
 
     let temp = if is_empty { h.template() } else { h.inverse() };
     match temp {

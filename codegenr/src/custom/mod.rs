@@ -1,5 +1,6 @@
 use handlebars::Handlebars;
 
+pub mod handlebars_ext;
 pub mod string_ext;
 
 mod debug;
@@ -10,6 +11,8 @@ mod strings;
 pub use strings::*;
 mod math;
 pub use math::*;
+mod getset;
+pub use getset::*;
 
 pub fn handlebars_setup(handlebars: &mut Handlebars) {
   #[cfg(debug_assertions)]
