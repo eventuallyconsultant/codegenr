@@ -1,3 +1,5 @@
+use std::{cell::RefCell, sync::Arc};
+
 use handlebars::Handlebars;
 
 pub mod handlebars_ext;
@@ -30,6 +32,10 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper("uppercase_first_letter", Box::new(UppercaseFirstLetter));
   handlebars.register_helper("split_get_first", Box::new(SplitGetFirst));
   handlebars.register_helper("split_get_last", Box::new(SplitGetLast));
+
+  let map = Default::default();
+  handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
+  handlebars.register_helper(SET_HELPER, Box::new(SetHelper::new(&map)));
 }
 
 // #[cfg(doctest)]

@@ -1,16 +1,17 @@
 use super::handlebars_ext::HandlebarsExt;
-use super::string_ext::StringExt;
 use handlebars::{HelperDef, RenderError, Renderable};
 use serde_json::Value;
-use std::{cell::RefCell, collections::HashMap};
+use std::{
+  collections::HashMap,
+  sync::{Arc, RwLock},
+};
 
 pub const GET_HELPER: &str = "get";
 pub const SET_HELPER: &str = "set";
 pub const CLEAR_HELPER: &str = "clear";
-pub const WITH_GET_HELPER: &str = "with_get";
+pub const IF_GET_HELPER: &str = "if_get";
 pub const WITH_SET_HELPER: &str = "with_set";
 
-// [HandlebarsHelperSpecification("{}", "{{set 'key', 'value'}}{{get 'key'}}", "value")]
 // [HandlebarsHelperSpecification("{ key: 'value' }", "{{set 'k', . }}{{#with_get 'k'}}{{key}}{{/with_get}}", "value")]
 // [HandlebarsHelperSpecification("{ key: 'value' }", "{{#with_set 'key', .key }}{{get 'key'}}{{/with_set}}{{get 'key'}}", "value")]
 // [HandlebarsHelperSpecification("{}", "{{set 'key', '42' }}{{get 'key'}}{{clear 'key'}}{{get 'key'}}", "42")]
@@ -19,14 +20,17 @@ pub const WITH_SET_HELPER: &str = "with_set";
 /// ```
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
-
+/// assert_eq!(
+///   test_helper(json!({}), r#"{{set "key" "v"}}{{get "key"}}"#),
+///   "v"
+/// );
 /// ```
 pub struct GetHelper {
-  values: RefCell<HashMap<String, Value>>,
+  values: Arc<RwLock<HashMap<String, Value>>>,
 }
 
 impl GetHelper {
-  pub fn new(values: &RefCell<HashMap<String, Value>>) -> Self {
+  pub fn new(values: &Arc<RwLock<HashMap<String, Value>>>) -> Self {
     Self { values: values.clone() }
   }
 }
@@ -46,7 +50,12 @@ impl HelperDef for GetHelper {
       .map(ToString::to_string)
       .ok_or_else(|| RenderError::new(format!("First {} param should be a string.", GET_HELPER)))?;
 
-    match self.values.borrow().get(&key) {
+    let lock = self
+      .values
+      .read()
+      .map_err(|_e| RenderError::new(format!("Could not acquire lock in {} helper", GET_HELPER)))?;
+
+    match lock.get(&key) {
       Some(v) => Ok(v.clone().into()),
       None => Err(RenderError::new(format!("First {} param should be a string.", GET_HELPER))),
     }
@@ -54,11 +63,11 @@ impl HelperDef for GetHelper {
 }
 
 pub struct SetHelper {
-  values: RefCell<HashMap<String, Value>>,
+  values: Arc<RwLock<HashMap<String, Value>>>,
 }
 
 impl SetHelper {
-  pub fn new(values: &RefCell<HashMap<String, Value>>) -> Self {
+  pub fn new(values: &Arc<RwLock<HashMap<String, Value>>>) -> Self {
     Self { values: values.clone() }
   }
 }
@@ -72,16 +81,21 @@ impl HelperDef for SetHelper {
     _render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
     _out: &mut dyn handlebars::Output,
   ) -> handlebars::HelperResult {
-    h.ensure_arguments_count(2, GET_HELPER)?;
+    h.ensure_arguments_count(2, SET_HELPER)?;
 
     let key = h
       .get_param_as_str(0)
       .map(ToString::to_string)
-      .ok_or_else(|| RenderError::new(format!("First {} param should be a string.", GET_HELPER)))?;
+      .ok_or_else(|| RenderError::new(format!("First {} param should be a string.", SET_HELPER)))?;
 
-    let value = h.get_param_as_json(0).ok_or_else(|| RenderError::new("Not happening."))?;
+    let value = h.get_param_as_json(1).ok_or_else(|| RenderError::new("Not happening."))?;
 
-    self.values.borrow_mut().insert(key, value.clone());
+    let mut lock = self
+      .values
+      .write()
+      .map_err(|_| RenderError::new(format!("Could not acquire lock in {} helper", SET_HELPER)))?;
+
+    lock.insert(key, value.clone());
     Ok(())
   }
 }
