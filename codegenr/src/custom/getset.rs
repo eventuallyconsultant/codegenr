@@ -13,7 +13,6 @@ pub const IF_GET_HELPER: &str = "if_get";
 pub const WITH_SET_HELPER: &str = "with_set";
 
 // [HandlebarsHelperSpecification("{ key: 'value' }", "{{set 'k', . }}{{#with_get 'k'}}{{key}}{{/with_get}}", "value")]
-// [HandlebarsHelperSpecification("{ key: 'value' }", "{{#with_set 'key', .key }}{{get 'key'}}{{/with_set}}{{get 'key'}}", "value")]
 // [HandlebarsHelperSpecification("{}", "{{set 'key', '42' }}{{get 'key'}}{{clear 'key'}}{{get 'key'}}", "42")]
 
 /// Gets a value from the key/value store
@@ -116,6 +115,64 @@ impl HelperDef for SetHelper {
       .map_err(|_| RenderError::new(format!("Could not acquire lock in {} helper", SET_HELPER)))?;
 
     lock.insert(key, value.clone());
+    Ok(())
+  }
+}
+
+/// Sets a value in the key/value store and clear it at the end of the block
+///```
+/// # use codegenr::custom::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   test_helper(json!({ "key": "value" }), r#"{{#with_set "key" key}}{{get "key"}}{{/with_set}}"#),
+///   "value"
+/// );
+///```
+/// see [`GetHelper`] for more examples
+pub struct WithSetHelper {
+  values: Arc<RwLock<HashMap<String, Value>>>,
+}
+
+impl WithSetHelper {
+  pub fn new(values: &Arc<RwLock<HashMap<String, Value>>>) -> Self {
+    Self { values: values.clone() }
+  }
+}
+
+impl HelperDef for WithSetHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    h.ensure_arguments_count(2, WITH_SET_HELPER)?;
+
+    let key = h
+      .get_param_as_str(0)
+      .map(ToString::to_string)
+      .ok_or_else(|| RenderError::new(format!("First {} param should be a string.", WITH_SET_HELPER)))?;
+
+    let value = h.get_param_as_json(1).ok_or_else(|| RenderError::new("Not happening."))?;
+
+    let mut lock = self
+      .values
+      .write()
+      .map_err(|_| RenderError::new(format!("Could not acquire lock in {} helper", SET_HELPER)))?;
+    lock.insert(key.clone(), value.clone());
+    drop(lock);
+
+    if let Some(t) = h.template() {
+      t.render(handle, ctx, render_ctx, out)?;
+    }
+
+    let mut lock = self
+      .values
+      .write()
+      .map_err(|_| RenderError::new(format!("Could not acquire lock in {} helper", SET_HELPER)))?;
+    lock.remove(&key);
     Ok(())
   }
 }

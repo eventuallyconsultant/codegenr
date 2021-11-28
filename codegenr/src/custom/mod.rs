@@ -34,6 +34,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
   handlebars.register_helper(SET_HELPER, Box::new(SetHelper::new(&map)));
+  handlebars.register_helper(WITH_SET_HELPER, Box::new(WithSetHelper::new(&map)));
 }
 
 pub fn test_helper(json: serde_json::Value, template: &str) -> String {
