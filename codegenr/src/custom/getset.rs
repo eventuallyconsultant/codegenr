@@ -183,6 +183,49 @@ impl HelperDef for IfGetHelper {
   }
 }
 
+/// Clear a value in the key/value store
+///```
+/// # use codegenr::custom::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{set "k" 42}}{{clear "k"}}{{#if_set "k"}}OK{{else}}NOK{{/if_set}}"#),
+///   "NOK"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{clear "k"}}{{#if_set "k"}}OK{{else}}NOK{{/if_set}}"#),
+///   "NOK"
+/// );
+///```
+/// see [`GetHelper`] for more examples
+pub struct ClearHelper {
+  values: Arc<RwLock<HashMap<String, Value>>>,
+}
+
+impl ClearHelper {
+  pub fn new(values: &Arc<RwLock<HashMap<String, Value>>>) -> Self {
+    Self { values: values.clone() }
+  }
+}
+
+impl HelperDef for ClearHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+    _: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    h.ensure_arguments_count(1, GET_HELPER)?;
+    let key = h.get_param_as_str_or_fail(0, CLEAR_HELPER)?.to_string();
+    rem_value(&self.values, &key, CLEAR_HELPER)?;
+    Ok(())
+  }
+}
+
+// =============================================================================================
+// =============================================================================================
+
 fn get_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_name: &str) -> Result<Option<Value>, RenderError> {
   let lock = values
     .read()
