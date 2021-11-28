@@ -1,5 +1,3 @@
-use std::{cell::RefCell, sync::Arc};
-
 use handlebars::Handlebars;
 
 pub mod handlebars_ext;
@@ -38,10 +36,9 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(SET_HELPER, Box::new(SetHelper::new(&map)));
 }
 
-// #[cfg(doctest)]
 pub fn test_helper(json: serde_json::Value, template: &str) -> String {
   let mut h = Handlebars::new();
   handlebars_setup(&mut h);
-  h.register_template_string("test", template).expect("OK!");
-  h.render("test", &json).unwrap()
+  h.register_template_string("test", template).expect("Could not register template.");
+  h.render("test", &json).expect("Template render returned an error")
 }

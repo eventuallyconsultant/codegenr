@@ -224,6 +224,7 @@ mod test {
   }
 
   #[test]
+  #[ignore]
   fn read_beezup_openapi() -> Result<(), anyhow::Error> {
     let _result = DocumentPath::parse("https://api-docs.beezup.com/swagger.json")?.load_raw()?;
     Ok(())

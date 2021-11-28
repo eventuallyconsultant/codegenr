@@ -3,7 +3,7 @@ use handlebars::handlebars_helper;
 
 /// Returns a string slice with leading and trailing whitespace removed.
 /// ```
-/// # use codegenr::custom_helpers::*;
+/// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   test_helper(json!({ "value": " test " }), "{{trim value}}"),
@@ -31,7 +31,7 @@ handlebars_helper!(Trim: |v: String| trim(v) );
 
 /// Returns a string in Pascal case
 /// ```
-/// # use codegenr::customs::*;
+/// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   test_helper(json!({ "value": "tEsT" }), "{{uppercase_first_letter value}}"),
@@ -63,7 +63,7 @@ handlebars_helper!(UpperCase: |v: String| upper_case(v));
 ///
 /// # Exemple
 /// ```
-/// # use codegenr::custom_helpers::*;
+/// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// let x = "./test/lol/notme".to_string();
 /// let y = "/".to_string();
@@ -84,7 +84,7 @@ handlebars_helper!(SplitGetFirst: |v: String, w: String| split_get_first(v, w));
 ///
 /// # Exemple
 /// ```
-/// # use codegenr::custom_helpers::*;
+/// # use codegenr::custom::*;
 /// let x = "test/notme/me".to_string();
 /// let y = "/".to_string();
 /// assert_eq!(split_get_last(x, y), "me");
@@ -98,7 +98,7 @@ handlebars_helper!(SplitGetLast: |v: String, w: String| split_get_last(v, w));
 ///
 /// # Exemple
 /// ```
-/// # use codegenr::custom_helpers::*;
+/// # use codegenr::custom::*;
 ///
 // { test: 42 }	{{trim_start test}}	42
 // { test: ' 42' }	{{trim_start test}}	42

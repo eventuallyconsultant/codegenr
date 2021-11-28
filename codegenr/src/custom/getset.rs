@@ -16,14 +16,29 @@ pub const WITH_SET_HELPER: &str = "with_set";
 // [HandlebarsHelperSpecification("{ key: 'value' }", "{{#with_set 'key', .key }}{{get 'key'}}{{/with_set}}{{get 'key'}}", "value")]
 // [HandlebarsHelperSpecification("{}", "{{set 'key', '42' }}{{get 'key'}}{{clear 'key'}}{{get 'key'}}", "42")]
 
-/// TODO
+/// Gets a value from the key/value store
 /// ```
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(json!({}), r#"{{set "key" "v"}}{{get "key"}}"#),
+///   test_helper(json!({}), r#"{{set "k" "v"}}{{get "k"}}"#),
 ///   "v"
 /// );
+/// assert_eq!(
+///   test_helper(json!({}), r#"{{set "" "v"}}{{get ""}}"#),
+///   "v"
+/// );
+/// assert_eq!(
+///   test_helper(json!({}), r#"{{set "k" 42}}{{get "k"}}"#),
+///   "42"
+/// );
+/// ```
+///
+/// An error will be raise if a non existing key is asked
+/// ```should_panic
+/// # use serde_json::json;
+/// # use codegenr::custom::*;
+/// test_helper(json!({}), r#"{{get "plop"}}"#);
 /// ```
 pub struct GetHelper {
   values: Arc<RwLock<HashMap<String, Value>>>,
@@ -57,11 +72,15 @@ impl HelperDef for GetHelper {
 
     match lock.get(&key) {
       Some(v) => Ok(v.clone().into()),
-      None => Err(RenderError::new(format!("First {} param should be a string.", GET_HELPER))),
+      None => Err(RenderError::new(format!(
+        "Value is not set for key '{}' in {} helper.",
+        key, GET_HELPER
+      ))),
     }
   }
 }
 
+///
 pub struct SetHelper {
   values: Arc<RwLock<HashMap<String, Value>>>,
 }
