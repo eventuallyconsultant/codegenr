@@ -80,7 +80,8 @@ impl HelperDef for GetHelper {
   }
 }
 
-///
+/// Sets a value in the key/value store
+/// see [`GetHelper`] for more examples
 pub struct SetHelper {
   values: Arc<RwLock<HashMap<String, Value>>>,
 }
