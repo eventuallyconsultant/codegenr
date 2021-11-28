@@ -6,11 +6,11 @@ use handlebars::handlebars_helper;
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(json!({ "value": " test " }), "{{trim value}}"),
+///   exec_template(json!({ "value": " test " }), "{{trim value}}"),
 ///   "test"
 /// );
 /// //assert_eq!(
-/// //  test_helper(json!({ "value": "-test-" }), "{{trim value \"-\"}}"),
+/// //  exec_template(json!({ "value": "-test-" }), "{{trim value \"-\"}}"),
 /// //  "test"
 /// //);
 /// ```
@@ -34,7 +34,7 @@ handlebars_helper!(Trim: |v: String| trim(v) );
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(json!({ "value": "tEsT" }), "{{uppercase_first_letter value}}"),
+///   exec_template(json!({ "value": "tEsT" }), "{{uppercase_first_letter value}}"),
 ///   "TEsT"
 /// );
 /// ```

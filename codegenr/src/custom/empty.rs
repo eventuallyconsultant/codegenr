@@ -7,31 +7,31 @@ use handlebars::{HelperDef, Renderable};
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(json!({}), "{{#if_not_empty \"42\"}}OK{{else}}NOK{{/if_not_empty}}"),
+///   exec_template(json!({}), "{{#if_not_empty \"42\"}}OK{{else}}NOK{{/if_not_empty}}"),
 ///   "OK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({}), "{{#if_not_empty \"  \"}}OK{{else}}NOK{{/if_not_empty}}"),
+///   exec_template(json!({}), "{{#if_not_empty \"  \"}}OK{{else}}NOK{{/if_not_empty}}"),
 ///   "NOK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({}), "{{#if_not_empty not_existing}}OK{{else}}NOK{{/if_not_empty}}"),
+///   exec_template(json!({}), "{{#if_not_empty not_existing}}OK{{else}}NOK{{/if_not_empty}}"),
 ///   "NOK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({"plop": "plop"}), "{{#if_not_empty plop}}OK{{else}}NOK{{/if_not_empty}}"),
+///   exec_template(json!({"plop": "plop"}), "{{#if_not_empty plop}}OK{{else}}NOK{{/if_not_empty}}"),
 ///   "OK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({"plop": ""}), "{{#if_not_empty plop}}OK{{else}}NOK{{/if_not_empty}}"),
+///   exec_template(json!({"plop": ""}), "{{#if_not_empty plop}}OK{{else}}NOK{{/if_not_empty}}"),
 ///   "NOK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({"plop": "plop"}), "{{#if_not_empty not_existing}}OK{{else}}NOK{{/if_not_empty}}"),
+///   exec_template(json!({"plop": "plop"}), "{{#if_not_empty not_existing}}OK{{else}}NOK{{/if_not_empty}}"),
 ///   "NOK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({"plop": "plop"}), "{{#if_not_empty}}OK{{else}}NOK{{/if_not_empty}}"),
+///   exec_template(json!({"plop": "plop"}), "{{#if_not_empty}}OK{{else}}NOK{{/if_not_empty}}"),
 ///   "NOK"
 /// );
 /// ```
@@ -61,31 +61,31 @@ impl HelperDef for IfNotEmptyHelper {
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(json!({}), "{{#if_empty \"42\"}}OK{{else}}NOK{{/if_empty}}"),
+///   exec_template(json!({}), "{{#if_empty \"42\"}}OK{{else}}NOK{{/if_empty}}"),
 ///   "NOK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({}), "{{#if_empty \"  \"}}OK{{else}}NOK{{/if_empty}}"),
+///   exec_template(json!({}), "{{#if_empty \"  \"}}OK{{else}}NOK{{/if_empty}}"),
 ///   "OK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({}), "{{#if_empty not_existing}}OK{{else}}NOK{{/if_empty}}"),
+///   exec_template(json!({}), "{{#if_empty not_existing}}OK{{else}}NOK{{/if_empty}}"),
 ///   "OK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({"plop": "plop"}), "{{#if_empty plop}}OK{{else}}NOK{{/if_empty}}"),
+///   exec_template(json!({"plop": "plop"}), "{{#if_empty plop}}OK{{else}}NOK{{/if_empty}}"),
 ///   "NOK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({"plop": ""}), "{{#if_empty plop}}OK{{else}}NOK{{/if_empty}}"),
+///   exec_template(json!({"plop": ""}), "{{#if_empty plop}}OK{{else}}NOK{{/if_empty}}"),
 ///   "OK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({"plop": "plop"}), "{{#if_empty not_existing}}OK{{else}}NOK{{/if_empty}}"),
+///   exec_template(json!({"plop": "plop"}), "{{#if_empty not_existing}}OK{{else}}NOK{{/if_empty}}"),
 ///   "OK"
 /// );
 /// assert_eq!(
-///   test_helper(json!({"plop": "plop"}), "{{#if_empty}}OK{{else}}NOK{{/if_empty}}"),
+///   exec_template(json!({"plop": "plop"}), "{{#if_empty}}OK{{else}}NOK{{/if_empty}}"),
 ///   "OK"
 /// );
 /// ```

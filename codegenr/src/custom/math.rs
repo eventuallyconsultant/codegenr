@@ -5,11 +5,11 @@ use handlebars::handlebars_helper;
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(serde_json::Value::Null, "{{hex 42}}"),
+///   exec_template(serde_json::Value::Null, "{{hex 42}}"),
 ///   "0x2a"
 /// );
 /// assert_eq!(
-///   test_helper(json!({ "value": 42 }), "{{hex value}}"),
+///   exec_template(json!({ "value": 42 }), "{{hex value}}"),
 ///   "0x2a"
 /// );
 /// ```

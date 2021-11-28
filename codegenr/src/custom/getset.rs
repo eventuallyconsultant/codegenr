@@ -9,26 +9,23 @@ use std::{
 pub const GET_HELPER: &str = "get";
 pub const SET_HELPER: &str = "set";
 pub const CLEAR_HELPER: &str = "clear";
-pub const IF_GET_HELPER: &str = "if_get";
+pub const IF_SET_HELPER: &str = "if_set";
 pub const WITH_SET_HELPER: &str = "with_set";
-
-// [HandlebarsHelperSpecification("{ key: 'value' }", "{{set 'k', . }}{{#with_get 'k'}}{{key}}{{/with_get}}", "value")]
-// [HandlebarsHelperSpecification("{}", "{{set 'key', '42' }}{{get 'key'}}{{clear 'key'}}{{get 'key'}}", "42")]
 
 /// Gets a value from the key/value store
 /// ```
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(json!({}), r#"{{set "k" "v"}}{{get "k"}}"#),
+///   exec_template(json!({}), r#"{{set "k" "v"}}{{get "k"}}"#),
 ///   "v"
 /// );
 /// assert_eq!(
-///   test_helper(json!({}), r#"{{set "" "v"}}{{get ""}}"#),
+///   exec_template(json!({}), r#"{{set "" "v"}}{{get ""}}"#),
 ///   "v"
 /// );
 /// assert_eq!(
-///   test_helper(json!({}), r#"{{set "k" 42}}{{get "k"}}"#),
+///   exec_template(json!({}), r#"{{set "k" 42}}{{get "k"}}"#),
 ///   "42"
 /// );
 /// ```
@@ -37,7 +34,7 @@ pub const WITH_SET_HELPER: &str = "with_set";
 /// ```should_panic
 /// # use serde_json::json;
 /// # use codegenr::custom::*;
-/// test_helper(json!({}), r#"{{get "plop"}}"#);
+/// exec_template(json!({}), r#"{{get "plop"}}"#);
 /// ```
 pub struct GetHelper {
   values: Arc<RwLock<HashMap<String, Value>>>,
@@ -124,7 +121,7 @@ impl HelperDef for SetHelper {
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(json!({ "key": "value" }), r#"{{#with_set "key" key}}{{get "key"}}{{/with_set}}"#),
+///   exec_template(json!({ "key": "value" }), r#"{{#with_set "key" key}}{{get "key"}}{{/with_set}}"#),
 ///   "value"
 /// );
 ///```
@@ -173,6 +170,61 @@ impl HelperDef for WithSetHelper {
       .write()
       .map_err(|_| RenderError::new(format!("Could not acquire lock in {} helper", SET_HELPER)))?;
     lock.remove(&key);
+    Ok(())
+  }
+}
+
+/// Sets a value in the key/value store and clear it at the end of the block
+///```
+/// # use codegenr::custom::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{set "k" 42}}{{#if_set "k"}}OK{{/if_set}}"#),
+///   "OK"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#if_set "k"}}OK{{else}}NOK{{/if_set}}"#),
+///   "NOK"
+/// );
+///```
+/// see [`GetHelper`] for more examples
+pub struct IfGetHelper {
+  values: Arc<RwLock<HashMap<String, Value>>>,
+}
+
+impl IfGetHelper {
+  pub fn new(values: &Arc<RwLock<HashMap<String, Value>>>) -> Self {
+    Self { values: values.clone() }
+  }
+}
+
+impl HelperDef for IfGetHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    h.ensure_arguments_count(1, IF_SET_HELPER)?;
+
+    let key = h
+      .get_param_as_str(0)
+      .map(ToString::to_string)
+      .ok_or_else(|| RenderError::new(format!("First {} param should be a string.", IF_SET_HELPER)))?;
+
+    let lock = self
+      .values
+      .read()
+      .map_err(|_e| RenderError::new(format!("Could not acquire lock in {} helper", GET_HELPER)))?;
+
+    let has_value = lock.get(&key).is_some();
+    let temp = if has_value { h.template() } else { h.inverse() };
+    if let Some(t) = temp {
+      t.render(handle, ctx, render_ctx, out)?
+    };
+
     Ok(())
   }
 }

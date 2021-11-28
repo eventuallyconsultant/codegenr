@@ -35,9 +35,10 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
   handlebars.register_helper(SET_HELPER, Box::new(SetHelper::new(&map)));
   handlebars.register_helper(WITH_SET_HELPER, Box::new(WithSetHelper::new(&map)));
+  handlebars.register_helper(IF_SET_HELPER, Box::new(IfGetHelper::new(&map)));
 }
 
-pub fn test_helper(json: serde_json::Value, template: &str) -> String {
+pub fn exec_template(json: serde_json::Value, template: &str) -> String {
   let mut h = Handlebars::new();
   handlebars_setup(&mut h);
   h.register_template_string("test", template).expect("Could not register template.");

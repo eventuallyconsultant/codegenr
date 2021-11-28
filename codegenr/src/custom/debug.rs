@@ -6,7 +6,7 @@ use serde_json::{json, Value};
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(json!({"plop": "plop"}), "{{debug 42 \"42\" plop non_existing}}"),
+///   exec_template(json!({"plop": "plop"}), "{{debug 42 \"42\" plop non_existing}}"),
 ///   r#"[{"relative_path":"","value":42},{"relative_path":"","value":"42"},{"relative_path":"plop","value":"plop"},{"relative_path":"non_existing","value":null}]"#
 /// );
 /// ```
@@ -44,7 +44,7 @@ impl HelperDef for DebugHelper {
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   test_helper(json!({"plop": "plop"}), "{{debug_ctx 42 \"42\" plop non_existing}}"),
+///   exec_template(json!({"plop": "plop"}), "{{debug_ctx 42 \"42\" plop non_existing}}"),
 ///   ""
 /// );
 /// ```
