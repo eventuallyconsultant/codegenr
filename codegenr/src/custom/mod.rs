@@ -31,6 +31,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(LOWERCASE_FIRST_LETTER_HELPER, Box::new(LowercaseFirstLetterHelper));
   handlebars.register_helper(SPLIT_GET_FIRST_HELPER, Box::new(SplitGetFirstHelper));
   handlebars.register_helper(SPLIT_GET_LAST_HELPER, Box::new(SplitGetLastHelper));
+  handlebars.register_helper(START_WITH_HELPER, Box::new(StartWithHelper));
 
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));

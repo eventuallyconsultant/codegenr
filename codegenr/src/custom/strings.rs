@@ -1,6 +1,6 @@
 use crate::custom::handlebars_ext::HandlebarsExt;
 use crate::custom::string_ext::StringExt;
-use handlebars::{handlebars_helper, HelperDef};
+use handlebars::{HelperDef, Renderable};
 use serde_json::Value;
 
 pub const TRIM_HELPER: &str = "trim";
@@ -12,6 +12,7 @@ pub const TRIM_START_HELPER: &str = "trim_start";
 pub const TRIM_END_HELPER: &str = "trim_end";
 pub const LOWER_CASE_HELPER: &str = "lower_case";
 pub const UPPER_CASE_HELPER: &str = "upper_case";
+pub const START_WITH_HELPER: &str = "start_with";
 
 /// Returns a string slice with leading and trailing whitespace removed.
 /// ```
@@ -236,5 +237,41 @@ impl HelperDef for TrimEndHelper {
     let to_trim = h.get_param_as_str_or_fail(0, TRIM_END_HELPER)?;
     let splitter = h.get_param_as_str(1).map(|s| s.to_string());
     Ok(handlebars::ScopedJson::Derived(Value::String(to_trim.trim_end_char(splitter))))
+  }
+}
+
+/// Determines whether the beginning of the second argumentmatches the second one
+///```
+/// # use codegenr::custom::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({"one": "test-one", "two": "one-test"}), r#"{{#start_with "test" one}}OK{{else}}{{/start_with}}"#),
+///   "OK"
+/// );
+/// assert_eq!(
+///   exec_template(json!({"one": "test-one", "two": "one-test"}), r#"{{#start_with "test" two}}OK{{else}}NOK{{/start_with}}"#),
+///   "NOK"
+/// );
+///```
+pub struct StartWithHelper;
+
+impl HelperDef for StartWithHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    h.ensure_arguments_count(2, START_WITH_HELPER)?;
+    let start = h.get_param_as_str_or_fail(0, START_WITH_HELPER)?;
+    let with = h.get_param_as_str_or_fail(1, START_WITH_HELPER)?;
+
+    let temp = if with.starts_with(start) { h.template() } else { h.inverse() };
+    if let Some(t) = temp {
+      t.render(handle, ctx, render_ctx, out)?
+    };
+    Ok(())
   }
 }
