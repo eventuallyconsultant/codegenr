@@ -16,7 +16,7 @@ env:
 
 jobs:
   dev-gen-tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       RUST_LOG: debug
      
