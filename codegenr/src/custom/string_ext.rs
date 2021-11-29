@@ -175,13 +175,28 @@ impl StringExt for &str {
   }
 
   fn pascal_case(&self) -> String {
-    if self.is_empty_or_whitespaces() {
-      return String::default();
-    }
-    let mut ve: Vec<char> = self.to_lowercase().chars().collect();
-    ve[0] = ve[0].to_uppercase().next().unwrap();
-    let result: String = ve.into_iter().collect();
-    result
+    let (_, pascal) = self
+      .trim()
+      .chars()
+      .fold((Some(false), String::with_capacity(self.len())), |acc, x| {
+        let (upper_next, mut s) = acc;
+        if is_out_of_case(x) {
+          return (Some(true), s);
+        }
+        match upper_next {
+          Some(up) => {
+            let c = if up {
+              x.to_uppercase().next().unwrap_or(x)
+            } else {
+              x.to_lowercase().next().unwrap_or(x)
+            };
+            s.push(c)
+          }
+          None => s.push(x),
+        }
+        (Some(false), s)
+      });
+    pascal
   }
 
   fn camel_case(&self) -> String {
@@ -227,7 +242,26 @@ impl StringExt for &str {
   //   [HandlebarsHelperSpecification("{ test: '2Hello2 ' }", "{{snake_case test}}", "2_hello2")]
   //   [HandlebarsHelperSpecification("{ test: 'HelloWorld_42LongName ' }", "{{snake_case test}}", "hello_world_42_long_name")]
   fn snake_case(&self) -> String {
-    todo!()
+    let (_, _, snake) = self
+      .trim()
+      .chars()
+      .fold((Some(true), Some(true), String::with_capacity(self.len())), |acc, x| {
+        let (previous_underscore, previous_upper, mut s) = acc;
+        if is_out_of_case(x) && previous_underscore.unwrap_or(false) {
+          s.push('_');
+          return (Some(true), Some(false), s);
+        }
+
+        let is_upper = x.is_uppercase();
+        if is_upper && previous_underscore.unwrap_or(false) && previous_upper.unwrap_or(false) {
+          s.push('_');
+        }
+
+        s.push(x.to_lowercase().next().unwrap_or(x));
+
+        (Some(false), Some(is_upper), s)
+      });
+    snake
   }
 }
 
