@@ -113,6 +113,11 @@ impl HelperDef for LowercaseFirstLetterHelper {
 ///   exec_template(json!({ "temp": "test/value" }), "{{split_get_first temp}}"),
 ///   "test"
 /// );
+///  assert_eq!(
+///   exec_template(json!({ "temp": "-test-123-" }), "{{split_get_first temp \"-\"}}"),
+///   "test"
+/// );
+///
 /// ```
 pub struct SplitGetFirstHelper;
 
@@ -142,6 +147,10 @@ impl HelperDef for SplitGetFirstHelper {
 /// assert_eq!(
 ///   exec_template(json!({ "temp": "test/value" }), "{{split_get_last temp}}"),
 ///   "value"
+/// );
+///  assert_eq!(
+///   exec_template(json!({ "temp": "-test-123-" }), "{{split_get_last temp \"-\"}}"),
+///   "123"
 /// );
 /// ```
 pub struct SplitGetLastHelper;
@@ -173,6 +182,10 @@ impl HelperDef for SplitGetLastHelper {
 ///   exec_template(json!({ "temp": " test " }), "{{trim_start temp}}"),
 ///   "test "
 /// );
+/// assert_eq!(
+///   exec_template(json!({ "temp": "/test/" }), "{{trim_start temp \"/\"}}"),
+///   "test/"
+/// );
 /// ```
 pub struct TrimStartHelper;
 
@@ -201,6 +214,10 @@ impl HelperDef for TrimStartHelper {
 /// assert_eq!(
 ///   exec_template(json!({ "temp": " test " }), "{{trim_end temp}}"),
 ///   " test"
+/// );
+/// assert_eq!(
+///   exec_template(json!({ "temp": "/test/" }), "{{trim_end temp \"/\"}}"),
+///   "/test"
 /// );
 /// ```
 pub struct TrimEndHelper;
