@@ -1,4 +1,4 @@
-# CodeGenR
+# CodeGenR -- WORK IN PROGRESS
 
 A rewrite of the C# [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 
@@ -6,10 +6,10 @@ A rewrite of the C# [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 
 - [x] Load a yaml or json to serde::json
 
-- [ ] Resolve `$ref` tags
+- [x] Resolve `$ref` tags
 
-- [ ] Pass all the resulting document to an handlebar template
-- [ ] Implement some default helper (and make some doc tests about them)
+- [x] Pass all the resulting document to an handlebar template
+- [x] Implement some default helper (and make some doc tests about them)
 - [ ] A plugin system
 - [ ] Migrate csharp customs helpers to this new plugin system
 - [ ] A this point, we could use `codegenr` in place of `CodegenUP`, just by calling some commands
