@@ -2,6 +2,8 @@
 
 A rewrite of the C# [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 
+![codegenr graphical explanation](_assets/codegenr.svg)
+
 ## Roadmap :
 
 - [x] Load a yaml or json to serde::json
