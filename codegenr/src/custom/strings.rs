@@ -1,5 +1,17 @@
+use crate::custom::handlebars_ext::HandlebarsExt;
 use crate::custom::string_ext::StringExt;
-use handlebars::handlebars_helper;
+use handlebars::{handlebars_helper, HelperDef};
+use serde_json::Value;
+
+pub const TRIM_HELPER: &str = "trim";
+pub const UPPERCASE_FIRST_LETTER_HELPER: &str = "uppercase_first_letter";
+pub const LOWERCASE_FIRST_LETTER_HELPER: &str = "lowercase_first_letter";
+pub const SPLIT_GET_FIRST_HELPER: &str = "split_get_first";
+pub const SPLIT_GET_LAST_HELPER: &str = "split_get_last";
+pub const TRIM_START_HELPER: &str = "trim_start";
+pub const TRIM_END_HELPER: &str = "trim_end";
+pub const LOWER_CASE_HELPER: &str = "lower_case";
+pub const UPPER_CASE_HELPER: &str = "upper_case";
 
 /// Returns a string slice with leading and trailing whitespace removed.
 /// ```
@@ -14,20 +26,25 @@ use handlebars::handlebars_helper;
 /// //  "test"
 /// //);
 /// ```
-pub fn trim(v: String) -> String {
-  trim_vnext(v, None)
-}
-pub fn trim_vnext(v: String, trimer: Option<String>) -> String {
-  let trimer = get_char_trimer(trimer);
+pub struct TrimHelper;
 
-  v.trim_matches(trimer).to_string()
-}
+impl HelperDef for TrimHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    h.ensure_arguments_count_min(1, TRIM_HELPER)?;
+    h.ensure_arguments_count_max(2, TRIM_HELPER)?;
 
-fn get_char_trimer(trimer: Option<String>) -> char {
-  trimer.unwrap_or_else(|| " ".to_string()).chars().next().unwrap_or(' ')
-}
+    let to_trim = h.get_param_as_str_or_fail(0, TRIM_HELPER)?.to_string();
+    let trimmer = h.get_param_as_str(1).map(|s| s.to_string());
 
-handlebars_helper!(Trim: |v: String| trim(v) );
+    Ok(Value::String(to_trim.trim_char(trimmer)).into())
+  }
+}
 
 /// Returns a string in Pascal case
 /// ```
@@ -38,26 +55,45 @@ handlebars_helper!(Trim: |v: String| trim(v) );
 ///   "TEsT"
 /// );
 /// ```
-pub fn uppercase_first_letter(v: String) -> String {
-  if v.is_empty() || !v.contains(char::is_alphanumeric) {
-    return "".to_string();
+pub struct UppercaseFirstLetterHelper;
+
+impl HelperDef for UppercaseFirstLetterHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    h.ensure_arguments_count_min(1, UPPERCASE_FIRST_LETTER_HELPER)?;
+    h.ensure_arguments_count_max(1, UPPERCASE_FIRST_LETTER_HELPER)?;
+
+    let to_uppercase = h.get_param_as_str_or_fail(0, UPPERCASE_FIRST_LETTER_HELPER)?;
+    Ok(handlebars::ScopedJson::Derived(Value::String(
+      to_uppercase.uppercase_first_letter(),
+    )))
   }
-  let mut ve: Vec<char> = v.chars().collect();
-  ve[0] = ve[0].to_uppercase().next().unwrap();
-  let result: String = ve.into_iter().collect();
-  result
 }
-handlebars_helper!(UppercaseFirstLetter: |v: String| uppercase_first_letter(v));
 
-pub fn lower_case(v: String) -> String {
-  v.to_lowercase()
-}
-handlebars_helper!(LowerCase: |v: String| lower_case(v));
+pub struct LowerCaseFirstLetterHelper;
 
-pub fn upper_case(v: String) -> String {
-  v.to_uppercase()
+impl HelperDef for LowerCaseFirstLetterHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    h.ensure_arguments_count_min(1, LOWERCASE_FIRST_LETTER_HELPER)?;
+    h.ensure_arguments_count_max(1, LOWERCASE_FIRST_LETTER_HELPER)?;
+
+    let to_lowercase = h.get_param_as_str_or_fail(0, LOWERCASE_FIRST_LETTER_HELPER)?;
+    Ok(handlebars::ScopedJson::Derived(Value::String(
+      to_lowercase.lowercase_first_letter(),
+    )))
+  }
 }
-handlebars_helper!(UpperCase: |v: String| upper_case(v));
 
 /// Return the first value of a String splited by a choosen parametter
 ///
@@ -69,16 +105,25 @@ handlebars_helper!(UpperCase: |v: String| upper_case(v));
 /// let y = "/".to_string();
 /// assert_eq!(split_get_first(x, y), "test");
 /// ```
-pub fn split_get_first(v: String, w: String) -> String {
-  for res in v.split(&w) {
-    if res.is_empty() || res.contains(char::is_whitespace) || !res.contains(char::is_alphanumeric) {
-      continue;
-    }
-    return res.to_string();
+pub struct SplitGetFirstHelper;
+
+impl HelperDef for SplitGetFirstHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    h.ensure_arguments_count_min(2, SPLIT_GET_FIRST_HELPER)?;
+    h.ensure_arguments_count_max(2, SPLIT_GET_FIRST_HELPER)?;
+
+    let to_split = h.get_param_as_str_or_fail(0, SPLIT_GET_FIRST_HELPER)?;
+    let splitter = h.get_param_as_str(1).map(|s| s.to_string());
+
+    Ok(handlebars::ScopedJson::Derived(Value::String(to_split.split_get_first(splitter))))
   }
-  Default::default()
 }
-handlebars_helper!(SplitGetFirst: |v: String, w: String| split_get_first(v, w));
 
 /// Return the value value of a String splited by a choosen parametter
 ///
@@ -89,10 +134,25 @@ handlebars_helper!(SplitGetFirst: |v: String, w: String| split_get_first(v, w));
 /// let y = "/".to_string();
 /// assert_eq!(split_get_last(x, y), "me");
 /// ```
-pub fn split_get_last(v: String, w: String) -> String {
-  v.split_get_last(Some(w))
+pub struct SplitGetLastHelper;
+
+impl HelperDef for SplitGetLastHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    h.ensure_arguments_count_min(1, SPLIT_GET_LAST_HELPER)?;
+    h.ensure_arguments_count_max(2, SPLIT_GET_LAST_HELPER)?;
+
+    let to_split = h.get_param_as_str_or_fail(0, SPLIT_GET_LAST_HELPER)?;
+    let splitter = h.get_param_as_str(1).map(|s| s.to_string());
+
+    Ok(handlebars::ScopedJson::Derived(Value::String(to_split.split_get_first(splitter))))
+  }
 }
-handlebars_helper!(SplitGetLast: |v: String, w: String| split_get_last(v, w));
 
 ///
 ///
@@ -106,28 +166,40 @@ handlebars_helper!(SplitGetLast: |v: String, w: String| split_get_last(v, w));
 // { test: 'AA' }	{{trim_start test 'A'}}	``
 // { test: ' test ' }	{{trim_start test ' t'}}	est
 /// ```
-pub fn trim_start(v: String) -> String {
-  v.trim_start().to_string()
-}
-handlebars_helper!(TrimStart: |v: String| trim_start(v) );
+pub struct TrimStartHelper;
 
-//pub fn trim_end(v: String) -> String {}
-//handlebars_helper!(TrimEnd: |v: String| trim_end(v));
+impl HelperDef for TrimStartHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    h.ensure_arguments_count_min(1, TRIM_START_HELPER)?;
+    h.ensure_arguments_count_max(2, TRIM_START_HELPER)?;
 
-#[cfg(test)]
-mod test {
-  use super::*;
-  use test_case::test_case;
-
-  #[test_case(" 42 ", "42 ")]
-  fn trim_start_test(value: &str, expected: &str) {
-    assert_eq!(trim_start(value.to_string()), expected.to_string());
+    let to_trim = h.get_param_as_str_or_fail(0, TRIM_START_HELPER)?;
+    let splitter = h.get_param_as_str(1).map(|s| s.to_string());
+    Ok(handlebars::ScopedJson::Derived(Value::String(to_trim.trim_start_char(splitter))))
   }
+}
 
-  #[test_case(" 42 ", "", "42")]
-  #[test_case("-4 2-", "-", "4 2")]
-  fn trim_test(value: &str, trimer: &str, expected: &str) {
-    let trimer = if !trimer.is_empty() { Some(trimer.to_string()) } else { None };
-    assert_eq!(trim_vnext(value.to_string(), trimer), expected.to_string());
+pub struct TrimEndHelper;
+
+impl HelperDef for TrimEndHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    h.ensure_arguments_count_min(1, TRIM_START_HELPER)?;
+    h.ensure_arguments_count_max(2, TRIM_START_HELPER)?;
+
+    let to_trim = h.get_param_as_str_or_fail(0, TRIM_END_HELPER)?;
+    let splitter = h.get_param_as_str(1).map(|s| s.to_string());
+    Ok(handlebars::ScopedJson::Derived(Value::String(to_trim.trim_end_char(splitter))))
   }
 }

@@ -24,12 +24,13 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper("if_empty", Box::new(IfEmptyHelper));
   handlebars.register_helper("if_not_empty", Box::new(IfNotEmptyHelper));
   handlebars.register_helper("hex", Box::new(Hex));
-  handlebars.register_helper("trim", Box::new(Trim));
-  handlebars.register_helper("lower_case", Box::new(LowerCase));
-  handlebars.register_helper("upper_case", Box::new(UpperCase));
-  handlebars.register_helper("uppercase_first_letter", Box::new(UppercaseFirstLetter));
-  handlebars.register_helper("split_get_first", Box::new(SplitGetFirst));
-  handlebars.register_helper("split_get_last", Box::new(SplitGetLast));
+  handlebars.register_helper(TRIM_HELPER, Box::new(TrimHelper));
+  handlebars.register_helper(TRIM_START_HELPER, Box::new(TrimStartHelper));
+  handlebars.register_helper(TRIM_END_HELPER, Box::new(TrimEndHelper));
+  handlebars.register_helper(UPPERCASE_FIRST_LETTER_HELPER, Box::new(UppercaseFirstLetterHelper));
+  handlebars.register_helper(LOWERCASE_FIRST_LETTER_HELPER, Box::new(UppercaseFirstLetterHelper));
+  handlebars.register_helper(SPLIT_GET_FIRST_HELPER, Box::new(SplitGetFirstHelper));
+  handlebars.register_helper(SPLIT_GET_LAST_HELPER, Box::new(SplitGetLastHelper));
 
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));

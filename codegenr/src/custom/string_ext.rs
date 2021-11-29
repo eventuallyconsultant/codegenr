@@ -4,9 +4,9 @@ pub trait StringExt {
   fn split_get_last(&self, splitter: Option<String>) -> String;
   fn get_first_char(&self) -> Option<char>;
 
-  fn del_char(&self, trimmer: Option<String>) -> String;
-  fn del_start_char(&self, trimmer: Option<String>) -> String;
-  fn del_end_char(&self, trimmer: Option<String>) -> String;
+  fn trim_char(&self, trimmer: Option<String>) -> String;
+  fn trim_start_char(&self, trimmer: Option<String>) -> String;
+  fn trim_end_char(&self, trimmer: Option<String>) -> String;
 
   fn uppercase_first_letter(&self) -> String;
   fn lowercase_first_letter(&self) -> String;
@@ -32,16 +32,16 @@ impl StringExt for Option<String> {
     self.as_ref().and_then(|s| s.get_first_char())
   }
 
-  fn del_char(&self, trimmer: Option<String>) -> String {
-    self.as_ref().map_or(Default::default(), |s| s.del_char(trimmer))
+  fn trim_char(&self, trimmer: Option<String>) -> String {
+    self.as_ref().map_or(Default::default(), |s| s.trim_char(trimmer))
   }
 
-  fn del_start_char(&self, trimmer: Option<String>) -> String {
-    self.as_ref().map_or(Default::default(), |s| s.del_start_char(trimmer))
+  fn trim_start_char(&self, trimmer: Option<String>) -> String {
+    self.as_ref().map_or(Default::default(), |s| s.trim_start_char(trimmer))
   }
 
-  fn del_end_char(&self, trimmer: Option<String>) -> String {
-    self.as_ref().map_or(Default::default(), |s| s.del_end_char(trimmer))
+  fn trim_end_char(&self, trimmer: Option<String>) -> String {
+    self.as_ref().map_or(Default::default(), |s| s.trim_end_char(trimmer))
   }
 
   fn uppercase_first_letter(&self) -> String {
@@ -82,16 +82,16 @@ impl StringExt for String {
     self.as_str().get_first_char()
   }
 
-  fn del_char(&self, trimmer: Option<String>) -> String {
-    self.as_str().del_char(trimmer)
+  fn trim_char(&self, trimmer: Option<String>) -> String {
+    self.as_str().trim_char(trimmer)
   }
 
-  fn del_start_char(&self, trimmer: Option<String>) -> String {
-    self.as_str().del_start_char(trimmer)
+  fn trim_start_char(&self, trimmer: Option<String>) -> String {
+    self.as_str().trim_start_char(trimmer)
   }
 
-  fn del_end_char(&self, trimmer: Option<String>) -> String {
-    self.as_str().del_end_char(trimmer)
+  fn trim_end_char(&self, trimmer: Option<String>) -> String {
+    self.as_str().trim_end_char(trimmer)
   }
 
   fn uppercase_first_letter(&self) -> String {
@@ -139,17 +139,17 @@ impl StringExt for &str {
     self.chars().next()
   }
 
-  fn del_char(&self, trimmer: Option<String>) -> String {
+  fn trim_char(&self, trimmer: Option<String>) -> String {
     let trimmer = trimmer.unwrap_or_else(|| " ".to_string()).chars().next().unwrap_or(' ');
     self.trim_matches(trimmer).to_string()
   }
 
-  fn del_start_char(&self, trimmer: Option<String>) -> String {
+  fn trim_start_char(&self, trimmer: Option<String>) -> String {
     let trimmer = trimmer.unwrap_or_else(|| " ".to_string()).chars().next().unwrap_or(' ');
     self.trim_start_matches(trimmer).to_string()
   }
 
-  fn del_end_char(&self, trimmer: Option<String>) -> String {
+  fn trim_end_char(&self, trimmer: Option<String>) -> String {
     let trimmer = trimmer.unwrap_or_else(|| " ".to_string()).chars().next().unwrap_or(' ');
     self.trim_end_matches(trimmer).to_string()
   }
@@ -293,7 +293,7 @@ mod test {
     } else {
       Some(trimmer.to_string())
     };
-    assert_eq!(v.del_char(trimmer), expected);
+    assert_eq!(v.trim_char(trimmer), expected);
   }
 
   #[test_case("", "e", "")]
@@ -307,7 +307,7 @@ mod test {
     } else {
       Some(trimmer.to_string())
     };
-    assert_eq!(v.del_start_char(trimmer), expected);
+    assert_eq!(v.trim_start_char(trimmer), expected);
   }
 
   #[test_case("", "e", "")]
@@ -321,7 +321,7 @@ mod test {
     } else {
       Some(trimmer.to_string())
     };
-    assert_eq!(v.del_end_char(trimmer), expected);
+    assert_eq!(v.trim_end_char(trimmer), expected);
   }
 
   #[test_case("42", "42")]
