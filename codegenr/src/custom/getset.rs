@@ -2,7 +2,6 @@ use super::handlebars_ext::HandlebarsExt;
 use handlebars::{HelperDef, RenderError, Renderable};
 use serde_json::Value;
 use std::{
-  clone,
   collections::HashMap,
   sync::{Arc, RwLock},
 };

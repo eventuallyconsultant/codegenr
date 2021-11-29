@@ -175,16 +175,16 @@ impl StringExt for &str {
   }
 
   fn pascal_case(&self) -> String {
-    let (_, pascal) = self.trim().chars().fold((false, String::with_capacity(self.len())), |acc, x| {
+    let (_, pascal) = self.trim().chars().fold((Some(true), String::with_capacity(self.len())), |acc, x| {
       let (upper_next, mut s) = acc;
       if is_out_of_case(x) {
-        return (true, s);
+        return (Some(true), s);
       }
       match upper_next {
-        true => s.push(x.to_uppercase().next().unwrap_or(x)),
-        false => s.push(x.to_lowercase().next().unwrap_or(x)),
+        Some(true) => s.push(x.to_uppercase().next().unwrap_or(x)),
+        _ => s.push(x),
       }
-      (false, s)
+      (Some(false), s)
     });
     pascal
   }
@@ -221,8 +221,10 @@ impl StringExt for &str {
       .chars()
       .fold((Some(true), Some(true), String::with_capacity(self.len())), |acc, x| {
         let (previous_underscore, previous_upper, mut s) = acc;
-        if is_out_of_case(x) && !previous_underscore.unwrap_or(false) {
-          s.push('_');
+        if is_out_of_case(x) {
+          if !previous_underscore.unwrap_or(true) {
+            s.push('_');
+          }
           return (Some(true), Some(false), s);
         }
 
@@ -323,15 +325,15 @@ mod test {
   }
 
   #[test_case("42", "42")]
-  #[test_case("HELLO", "Hello")]
+  #[test_case("HELLO", "HELLO")]
   #[test_case("HelloWorld", "HelloWorld")]
   #[test_case("helloo", "Helloo")]
   #[test_case("heLlo wOrld", "HeLloWOrld")]
   #[test_case("hello_wwrld", "HelloWwrld")]
   #[test_case("hello-worldd", "HelloWorldd")]
-  #[test_case("helo-WORLD", "Helo-WORLD")]
-  #[test_case("hello/WOOLD", "helloWOOLD")]
-  #[test_case("hello\\\\WORD", "HelloWORLD")]
+  #[test_case("helo-WORLD", "HeloWORLD")]
+  #[test_case("hello/WOOLD", "HelloWOOLD")]
+  #[test_case("hello\\\\WORD", "HelloWORD")]
   fn pascal_case_tests(v: &str, expected: &str) {
     assert_eq!(v.pascal_case(), expected);
   }
@@ -350,20 +352,20 @@ mod test {
 
   #[test_case("42", "42")]
   #[test_case("hello", "hello")]
-  #[test_case("'helo world", "helo_world")]
-  #[test_case("'helloo_world", "helloo_world")]
-  #[test_case("'heloo-world", "heloo_world")]
-  #[test_case("'hallo--world", "hallo_world")]
-  #[test_case("'halo__World", "halo_world")]
-  #[test_case("'haloo-World", "haloo_world")]
-  #[test_case("'halloo _ world", "halloo_world")]
-  #[test_case("'heello - world", "heello_world")]
-  #[test_case("'HelloWoorld", "hello_woorld")]
-  #[test_case("'heello _WOORLD", "heello_woorld")]
-  #[test_case("' HEELLO", "heello")]
-  #[test_case("'Helo ", "helo")]
-  #[test_case("'2Hello2 ", "2_hello2")]
-  #[test_case("'HelloWorld_42LongName ", "hello_world_42_long_name")]
+  #[test_case("helo world", "helo_world")]
+  #[test_case("helloo_world", "helloo_world")]
+  #[test_case("heloo-world", "heloo_world")]
+  #[test_case("hallo--world", "hallo_world")]
+  #[test_case("halo__World", "halo_world")]
+  #[test_case("haloo-World", "haloo_world")]
+  #[test_case("halloo _ world", "halloo_world")]
+  #[test_case("heello - world", "heello_world")]
+  #[test_case("HelloWoorld", "hello_woorld")]
+  #[test_case("heello _WOORLD", "heello_woorld")]
+  #[test_case(" HEELLO", "heello")]
+  #[test_case("Helo ", "helo")]
+  #[test_case("2Hello2 ", "2_hello2")]
+  #[test_case("HelloWorld_42LongName ", "hello_world_42_long_name")]
   fn snake_case_tests(v: &str, expected: &str) {
     assert_eq!(v.snake_case(), expected);
   }
