@@ -28,7 +28,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(TRIM_START_HELPER, Box::new(TrimStartHelper));
   handlebars.register_helper(TRIM_END_HELPER, Box::new(TrimEndHelper));
   handlebars.register_helper(UPPERCASE_FIRST_LETTER_HELPER, Box::new(UppercaseFirstLetterHelper));
-  handlebars.register_helper(LOWERCASE_FIRST_LETTER_HELPER, Box::new(UppercaseFirstLetterHelper));
+  handlebars.register_helper(LOWERCASE_FIRST_LETTER_HELPER, Box::new(LowercaseFirstLetterHelper));
   handlebars.register_helper(SPLIT_GET_FIRST_HELPER, Box::new(SplitGetFirstHelper));
   handlebars.register_helper(SPLIT_GET_LAST_HELPER, Box::new(SplitGetLastHelper));
 

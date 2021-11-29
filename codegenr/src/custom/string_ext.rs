@@ -369,4 +369,18 @@ mod test {
   fn snake_case_tests(v: &str, expected: &str) {
     assert_eq!(v.snake_case(), expected);
   }
+
+  #[test_case("42", "42")]
+  #[test_case("hello", "hello")]
+  #[test_case("Test", "test")]
+  fn lowercase_first_letter_tests(v: &str, expected: &str) {
+    assert_eq!(v.lowercase_first_letter(), expected)
+  }
+
+  #[test_case("42", "42")]
+  #[test_case("HELLO", "HELLO")]
+  #[test_case("test", "Test")]
+  fn uppercase_first_letter_tests(v: &str, expected: &str) {
+    assert_eq!(v.uppercase_first_letter(), expected)
+  }
 }
