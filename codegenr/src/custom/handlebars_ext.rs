@@ -9,6 +9,7 @@ pub trait HandlebarsExt {
   fn get_param_as_str_or_fail(&self, index: usize, helper_name: &str) -> Result<&str, RenderError>;
   fn get_param_as_json(&self, index: usize) -> Option<&Value>;
   fn get_param_as_json_or_fail(&self, index: usize, helper_name: &str) -> Result<&Value, RenderError>;
+  fn get_param_as_array_or_fail(&self, index: usize, helper_name: &str) -> Result<&Vec<Value>, RenderError>;
 }
 
 impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
@@ -70,5 +71,15 @@ impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
     self
       .get_param_as_json(index)
       .ok_or_else(|| RenderError::new(format!("There should be a {} argument for '{}' helper.", index, helper_name)))
+  }
+
+  fn get_param_as_array_or_fail(&self, index: usize, helper_name: &str) -> Result<&Vec<Value>, RenderError> {
+    match self.get_param_as_json_or_fail(index, helper_name)? {
+      Value::Array(a) => Ok(a),
+      _ => Err(RenderError::new(format!(
+        "Argument {} should be an array for '{}' helper.",
+        index, helper_name
+      ))),
+    }
   }
 }

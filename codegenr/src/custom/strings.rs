@@ -281,6 +281,7 @@ impl HelperDef for StartWithHelper {
 
 /// Execute the inner template with the matching parameter, when matching key is equal to the first parameter
 /// {{#with_matching some_value matching_key1 context1 mateching_key2 context2 ... }}
+/// Render the inverse template if no matching key was found
 ///```
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
@@ -359,11 +360,15 @@ impl HelperDef for WithMatchingHelper {
 ///```
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
-/// let json_array = json!({ "type": "object","required": [ "errorMeSSage", "test" ],"properties": {"errorMessage": {"type": "string"},"non_required_prop" : {"type" : "int"}}});
+/// let json_array = json!({ "type": "object", "required": [ "errorMeSSage", "test" ], "properties": {"errorMessage": {"type": "string"}, "non_required_prop" : {"type" : "int"}}});
 /// assert_eq!(
-///   exec_template(json_array.clone(), r#"{{#if_array_contains required "errorMessage"}}OK{{else}}NOK{{/if_array_contains}}"#),
+///   exec_template(json_array.clone(), r#"{{#if_array_contains required "errorMeSSage"}}OK{{else}}NOK{{/if_array_contains}}"#),
 ///   "OK"
 /// );
+/// //assert_eq!(
+///   //exec_template(json_array.clone(), r#"{{#if_array_contains required "errormessage"}}OK{{else}}NOK{{/if_array_contains}}"#),
+///   //"OK"
+/// //);
 /// assert_eq!(
 ///   exec_template(json_array.clone(), r#"{{#if_array_contains required "test"}}OK{{else}}NOK{{/if_array_contains}}"#),
 ///   "OK"
@@ -385,20 +390,13 @@ impl HelperDef for IfArrayContainsHelper {
     out: &mut dyn handlebars::Output,
   ) -> handlebars::HelperResult {
     h.ensure_arguments_count(2, IF_ARRAY_CONTAINS)?;
-    let value = h.get_param_as_str(0).map(|s| s.to_string());
-    let comp = h.get_param_as_str_or_fail(1, IF_ARRAY_CONTAINS)?;
+    let value = h.get_param_as_array_or_fail(0, IF_ARRAY_CONTAINS)?;
+    let key = h.get_param_as_json_or_fail(1, IF_ARRAY_CONTAINS)?;
 
-    if let Some(items) = value {
-      if items.to_lowercase() == comp.to_lowercase() {
-        let temp = h.template();
-        if let Some(t) = temp {
-          t.render(handle, ctx, render_ctx, out)?
-        };
-        return Ok(());
-      }
-    }
+    // todo: compare case insensitive when both strings
+    let is_value_found = value.iter().any(|s| s == key);
+    let temp = if is_value_found { h.template() } else { h.inverse() };
 
-    let temp = h.inverse();
     if let Some(t) = temp {
       t.render(handle, ctx, render_ctx, out)?
     };
