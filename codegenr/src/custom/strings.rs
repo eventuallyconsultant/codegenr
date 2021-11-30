@@ -1,6 +1,6 @@
 use crate::custom::handlebars_ext::HandlebarsExt;
 use crate::custom::string_ext::StringExt;
-use handlebars::{BlockContext, HelperDef, RenderError, Renderable};
+use handlebars::{BlockContext, HelperDef, RenderError, Renderable, StringOutput};
 use serde_json::Value;
 
 pub const TRIM_HELPER: &str = "trim";
@@ -16,6 +16,7 @@ pub const START_WITH_HELPER: &str = "start_with";
 pub const WITH_MATCHING_HELPER: &str = "with_matching";
 pub const IF_ARRAY_CONTAINS: &str = "if_array_contains";
 pub const EACH_WITH_SORT_HELPER: &str = "each_with_sort";
+pub const TRIM_BLOCK_HELPER: &str = "trim_block";
 
 /// Returns a string slice with leading and trailing whitespace removed.
 /// ```
@@ -400,6 +401,30 @@ impl HelperDef for IfArrayContainsHelper {
     if let Some(t) = temp {
       t.render(handle, ctx, render_ctx, out)?
     };
+    Ok(())
+  }
+}
+
+pub struct TrimBlockHelper;
+
+impl HelperDef for TrimBlockHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    if let Some(t) = h.template() {
+      let mut buffer = StringOutput::new();
+      t.render(handle, ctx, render_ctx, &mut buffer)?;
+      let s = buffer.into_string()?;
+      // récuprer le 1er param (trimer)
+      // todo trim da string
+      out.write(&s)?;
+    };
+
     Ok(())
   }
 }
