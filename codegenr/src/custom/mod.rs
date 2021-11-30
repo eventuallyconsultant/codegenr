@@ -13,6 +13,8 @@ mod math;
 pub use math::*;
 mod getset;
 pub use getset::*;
+mod equals;
+pub use equals::*;
 
 pub fn handlebars_setup(handlebars: &mut Handlebars) {
   #[cfg(debug_assertions)]
@@ -23,6 +25,8 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper("debug_ctx", Box::new(DebugCtxHelper));
   handlebars.register_helper(IF_EMPTY_HELPER, Box::new(IfEmptyHelper));
   handlebars.register_helper(IF_NOT_EMPTY_HELPER, Box::new(IfNotEmptyHelper));
+  handlebars.register_helper(IF_EQUALS_HELPER, Box::new(IfEmptyHelper));
+  handlebars.register_helper(IF_NOT_EQUALS_HELPER, Box::new(IfNotEmptyHelper));
   handlebars.register_helper("hex", Box::new(Hex));
   handlebars.register_helper(TRIM_HELPER, Box::new(TrimHelper));
   handlebars.register_helper(TRIM_START_HELPER, Box::new(TrimStartHelper));
@@ -34,7 +38,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(START_WITH_HELPER, Box::new(StartWithHelper));
   handlebars.register_helper(WITH_MATCHING_HELPER, Box::new(WithMatchingHelper));
   handlebars.register_helper(IF_ARRAY_CONTAINS, Box::new(IfArrayContainsHelper));
-
+  //handlebars.register_helper(EACH_WITH_SORT_HELPER, Box::new(EachWithSortHelper));
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
   handlebars.register_helper(SET_HELPER, Box::new(SetHelper::new(&map)));

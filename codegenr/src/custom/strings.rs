@@ -15,6 +15,7 @@ pub const UPPER_CASE_HELPER: &str = "upper_case";
 pub const START_WITH_HELPER: &str = "start_with";
 pub const WITH_MATCHING_HELPER: &str = "with_matching";
 pub const IF_ARRAY_CONTAINS: &str = "if_array_contains";
+pub const EACH_WITH_SORT_HELPER: &str = "each_with_sort";
 
 /// Returns a string slice with leading and trailing whitespace removed.
 /// ```
@@ -307,7 +308,7 @@ impl HelperDef for WithMatchingHelper {
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
     out: &mut dyn handlebars::Output,
   ) -> handlebars::HelperResult {
-    //h.ensure_arguments_count(2, WITH_MATCHING_HELPER)?;
+    h.ensure_arguments_count(2, WITH_MATCHING_HELPER)?;
     let value = h.get_param_as_str_or_fail(0, WITH_MATCHING_HELPER)?;
     if value.len() % 2 != 1 {
       return Err(RenderError::new(format!(
@@ -387,3 +388,20 @@ impl HelperDef for IfArrayContainsHelper {
     Ok(())
   }
 }
+
+// pub struct EachWithSortHelper;
+
+// impl HelperDef for EachWithSortHelper {
+//   fn call<'reg: 'rc, 'rc>(
+//     &self,
+//     h: &handlebars::Helper<'reg, 'rc>,
+//     handle: &'reg handlebars::Handlebars<'reg>,
+//     ctx: &'rc handlebars::Context,
+//     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+//     out: &mut dyn handlebars::Output,
+//   ) -> handlebars::HelperResult {
+//     h.ensure_arguments_count_min(1, EACH_WITH_SORT_HELPER)?;
+//     h.ensure_arguments_count_min(2, EACH_WITH_SORT_HELPER)?;
+//     Ok(())
+//   }
+// }
