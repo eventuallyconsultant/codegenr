@@ -2,6 +2,9 @@ use super::handlebars_ext::HandlebarsExt;
 use super::string_ext::StringExt;
 use handlebars::{HelperDef, Renderable};
 
+pub const IF_NOT_EMPTY_HELPER: &str = "if_not_empty";
+pub const IF_EMPTY_HELPER: &str = "if_empty";
+
 /// Call the template if a non empty or whitespaces string is passed as parameter
 /// ```
 /// # use codegenr::custom::*;

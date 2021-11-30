@@ -21,8 +21,8 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   }
   handlebars.register_helper("debug", Box::new(DebugHelper));
   handlebars.register_helper("debug_ctx", Box::new(DebugCtxHelper));
-  handlebars.register_helper("if_empty", Box::new(IfEmptyHelper));
-  handlebars.register_helper("if_not_empty", Box::new(IfNotEmptyHelper));
+  handlebars.register_helper(IF_EMPTY_HELPER, Box::new(IfEmptyHelper));
+  handlebars.register_helper(IF_NOT_EMPTY_HELPER, Box::new(IfNotEmptyHelper));
   handlebars.register_helper("hex", Box::new(Hex));
   handlebars.register_helper(TRIM_HELPER, Box::new(TrimHelper));
   handlebars.register_helper(TRIM_START_HELPER, Box::new(TrimStartHelper));
@@ -32,6 +32,8 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(SPLIT_GET_FIRST_HELPER, Box::new(SplitGetFirstHelper));
   handlebars.register_helper(SPLIT_GET_LAST_HELPER, Box::new(SplitGetLastHelper));
   handlebars.register_helper(START_WITH_HELPER, Box::new(StartWithHelper));
+  handlebars.register_helper(WITH_MATCHING_HELPER, Box::new(WithMatchingHelper));
+  handlebars.register_helper(IF_ARRAY_CONTAINS, Box::new(IfArrayContainsHelper));
 
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
