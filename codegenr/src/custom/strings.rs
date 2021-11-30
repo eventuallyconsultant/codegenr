@@ -1,6 +1,6 @@
 use crate::custom::handlebars_ext::HandlebarsExt;
 use crate::custom::string_ext::StringExt;
-use handlebars::{HelperDef, RenderError, Renderable};
+use handlebars::{BlockContext, Context, HelperDef, RenderContext, RenderError, Renderable, ScopedJson};
 use serde_json::Value;
 
 pub const TRIM_HELPER: &str = "trim";
@@ -279,22 +279,31 @@ impl HelperDef for StartWithHelper {
   }
 }
 
-/// Determines whether the beginning of the second argumentmatches the second one (NON FONCTIONELLE, A CORRIGER)
+/// Execute the inner template with the matching parameter, when matching key is equal to the first parameter
+/// {{#with_matching some_value matching_key1 context1 mateching_key2 context2 ... }}
 ///```
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 ///
-/// //assert_eq!(
-///   //exec_template(json!({}), r#"{{#with_matching 'test' '1' '1', '2', '2'}}{{else}}NOT FOUND{{/with_matching}}"#),
-///   //"NOT FOUND"
-/// //);
-/// //assert_eq!(
-///   //exec_template(json!({}), r#"{{#with_matching "value1" "value2" "context1"}}{{.}}{{else}}NOT FOUND{{/with_matching}}"#),
-///   //"value2"
-/// //);
 /// assert_eq!(
-///   exec_template(json!({ "value": "42" }), r#"{{#with_matching value "42"}}{{value}}{{else}}NOT FOUND{{/with_matching}}"#),
-///   "42"
+///   exec_template(json!({}), r#"{{#with_matching "test" "1" "1" "2" "2"}}{{else}}NOT FOUND{{/with_matching}}"#),
+///   "NOT FOUND"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#with_matching "2" "1" "01" "2" "02"}}{{this}}{{else}}NOT FOUND{{/with_matching}}"#),
+///   "02"
+/// );
+/// assert_eq!(
+///   exec_template(json!({ "value": "42" }), r#"{{#with_matching value "42" "toto"}}{{this}}{{else}}NOT FOUND{{/with_matching}}"#),
+///   "toto"
+/// );
+/// assert_eq!(
+///   exec_template(json!({ "value": "42" }), r#"{{#with_matching value "43" "toto"}}{{this}}{{else}}NOT FOUND{{/with_matching}}"#),
+///   "NOT FOUND"
+/// );
+/// assert_eq!(
+///   exec_template(json!({ "value": "42" }), r#"{{#with_matching value "42" "toto"}}{{this}}{{else}}NOT FOUND{{/with_matching}}_and_{{value}}"#),
+///   "toto_and_42"
 /// );
 ///```
 pub struct WithMatchingHelper;
@@ -308,28 +317,36 @@ impl HelperDef for WithMatchingHelper {
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
     out: &mut dyn handlebars::Output,
   ) -> handlebars::HelperResult {
-    h.ensure_arguments_count(2, WITH_MATCHING_HELPER)?;
-    let value = h.get_param_as_str_or_fail(0, WITH_MATCHING_HELPER)?;
-    if value.len() % 2 != 1 {
+    h.ensure_arguments_count_min(3, WITH_MATCHING_HELPER)?;
+    let arguments_count = h.params().len();
+    if arguments_count % 2 != 1 {
       return Err(RenderError::new(format!(
-        " Arguments number for the {} helper must be an odd number",
+        "Arguments number for the '{}' helper must be an odd number.",
         WITH_MATCHING_HELPER
       )));
     }
+
+    let key = h.get_param_as_json_or_fail(0, WITH_MATCHING_HELPER)?;
+
     let mut pair_position = 1;
-    while pair_position < value.len() {
-      let match_key = h.get_param_as_str(pair_position);
-      if value.to_lowercase() == match_key.unwrap().to_lowercase() {
-        let temp = h.template();
-        if let Some(t) = temp {
-          t.render(handle, ctx, render_ctx, out)?
+    while pair_position < arguments_count {
+      let match_key = h.get_param_as_json_or_fail(pair_position, WITH_MATCHING_HELPER)?;
+      // todo: for strings, be case insensitive : value.to_lowercase() == match_key.unwrap().to_lowercase()
+      if key == match_key {
+        if let Some(t) = h.template() {
+          let match_value = h.get_param_as_json_or_fail(pair_position + 1, WITH_MATCHING_HELPER)?;
+          let mut block = BlockContext::new();
+          block.set_base_value(match_value.clone());
+          render_ctx.push_block(block);
+          t.render(handle, ctx, render_ctx, out)?;
+          render_ctx.pop_block();
         };
         return Ok(());
       }
       pair_position += 2;
     }
-    let temp = h.inverse();
-    if let Some(t) = temp {
+
+    if let Some(t) = h.inverse() {
       t.render(handle, ctx, render_ctx, out)?
     };
     Ok(())
