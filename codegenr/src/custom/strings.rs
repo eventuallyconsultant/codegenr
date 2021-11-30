@@ -1,6 +1,6 @@
 use crate::custom::handlebars_ext::HandlebarsExt;
 use crate::custom::string_ext::StringExt;
-use handlebars::{BlockContext, Context, HelperDef, RenderContext, RenderError, Renderable, ScopedJson};
+use handlebars::{BlockContext, HelperDef, RenderError, Renderable};
 use serde_json::Value;
 
 pub const TRIM_HELPER: &str = "trim";
