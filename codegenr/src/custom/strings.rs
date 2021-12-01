@@ -405,6 +405,36 @@ impl HelperDef for IfArrayContainsHelper {
   }
 }
 
+/// Trim start and end of a block output
+/// (all arguments are converted to string and case insensitive compared)
+///```
+/// # use codegenr::custom::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block " "}} 1,2,3,4 {{/trim_block}}"#),
+///   "1,2,3,4"
+/// );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block ","}}1,2,3,4{{/trim_block}}"#),
+// /   "1,2,3,4"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block ","}}1,2,3,4,{{/trim_block}}"#),
+// /   "1,2,3,4"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block ","}},1,2,3,4,{{/trim_block}}"#),
+// /   "1,2,3,4"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block ","}},,1,2,3,4,,{{/trim_block}}"#),
+// /   "1,2,3,4"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({"a": "42", "b": "42", "c": "42"}), r#"{{#trim_block ","}}{{#each this}}{{@key}},{{/each}}{{/trim_block}}"#),
+// /   "a,b,c"
+// / );
+///```
 pub struct TrimBlockHelper;
 
 impl HelperDef for TrimBlockHelper {
@@ -420,8 +450,8 @@ impl HelperDef for TrimBlockHelper {
       let mut buffer = StringOutput::new();
       t.render(handle, ctx, render_ctx, &mut buffer)?;
       let s = buffer.into_string()?;
-      // récuprer le 1er param (trimer)
-      // todo trim da string
+      let trimmer = h.get_param_as_str(0).map(|s| s.to_string());
+      s.trim_char(trimmer);
       out.write(&s)?;
     };
 
@@ -429,6 +459,113 @@ impl HelperDef for TrimBlockHelper {
   }
 }
 
+/// Trim start of a block output
+/// (all arguments are converted to string and case insensitive compared)
+///```
+/// # use codegenr::custom::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_start}} 1,2,3,4 {{/trim_block_start}}"#),
+///   "1,2,3,4 "
+/// );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block_start ','}}1,2,3,4{{/trim_block_start}}"#),
+// /   "1,2,3,4"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block_start ','}}1,2,3,4,{{/trim_block_start}}"#),
+// /   "1,2,3,4,"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block_start ','}},1,2,3,4,{{/trim_block_start}}"#),
+// /   "1,2,3,4,"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block_start ','}},,1,2,3,4,,{{/trim_block_start}}"#),
+// /   "1,2,3,4,,"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({"a": "42", "b": "42", "c": "42"}), r#"{{#trim_block_start ','}}{{#each this}}{{@key}},{{/each}}{{/trim_block_start}}"#),
+// /   "a,b,c,"
+// / );
+///```
+pub struct TrimBlockStartHelper;
+
+impl HelperDef for TrimBlockStartHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    if let Some(t) = h.template() {
+      let mut buffer = StringOutput::new();
+      t.render(handle, ctx, render_ctx, &mut buffer)?;
+      let s = buffer.into_string()?;
+      let trimmer = h.get_param_as_str(0).map(|s| s.to_string());
+      s.trim_start_char(trimmer);
+      out.write(&s)?;
+    };
+
+    Ok(())
+  }
+}
+
+/// Trim end of a block output
+/// (all arguments are converted to string and case insensitive compared)
+///```
+/// # use codegenr::custom::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_end " "}} 1,2,3,4 {{/trim_block}}"#),
+///   " 1,2,3,4"
+/// );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block_end ","}}1,2,3,4{{/trim_block}}"#),
+// /   "1,2,3,4"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block_end ","}}1,2,3,4,{{/trim_block}}"#),
+// /   "1,2,3,4"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block_end ","}},1,2,3,4,{{/trim_block}}"#),
+// /   ",1,2,3,4"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({}), r#"{{#trim_block_end ","}},,1,2,3,4,,{{/trim_block}}"#),
+// /   ",,1,2,3,4"
+// / );
+// / assert_eq!(
+// /   exec_template(json!({"a": "42", "b": "42", "c": "42"}), r#"{{#trim_block_end ","}}{{#each this}}{{@key}},{{/each}}{{/trim_block}}"#),
+// /   "a,b,c"
+// / );
+///```
+pub struct TrimBlockEndHelper;
+
+impl HelperDef for TrimBlockEndHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    if let Some(t) = h.template() {
+      let mut buffer = StringOutput::new();
+      t.render(handle, ctx, render_ctx, &mut buffer)?;
+      let s = buffer.into_string()?;
+      let trimmer = h.get_param_as_str(0).map(|s| s.to_string());
+      s.trim_end_char(trimmer);
+      out.write(&s)?;
+    };
+
+    Ok(())
+  }
+}
 // pub struct EachWithSortHelper;
 
 // impl HelperDef for EachWithSortHelper {
