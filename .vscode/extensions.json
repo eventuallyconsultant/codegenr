@@ -14,7 +14,8 @@
     "eamodio.gitlens",
     "ms-vsliveshare.vsliveshare",
     "shd101wyy.markdown-preview-enhanced",
-    "usernamehw.errorlens"
+    "usernamehw.errorlens",
+    "rhaiscript.vscode-rhai"
   ],
   // List of extensions recommended by VS Code that should not be recommended for users of this workspace.
   "unwantedRecommendations": [
