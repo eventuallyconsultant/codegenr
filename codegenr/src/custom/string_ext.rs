@@ -1,3 +1,5 @@
+use regex::Regex;
+
 pub trait StringExt {
   fn is_empty_or_whitespaces(&self) -> bool;
   fn split_get_first(&self, splitter: Option<String>) -> String;
@@ -13,6 +15,8 @@ pub trait StringExt {
   fn pascal_case(&self) -> String;
   fn camel_case(&self) -> String;
   fn snake_case(&self) -> String;
+
+  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String;
 }
 
 impl StringExt for Option<String> {
@@ -63,6 +67,10 @@ impl StringExt for Option<String> {
   fn snake_case(&self) -> String {
     self.as_ref().map_or(Default::default(), |s| s.snake_case())
   }
+
+  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String {
+    self.as_ref().map_or(Default::default(), |s| s.on_one_line(indent, line_break))
+  }
 }
 
 impl StringExt for String {
@@ -112,6 +120,10 @@ impl StringExt for String {
 
   fn snake_case(&self) -> String {
     self.as_str().snake_case()
+  }
+
+  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String {
+    self.as_str().on_one_line(indent, line_break)
   }
 }
 
@@ -238,6 +250,17 @@ impl StringExt for &str {
         (Some(false), Some(is_upper), s)
       });
     snake
+  }
+
+  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String {
+    let re = Regex::new(r#" *[\r\n]+ *"#).unwrap();
+    let r = re.replace_all(self, "");
+
+    let eol = if line_break.unwrap_or(true) { "\n" } else { "" };
+    let indent = indent.unwrap_or_default();
+
+    let result = format!("{:indent$}{}{}", "", r.trim(), eol, indent = indent as usize);
+    result
   }
 }
 

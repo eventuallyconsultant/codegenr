@@ -10,6 +10,8 @@ pub trait HandlebarsExt {
   fn get_param_as_json(&self, index: usize) -> Option<&Value>;
   fn get_param_as_json_or_fail(&self, index: usize, helper_name: &str) -> Result<&Value, RenderError>;
   fn get_param_as_array_or_fail(&self, index: usize, helper_name: &str) -> Result<&Vec<Value>, RenderError>;
+  fn get_param_as_bool(&self, index: usize) -> Option<bool>;
+  fn get_param_as_integer(&self, index: usize) -> Option<u64>;
 }
 
 impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
@@ -81,5 +83,11 @@ impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
         index, helper_name
       ))),
     }
+  }
+  fn get_param_as_bool(&self, index: usize) -> Option<bool> {
+    self.param(index).map(|p| p.value().as_bool()).flatten()
+  }
+  fn get_param_as_integer(&self, index: usize) -> Option<u64> {
+    self.param(index).map(|p| p.value().as_u64()).flatten()
   }
 }

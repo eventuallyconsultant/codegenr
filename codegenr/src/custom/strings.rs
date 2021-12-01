@@ -19,6 +19,7 @@ pub const EACH_WITH_SORT_HELPER: &str = "each_with_sort";
 pub const TRIM_BLOCK_HELPER: &str = "trim_block";
 pub const TRIM_BLOCK_START_HELPER: &str = "trim_block_start";
 pub const TRIM_BLOCK_END_HELPER: &str = "trim_block_end";
+pub const ONE_LINE_HELPER: &str = "one_line";
 
 /// Returns a string slice with leading and trailing whitespace removed.
 /// ```
@@ -562,6 +563,113 @@ impl HelperDef for TrimBlockEndHelper {
       let s = buffer.into_string()?;
       let trimmer = h.get_param_as_str(0).map(|s| s.to_string());
       out.write(&s.trim_end_char(trimmer))?;
+    };
+
+    Ok(())
+  }
+}
+
+/// Trim end of a block output
+/// (all arguments are converted to string and case insensitive compared)
+///```
+/// # use codegenr::custom::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}} {{/one_line}}"),
+/// "\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}} |do not < remove please >| {{/one_line}}"),
+///  "|do not < remove please >|\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}} \n {{/one_line}}"),
+/// "\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}\n {{/one_line}}"),
+/// "\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}\n{{/one_line}}"),
+/// "\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}} \r\n {{/one_line}}"),
+/// "\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}\r\n{{/one_line}}"),
+/// "\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}} test{{/one_line}}"),
+/// "test\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}} a \n z {{/one_line}}"),
+/// "az\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}a\n z{{/one_line}}"),
+/// "az\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}a\nz{{/one_line}}"),
+/// "az\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}a \r\n z{{/one_line}}"),
+/// "az\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}a \r\n \r\n \r\nz{{/one_line}}"),
+/// "az\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}test\r\n\r\n\r\ntest{{/one_line}}"),
+/// "testtest\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line 0 true}}test\r\n\r\n\r\ntest{{/one_line}}"),
+///  "testtest\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line 0 false}}test\r\n\r\n\r\ntest{{/one_line}}"),
+/// "testtest"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}{{/one_line}}"),
+///  "\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line}}   test {{/one_line}}"),
+/// "test\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#one_line 5}}test{{/one_line}}"),
+/// "     test\n"
+/// );
+///```
+pub struct OneLineHelper;
+
+impl HelperDef for OneLineHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    if let Some(t) = h.template() {
+      h.ensure_arguments_count_max(2, ONE_LINE_HELPER)?;
+      let mut buffer = StringOutput::new();
+      t.render(handle, ctx, render_ctx, &mut buffer)?;
+      let s = buffer.into_string()?;
+      let indent = h.get_param_as_integer(0);
+      let line_break = h.get_param_as_bool(1);
+      out.write(&s.on_one_line(indent, line_break))?;
     };
 
     Ok(())
