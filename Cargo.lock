@@ -109,6 +109,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "handlebars",
+ "once_cell",
  "path-dedot",
  "regex",
  "reqwest",

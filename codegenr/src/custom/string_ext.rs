@@ -1,5 +1,3 @@
-use regex::Regex;
-
 pub trait StringExt {
   fn is_empty_or_whitespaces(&self) -> bool;
   fn split_get_first(&self, splitter: Option<String>) -> String;
@@ -253,8 +251,7 @@ impl StringExt for &str {
   }
 
   fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String {
-    let re = Regex::new(r#" *[\r\n]+ *"#).unwrap();
-    let r = re.replace_all(self, "");
+    let r = ONE_LINER_REGEX.replace_all(self, "");
 
     let eol = if line_break.unwrap_or(true) { "\n" } else { "" };
     let indent = indent.unwrap_or_default();
@@ -264,9 +261,13 @@ impl StringExt for &str {
   }
 }
 
+static ONE_LINER_REGEX: once_cell::sync::Lazy<regex::Regex> =
+  once_cell::sync::Lazy::new(|| regex::Regex::new(r#" *[\r\n]+ *"#).expect("The ONE_LINER_REGEX regex did not compile."));
+
 fn is_out_of_case(c: char) -> bool {
   !(c.is_alphabetic() || c.is_numeric())
 }
+
 #[cfg(test)]
 mod test {
   use super::*;
