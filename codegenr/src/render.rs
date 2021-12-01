@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use walkdir::WalkDir;
 
-use crate::custom::handlebars_setup;
+use crate::helpers::handlebars_setup;
 
 const PARTIAL_TEMPLATE_PREFIX: &str = "_";
 const HANDLEBARS_TEMPLATE_EXTENSION: &str = ".hbs";

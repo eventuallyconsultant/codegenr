@@ -2,7 +2,7 @@ use handlebars::handlebars_helper;
 
 /// Return the hexadecimal representation of the integer value
 /// ```
-/// # use codegenr::custom::*;
+/// # use codegenr::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(serde_json::Value::Null, "{{hex 42}}"),
