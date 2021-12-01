@@ -17,6 +17,8 @@ pub const WITH_MATCHING_HELPER: &str = "with_matching";
 pub const IF_ARRAY_CONTAINS: &str = "if_array_contains";
 pub const EACH_WITH_SORT_HELPER: &str = "each_with_sort";
 pub const TRIM_BLOCK_HELPER: &str = "trim_block";
+pub const TRIM_BLOCK_START_HELPER: &str = "trim_block_start";
+pub const TRIM_BLOCK_END_HELPER: &str = "trim_block_end";
 
 /// Returns a string slice with leading and trailing whitespace removed.
 /// ```
@@ -414,26 +416,26 @@ impl HelperDef for IfArrayContainsHelper {
 ///   exec_template(json!({}), r#"{{#trim_block " "}} 1,2,3,4 {{/trim_block}}"#),
 ///   "1,2,3,4"
 /// );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block ","}}1,2,3,4{{/trim_block}}"#),
-// /   "1,2,3,4"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block ","}}1,2,3,4,{{/trim_block}}"#),
-// /   "1,2,3,4"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block ","}},1,2,3,4,{{/trim_block}}"#),
-// /   "1,2,3,4"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block ","}},,1,2,3,4,,{{/trim_block}}"#),
-// /   "1,2,3,4"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({"a": "42", "b": "42", "c": "42"}), r#"{{#trim_block ","}}{{#each this}}{{@key}},{{/each}}{{/trim_block}}"#),
-// /   "a,b,c"
-// / );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block ","}}1,2,3,4{{/trim_block}}"#),
+///   "1,2,3,4"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block ","}}1,2,3,4,{{/trim_block}}"#),
+///   "1,2,3,4"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block ","}},1,2,3,4,{{/trim_block}}"#),
+///   "1,2,3,4"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block ","}},,1,2,3,4,,{{/trim_block}}"#),
+///   "1,2,3,4"
+/// );
+/// assert_eq!(
+///   exec_template(json!({"a": "42", "b": "42", "c": "42"}), r#"{{#trim_block ","}}{{#each this}}{{@key}},{{/each}}{{/trim_block}}"#),
+///   "a,b,c"
+/// );
 ///```
 pub struct TrimBlockHelper;
 
@@ -451,8 +453,8 @@ impl HelperDef for TrimBlockHelper {
       t.render(handle, ctx, render_ctx, &mut buffer)?;
       let s = buffer.into_string()?;
       let trimmer = h.get_param_as_str(0).map(|s| s.to_string());
-      s.trim_char(trimmer);
-      out.write(&s)?;
+
+      out.write(&s.trim_char(trimmer))?;
     };
 
     Ok(())
@@ -468,26 +470,26 @@ impl HelperDef for TrimBlockHelper {
 ///   exec_template(json!({}), r#"{{#trim_block_start}} 1,2,3,4 {{/trim_block_start}}"#),
 ///   "1,2,3,4 "
 /// );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block_start ','}}1,2,3,4{{/trim_block_start}}"#),
-// /   "1,2,3,4"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block_start ','}}1,2,3,4,{{/trim_block_start}}"#),
-// /   "1,2,3,4,"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block_start ','}},1,2,3,4,{{/trim_block_start}}"#),
-// /   "1,2,3,4,"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block_start ','}},,1,2,3,4,,{{/trim_block_start}}"#),
-// /   "1,2,3,4,,"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({"a": "42", "b": "42", "c": "42"}), r#"{{#trim_block_start ','}}{{#each this}}{{@key}},{{/each}}{{/trim_block_start}}"#),
-// /   "a,b,c,"
-// / );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_start ","}}1,2,3,4{{/trim_block_start}}"#),
+///   "1,2,3,4"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_start ","}}1,2,3,4,{{/trim_block_start}}"#),
+///   "1,2,3,4,"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_start ","}},1,2,3,4,{{/trim_block_start}}"#),
+///   "1,2,3,4,"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_start ","}},,1,2,3,4,,{{/trim_block_start}}"#),
+///   "1,2,3,4,,"
+/// );
+/// assert_eq!(
+///   exec_template(json!({"a": "42", "b": "42", "c": "42"}), r#"{{#trim_block_start ","}}{{#each this}}{{@key}},{{/each}}{{/trim_block_start}}"#),
+///   "a,b,c,"
+/// );
 ///```
 pub struct TrimBlockStartHelper;
 
@@ -505,8 +507,8 @@ impl HelperDef for TrimBlockStartHelper {
       t.render(handle, ctx, render_ctx, &mut buffer)?;
       let s = buffer.into_string()?;
       let trimmer = h.get_param_as_str(0).map(|s| s.to_string());
-      s.trim_start_char(trimmer);
-      out.write(&s)?;
+
+      out.write(&s.trim_start_char(trimmer))?;
     };
 
     Ok(())
@@ -519,29 +521,29 @@ impl HelperDef for TrimBlockStartHelper {
 /// # use codegenr::custom::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   exec_template(json!({}), r#"{{#trim_block_end " "}} 1,2,3,4 {{/trim_block}}"#),
+///   exec_template(json!({}), r#"{{#trim_block_end " "}} 1,2,3,4 {{/trim_block_end}}"#),
 ///   " 1,2,3,4"
 /// );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block_end ","}}1,2,3,4{{/trim_block}}"#),
-// /   "1,2,3,4"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block_end ","}}1,2,3,4,{{/trim_block}}"#),
-// /   "1,2,3,4"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block_end ","}},1,2,3,4,{{/trim_block}}"#),
-// /   ",1,2,3,4"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({}), r#"{{#trim_block_end ","}},,1,2,3,4,,{{/trim_block}}"#),
-// /   ",,1,2,3,4"
-// / );
-// / assert_eq!(
-// /   exec_template(json!({"a": "42", "b": "42", "c": "42"}), r#"{{#trim_block_end ","}}{{#each this}}{{@key}},{{/each}}{{/trim_block}}"#),
-// /   "a,b,c"
-// / );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_end ","}}1,2,3,4{{/trim_block_end}}"#),
+///   "1,2,3,4"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_end ","}}1,2,3,4,{{/trim_block_end}}"#),
+///   "1,2,3,4"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_end ","}},1,2,3,4,{{/trim_block_end}}"#),
+///   ",1,2,3,4"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#trim_block_end ","}},,1,2,3,4,,{{/trim_block_end}}"#),
+///   ",,1,2,3,4"
+/// );
+/// assert_eq!(
+///   exec_template(json!({"a": "42", "b": "42", "c": "42"}), r#"{{#trim_block_end ","}}{{#each this}}{{@key}},{{/each}}{{/trim_block_end}}"#),
+///   "a,b,c"
+/// );
 ///```
 pub struct TrimBlockEndHelper;
 
@@ -559,8 +561,7 @@ impl HelperDef for TrimBlockEndHelper {
       t.render(handle, ctx, render_ctx, &mut buffer)?;
       let s = buffer.into_string()?;
       let trimmer = h.get_param_as_str(0).map(|s| s.to_string());
-      s.trim_end_char(trimmer);
-      out.write(&s)?;
+      out.write(&s.trim_end_char(trimmer))?;
     };
 
     Ok(())

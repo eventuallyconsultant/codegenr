@@ -39,6 +39,8 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(WITH_MATCHING_HELPER, Box::new(WithMatchingHelper));
   handlebars.register_helper(IF_ARRAY_CONTAINS, Box::new(IfArrayContainsHelper));
   handlebars.register_helper(TRIM_BLOCK_HELPER, Box::new(TrimBlockHelper));
+  handlebars.register_helper(TRIM_BLOCK_START_HELPER, Box::new(TrimBlockStartHelper));
+  handlebars.register_helper(TRIM_BLOCK_END_HELPER, Box::new(TrimBlockEndHelper));
   //handlebars.register_helper(EACH_WITH_SORT_HELPER, Box::new(EachWithSortHelper));
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
