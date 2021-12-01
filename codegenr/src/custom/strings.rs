@@ -631,7 +631,7 @@ impl HelperDef for TrimBlockEndHelper {
 /// "testtest\n"
 /// );
 /// assert_eq!(
-///   exec_template(json!({}), "{{#one_line 0 true}}test\r\n\r\n\r\ntest{{/one_line}}"),
+///   exec_template(json!({}), "{{#one_line 0 \"true\"}}test\r\n\r\n\r\ntest{{/one_line}}"),
 ///  "testtest\n"
 /// );
 /// assert_eq!(

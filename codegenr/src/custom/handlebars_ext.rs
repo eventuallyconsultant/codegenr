@@ -85,9 +85,20 @@ impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
     }
   }
   fn get_param_as_bool(&self, index: usize) -> Option<bool> {
-    self.param(index).map(|p| p.value().as_bool()).flatten()
+    self.param(index).map(|p| is_truthy(p.value()))
   }
   fn get_param_as_integer(&self, index: usize) -> Option<u64> {
     self.param(index).map(|p| p.value().as_u64()).flatten()
+  }
+}
+
+fn is_truthy(json: &Value) -> bool {
+  match *json {
+    Value::Bool(ref i) => *i,
+    Value::Number(ref n) => n.as_f64().map(|f| !f.is_nan()).unwrap_or(false),
+    Value::Null => false,
+    Value::String(ref i) => !i.is_empty() && i.to_lowercase() == "true",
+    Value::Array(ref i) => !i.is_empty(),
+    Value::Object(ref i) => !i.is_empty(),
   }
 }
