@@ -4,6 +4,7 @@ use handlebars::Handlebars;
 
 pub fn handlebars_setup(handlebars: &mut Handlebars) -> Result<(), anyhow::Error> {
   handlebars_add_script(handlebars, "./_samples/rhai/param_0_len.rhai")?;
+  handlebars_add_script(handlebars, "./_samples/rhai/concat.rhai")?;
   Ok(())
 }
 pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: &str) -> Result<(), anyhow::Error> {
@@ -30,7 +31,8 @@ mod test {
   // use test_case::test_case;
 
   #[test]
-  fn t() {
-    assert_eq!(exec_template(json!({"key": "value"}), "{{param_0_len \"plop\"}}"), "4")
+  fn tests() {
+    assert_eq!(exec_template(json!({}), "{{param_0_len \"plop\"}}"), "4");
+    assert_eq!(exec_template(json!({"a": "aa", "b": "bb"}), "{{concat a b}}"), "aabb");
   }
 }
