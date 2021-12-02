@@ -1,3 +1,5 @@
+use regex::Regex;
+
 pub trait StringExt {
   fn is_empty_or_whitespaces(&self) -> bool;
   fn split_get_first(&self, splitter: Option<String>) -> String;
@@ -15,7 +17,11 @@ pub trait StringExt {
   fn snake_case(&self) -> String;
 
   fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String;
+
+  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error>;
 }
+
+// impl<T> StringExt for T where T: AsRef<str> {}
 
 impl StringExt for Option<String> {
   fn is_empty_or_whitespaces(&self) -> bool {
@@ -68,6 +74,13 @@ impl StringExt for Option<String> {
 
   fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String {
     self.as_ref().map_or(Default::default(), |s| s.on_one_line(indent, line_break))
+  }
+
+  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
+    // self
+    //   .as_ref()
+    //   .map_or(Default::default(), |s| s.regex_extract(regex_extractor, regex_replacer, separator))
+    todo!()
   }
 }
 
@@ -122,6 +135,10 @@ impl StringExt for String {
 
   fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String {
     self.as_str().on_one_line(indent, line_break)
+  }
+
+  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
+    todo!()
   }
 }
 
@@ -259,6 +276,23 @@ impl StringExt for &str {
     let result = format!("{:indent$}{}{}", "", r.trim(), eol, indent = indent as usize);
     result
   }
+
+  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
+    let regex_extr = Regex::new(regex_extractor)?;
+    let regex_repl = regex_replacer.unwrap_or("$1");
+    //let separator = separator.unwrap_or(", ");
+
+    let mut s = Vec::new();
+    for m in regex_extr.find_iter(self) {
+      //dbg!(&m);
+      let value = Regex::new(m.as_str())?;
+      let replaced = value.replace(self, regex_repl);
+      s.push(replaced);
+      //dbg!(&s);
+    }
+
+    Ok(s.into_iter().collect())
+  }
 }
 
 static ONE_LINER_REGEX: once_cell::sync::Lazy<regex::Regex> =
@@ -272,6 +306,16 @@ fn is_out_of_case(c: char) -> bool {
 mod test {
   use super::*;
   use test_case::test_case;
+
+  #[test_case("10234510", "[^01]+", None, None, "1010")]
+  //#[test_case("/user/{username}", "{([^}]*)}", Some("$1"), None, "username")]
+  //#[test_case("/user/{username}", "{([^}]*)}", Some("$1"), None, "username", "id")]
+  //#[test_case("/user/{username}", "{([^}]*)}", Some("<$1>"), Some("|"), "<sername>|<id>")]
+  // #[test_case()]
+  fn regex_extract_tests(arg: &str, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>, expected: &str) {
+    let result = arg.regex_extract(regex_extractor, regex_replacer, separator).unwrap();
+    assert_eq!(result, expected);
+  }
 
   #[test_case(" ", true)]
   #[test_case("  \t\n ", true)]
