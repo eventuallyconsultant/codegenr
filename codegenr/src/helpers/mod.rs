@@ -1,4 +1,6 @@
 use handlebars::Handlebars;
+use serde_json::Value;
+use std::collections::HashMap;
 
 pub mod handlebars_ext;
 pub mod string_ext;
@@ -15,8 +17,10 @@ mod getset;
 pub use getset::*;
 mod equals;
 pub use equals::*;
+mod params;
+pub use params::*;
 
-pub fn handlebars_setup(handlebars: &mut Handlebars) {
+pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<String, Value>) {
   #[cfg(debug_assertions)]
   {
     handlebars.set_dev_mode(true);
@@ -50,11 +54,20 @@ pub fn handlebars_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(WITH_SET_HELPER, Box::new(WithSetHelper::new(&map)));
   handlebars.register_helper(IF_SET_HELPER, Box::new(IfGetHelper::new(&map)));
   handlebars.register_helper(CLEAR_HELPER, Box::new(ClearHelper::new(&map)));
+
+  handlebars.register_helper(GLOBAL_PARAMETERS_HELPER, Box::new(GlobalparameterHelper::new(global_params)));
 }
 
 pub fn exec_template(json: serde_json::Value, template: &str) -> String {
   let mut h = Handlebars::new();
-  handlebars_setup(&mut h);
+  handlebars_setup(&mut h, Default::default());
+  h.register_template_string("test", template).expect("Could not register template.");
+  h.render("test", &json).expect("Template render returned an error.")
+}
+
+pub fn exec_template_with_global_params(json: serde_json::Value, template: &str, global_params: HashMap<String, Value>) -> String {
+  let mut h = Handlebars::new();
+  handlebars_setup(&mut h, global_params);
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
 }
