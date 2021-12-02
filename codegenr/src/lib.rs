@@ -33,7 +33,7 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
   let templates = TemplateCollection::from_list(all_templates)?;
 
   let mut handlebars = Handlebars::new();
-  helpers::handlebars_setup(&mut handlebars);
+  helpers::handlebars_setup(&mut handlebars, todo!());
   // custom::handlebars_setup(&mut handlebars);
 
   let rendered = templates.render(&json, handlebars)?;
