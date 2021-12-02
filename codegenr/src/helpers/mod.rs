@@ -56,5 +56,5 @@ pub fn exec_template(json: serde_json::Value, template: &str) -> String {
   let mut h = Handlebars::new();
   handlebars_setup(&mut h);
   h.register_template_string("test", template).expect("Could not register template.");
-  h.render("test", &json).expect("Template render returned an error")
+  h.render("test", &json).expect("Template render returned an error.")
 }
