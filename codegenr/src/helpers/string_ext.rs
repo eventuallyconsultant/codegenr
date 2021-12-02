@@ -277,21 +277,19 @@ impl StringExt for &str {
     result
   }
 
-  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
+  fn regex_extract(&self, regex_extractor: &str, replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
     let regex_extr = Regex::new(regex_extractor)?;
-    let regex_repl = regex_replacer.unwrap_or("$1");
-    //let separator = separator.unwrap_or(", ");
+    let replacer = replacer.unwrap_or("$1");
+    let separator = separator.unwrap_or(", ");
 
-    let mut s = Vec::new();
+    let mut values = Vec::new();
     for m in regex_extr.find_iter(self) {
-      //dbg!(&m);
-      let value = Regex::new(m.as_str())?;
-      let replaced = value.replace(self, regex_repl);
-      s.push(replaced);
-      //dbg!(&s);
+      let matched = m.as_str();
+      let replaced = regex_extr.replace(matched, replacer);
+      values.push(replaced.to_string());
     }
 
-    Ok(s.into_iter().collect())
+    Ok(values.join(separator))
   }
 }
 
@@ -307,11 +305,9 @@ mod test {
   use super::*;
   use test_case::test_case;
 
-  #[test_case("10234510", "[^01]+", None, None, "1010")]
-  //#[test_case("/user/{username}", "{([^}]*)}", Some("$1"), None, "username")]
-  //#[test_case("/user/{username}", "{([^}]*)}", Some("$1"), None, "username", "id")]
-  //#[test_case("/user/{username}", "{([^}]*)}", Some("<$1>"), Some("|"), "<sername>|<id>")]
-  // #[test_case()]
+  #[test_case("/user/{username}", "\\{([^}]*)}", Some("$1"), None, "username")]
+  #[test_case("/user/{username}/{id}", "\\{([^}]*)}", Some("$1"), None, "username, id")]
+  #[test_case("/user/{username}/{id}", "\\{([^}]*)}", Some("<$1>"), Some("|"), "<username>|<id>")]
   fn regex_extract_tests(arg: &str, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>, expected: &str) {
     let result = arg.regex_extract(regex_extractor, regex_replacer, separator).unwrap();
     assert_eq!(result, expected);
