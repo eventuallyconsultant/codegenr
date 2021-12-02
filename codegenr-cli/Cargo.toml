@@ -1,0 +1,18 @@
+[package]
+name = "codegenr-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your@email.com>"]
+description = "Fast json/yaml/openapi code generator base on handlebars templating."
+readme = "README.md"
+homepage = "https://github.com/eventuallyconsultant/codegenr/"
+repository = "https://github.com/eventuallyconsultant/codegenr/"
+keywords = ["codegen", "openapi", "api-first", "contract-first", "swagger", "api"]
+categories = ["development-tools"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+codegenr = { path="../codegenr" }
+structopt = "0.3.23"
+anyhow = "1.0.44"

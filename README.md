@@ -26,3 +26,4 @@ A rewrite of the C# [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 ## Some command lines
 
 - `cargo doc --open` to open the documentation for `codegenr`
+- `cargo install --path codegenr-cli` installs codegenr command line from sources

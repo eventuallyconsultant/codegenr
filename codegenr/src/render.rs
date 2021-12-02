@@ -49,6 +49,14 @@ impl TemplateCollection {
 
     Ok(Self { main, partials })
   }
+
+  pub fn render(&self, json: &Value, mut handlebars: Handlebars) -> Result<String, anyhow::Error> {
+    handlebars.register_template_file("main", self.main.file_path())?;
+    for (_, value) in self.partials.iter() {
+      handlebars.register_template_file(value.template_name(), value.file_path())?
+    }
+    Ok(handlebars.render("main", json)?)
+  }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -113,20 +121,6 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, any
   Ok(result)
 }
 
-#[allow(dead_code)] //todo: remove when used
-fn render_collection(templates: TemplateCollection, json: &Value) -> Result<String, anyhow::Error> {
-  let mut reg = Handlebars::new();
-  handlebars_setup(&mut reg);
-  // for each template ->( main puis partials ) register
-  //templates.main.template_name()
-  reg.register_template_file("main", templates.main.file_path())?;
-  for (_, value) in templates.partials {
-    reg.register_template_file(value.template_name(), value.file_path())?
-  }
-
-  Ok(reg.render("main", json)?)
-}
-
 #[cfg(test)]
 mod test {
   use super::*;
@@ -142,9 +136,9 @@ mod test {
 
     // println!("{:?}", json);
 
-    let result = render_collection(collection, &json)?;
+    let result = collection.render(&json, Handlebars::new())?;
     dbg!(result);
-    // let mut reg = Handlebars::new();
+    // let mut reg = Handlebars::nemw();
     // reg.register_template_string("tpl_1", "Good afternoon, {{name}}")?;
     // println!("{}", reg.render("tpl_1", &json)?);
 
