@@ -5,7 +5,7 @@ fn main() {
   println!("===================================================================");
   println!("Default handlebars configuration :\n{:#?}", h);
 
-  handlebars_setup(&mut h);
+  handlebars_setup(&mut h, Default::default());
   println!("===================================================================");
   println!("codegenr handlebars configuration :\n{:#?}", h);
 }
