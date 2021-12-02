@@ -1,15 +1,15 @@
 pub mod custom;
 pub mod helpers;
 pub mod loader;
+pub mod processor;
 pub mod render;
 pub mod resolver;
 
-use custom::*;
-use handlebars::Handlebars;
-use helpers::*;
 use loader::*;
 use render::*;
 use resolver::*;
+
+use handlebars::Handlebars;
 
 #[derive(Debug)]
 pub struct Options {

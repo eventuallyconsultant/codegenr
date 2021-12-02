@@ -13,6 +13,7 @@ url = "2.2.2"
 path-dedot = "3.0.14"
 reqwest = { version = "0.11", features = ["blocking"] }
 walkdir = "2"
+glob = "0.3"
 # Json & Yaml manipulation
 serde_json = { version = "1.0.68", features = ["preserve_order"] }
 serde_yaml = "0.8.21"
