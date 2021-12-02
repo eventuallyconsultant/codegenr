@@ -677,72 +677,88 @@ impl HelperDef for OneLineHelper {
   }
 }
 
-/// Trim end of a block output
-/// (all arguments are converted to string and case insensitive compared)
+// /// Trim end of a block output
+// /// (all arguments are converted to string and case insensitive compared)
+// ///```
+// /// # use codegenr::helpers::*;
+// /// # use serde_json::json;
+// /// assert_eq!(
+// ///   exec_template(json!([{t: 'c'}, {t: 'a'}, {t: 'b'}]), r#"{{#each .}}{{t}}{{/each}}"#),
+// ///   "cab"
+// /// );
+// /// assert_eq!(
+// ///   exec_template(json!([{t: 'c'}, {t: 'a'}, {t: 'b'}]), r#"{{#each_with_sort . 't'}}{{#each .}}{{t}}{{/each}}{{/each_with_sort}}"#),
+// ///   "abc"
+// /// );
+// /// assert_eq!(
+// ///   exec_template(json!({[]}), r#"{{#each_with_sort . .}}{{/each_with_sort}}"#),
+// ///   ""
+// /// );
+// /// assert_eq!(
+// ///   exec_template(json!({ a : {}, b : {} }), r#"{{#each_with_sort .}}{{#each .}}{{@key}}{{/each}}{{/each_with_sort}}"#),
+// ///   "ab"
+// /// );
+// /// assert_eq!(
+// ///   exec_template(json!({ b : {}, a : {} }), r#"{{#each_with_sort .}}{{#each .}}{{@key}}{{/each}}{{/each_with_sort}}"#),
+// ///   "ab"
+// /// );
+// /// assert_eq!(
+// ///   exec_template(json!({\r\n{\r\n "swagger": "2.0",\r\n "info": {\r\n "title": "Marketplace Gateway API - Feeds",\r\n ...), r#"{{#each_with_sort parameters}}{{#each .}}{{@key}},{{/each}}{{/each_with_sort}}"#),
+// ///   "accountIdParameter,credentialParameter,feedTypeParameter,marketplaceBusinessCodeParameter,publicationIdParameter,"
+// /// );
+// ///```
+// pub struct EachWithSortHelper;
+
+// impl HelperDef for EachWithSortHelper {
+//   fn call<'reg: 'rc, 'rc>(
+//     &self,
+//     h: &handlebars::Helper<'reg, 'rc>,
+//     handle: &'reg handlebars::Handlebars<'reg>,
+//     ctx: &'rc handlebars::Context,
+//     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+//     out: &mut dyn handlebars::Output,
+//   ) -> handlebars::HelperResult {
+//     h.ensure_arguments_count_min(1, EACH_WITH_SORT_HELPER)?;
+//     h.ensure_arguments_count_min(2, EACH_WITH_SORT_HELPER)?;
+
+//     Ok(())
+//   }
+// }
+
+/// Extract and transform a list of values.
 ///```
 /// # use codegenr::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   exec_template(json!([{t: 'c'}, {t: 'a'}, {t: 'b'}]), r#"{{#each .}}{{t}}{{/each}}"#),
-///   "cab"
+///   exec_template(json!({"test": "/user/{username}"}), r#"{{regex_extract test "\\{([^}]*)}" "$1"}}"#),
+///   "username"
 /// );
 /// assert_eq!(
-///   exec_template(json!([{t: 'c'}, {t: 'a'}, {t: 'b'}]), r#"{{#each_with_sort . 't'}}{{#each .}}{{t}}{{/each}}{{/each_with_sort}}"#),
-///   "abc"
+///   exec_template(json!({"test": "/user/{username}/{id}"}), r#"{{regex_extract test "\\{([^}]*)}" "$1"}}"#),
+///   "username, id"
 /// );
 /// assert_eq!(
-///   exec_template(json!({[]}), r#"{{#each_with_sort . .}}{{/each_with_sort}}"#),
-///   ""
-/// );
-/// assert_eq!(
-///   exec_template(json!({ a : {}, b : {} }), r#"{{#each_with_sort .}}{{#each .}}{{@key}}{{/each}}{{/each_with_sort}}"#),
-///   "ab"
-/// );
-/// assert_eq!(
-///   exec_template(json!({ b : {}, a : {} }), r#"{{#each_with_sort .}}{{#each .}}{{@key}}{{/each}}{{/each_with_sort}}"#),
-///   "ab"
-/// );
-/// assert_eq!(
-///   exec_template(json!({\r\n{\r\n "swagger": "2.0",\r\n "info": {\r\n "title": "Marketplace Gateway API - Feeds",\r\n ...), r#"{{#each_with_sort parameters}}{{#each .}}{{@key}},{{/each}}{{/each_with_sort}}"#),
-///   "accountIdParameter,credentialParameter,feedTypeParameter,marketplaceBusinessCodeParameter,publicationIdParameter,"
+///   exec_template(json!({"test": "/user/{username}/{id}"}), r#"{{regex_extract test "\\{([^}]*)}" "<$1>" "|" }}"#),
+///   "&lt;username&gt;|&lt;id&gt;"
 /// );
 ///```
-pub struct EachWithSortHelper;
-
-impl HelperDef for EachWithSortHelper {
-  fn call<'reg: 'rc, 'rc>(
-    &self,
-    h: &handlebars::Helper<'reg, 'rc>,
-    handle: &'reg handlebars::Handlebars<'reg>,
-    ctx: &'rc handlebars::Context,
-    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
-    out: &mut dyn handlebars::Output,
-  ) -> handlebars::HelperResult {
-    h.ensure_arguments_count_min(1, EACH_WITH_SORT_HELPER)?;
-    h.ensure_arguments_count_min(2, EACH_WITH_SORT_HELPER)?;
-
-    Ok(())
-  }
-}
-// "{ test: \"/user/{username}\" }",    "{{regex_extract test '{([^}]*)}', '$1'}}", "username"
-// "{ test: \"/user/{username}/{id}\" }", "{{regex_extract test '{([^}]*)}', '$1'}}", "username, id"
-// "{ test: \"/user/{username}/{id}\" }", "{{regex_extract test '{([^}]*)}', '<$1>', '|'}}", "<username>|<id>"
 pub struct RegegExtractHelper;
 
 impl HelperDef for RegegExtractHelper {
-  fn call<'reg: 'rc, 'rc>(
+  fn call_inner<'reg: 'rc, 'rc>(
     &self,
     h: &handlebars::Helper<'reg, 'rc>,
-    handle: &'reg handlebars::Handlebars<'reg>,
-    ctx: &'rc handlebars::Context,
-    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
-    out: &mut dyn handlebars::Output,
-  ) -> handlebars::HelperResult {
-    let arg = h.get_param_as_str_or_fail(0, REGEX_EXTRACT_HELPER);
-    let regex_patern = h.get_param_as_str_or_fail(1, REGEX_EXTRACT_HELPER);
-    let regex_replacement = h.get_param_as_str_or_fail(2, REGEX_EXTRACT_HELPER);
-    let other_params = h.get_param_as_str(3);
-
-    Ok(())
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    let arg = h.get_param_as_str_or_fail(0, REGEX_EXTRACT_HELPER)?;
+    let regex_patern = h.get_param_as_str_or_fail(1, REGEX_EXTRACT_HELPER)?;
+    let regex_replacement = h.get_param_as_str_or_fail(2, REGEX_EXTRACT_HELPER)?;
+    let separator = h.get_param_as_str(3);
+    let result = arg
+      .regex_extract(regex_patern, Some(regex_replacement), separator)
+      .map_err(|e| RenderError::new(format!("{} error: '{}'.", REGEX_EXTRACT_HELPER, e)))?;
+    Ok(handlebars::ScopedJson::Derived(Value::String(result)))
   }
 }
