@@ -116,7 +116,7 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, any
 #[allow(dead_code)] //todo: remove when used
 fn render_collection(templates: TemplateCollection, json: &Value) -> Result<String, anyhow::Error> {
   let mut reg = Handlebars::new();
-  handlebars_setup(&mut reg);
+  handlebars_setup(&mut reg, Default::default());
   // for each template ->( main puis partials ) register
   //templates.main.template_name()
   reg.register_template_file("main", templates.main.file_path())?;
