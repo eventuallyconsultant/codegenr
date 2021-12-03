@@ -20,6 +20,7 @@ pub const TRIM_BLOCK_HELPER: &str = "trim_block";
 pub const TRIM_BLOCK_START_HELPER: &str = "trim_block_start";
 pub const TRIM_BLOCK_END_HELPER: &str = "trim_block_end";
 pub const ONE_LINE_HELPER: &str = "one_line";
+pub const NO_EMPTY_LINES_HELPER: &str = "no_empty_lines";
 pub const REGEX_EXTRACT_HELPER: &str = "regex_extract";
 
 /// Returns a string slice with leading and trailing whitespace removed.
@@ -673,6 +674,46 @@ impl HelperDef for OneLineHelper {
       out.write(&s.on_one_line(indent, line_break))?;
     };
 
+    Ok(())
+  }
+}
+
+/// Removes empty lines from the block
+///```
+/// # use codegenr::helpers::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({}), "{{#no_empty_lines}} {{/no_empty_lines}}"),
+/// ""
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#no_empty_lines}}a\n \t \nb{{/no_empty_lines}}"),
+/// "a\nb"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#no_empty_lines}}\r\na\n \t \nb\r\nc\r\n\r\n{{/no_empty_lines}}"),
+/// "a\nb\nc"
+/// );
+///```
+pub struct NoEmptyLinesHelper;
+
+impl HelperDef for NoEmptyLinesHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    if let Some(t) = h.template() {
+      h.ensure_arguments_count_max(2, ONE_LINE_HELPER)?;
+      let mut buffer = StringOutput::new();
+      t.render(handle, ctx, render_ctx, &mut buffer)?;
+      let s = buffer.into_string()?;
+      let result: String = s.lines().filter(|s| !s.trim().is_empty()).collect::<Vec<_>>().join("\n");
+      out.write(&result)?;
+    };
     Ok(())
   }
 }
