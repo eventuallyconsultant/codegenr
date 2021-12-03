@@ -47,7 +47,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(TRIM_BLOCK_END_HELPER, Box::new(TrimBlockEndHelper));
   handlebars.register_helper(ONE_LINE_HELPER, Box::new(OneLineHelper));
   handlebars.register_helper(REGEX_EXTRACT_HELPER, Box::new(RegexExtractHelper));
-  //handlebars.register_helper(EACH_WITH_SORT_HELPER, Box::new(EachWithSortHelper));
+  // handlebars.register_helper(EACH_WITH_SORT_HELPER, Box::new(EachWithSortHelper));
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
   handlebars.register_helper(SET_HELPER, Box::new(SetHelper::new(&map)));

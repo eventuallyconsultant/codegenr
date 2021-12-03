@@ -1,7 +1,6 @@
 use crate::helpers::handlebars_ext::HandlebarsExt;
 use crate::helpers::string_ext::StringExt;
-use handlebars::{to_json, BlockContext, BlockParams, Helper, HelperDef, PathAndJson, RenderError, Renderable, StringOutput};
-use serde_json::value::Value as Json;
+use handlebars::{BlockContext, HelperDef, RenderError, Renderable, StringOutput};
 use serde_json::Value;
 
 pub const TRIM_HELPER: &str = "trim";
@@ -716,201 +715,216 @@ impl HelperDef for RegexExtractHelper {
   }
 }
 
-// /// Trim end of a block output
-// /// (all arguments are converted to string and case insensitive compared)
-// ///```
-// /// # use codegenr::helpers::*;
-// /// # use serde_json::json;
-// /// assert_eq!(
-// ///   exec_template(json!([{t: 'c'}, {t: 'a'}, {t: 'b'}]), r#"{{#each .}}{{t}}{{/each}}"#),
-// ///   "cab"
-// /// );
-// /// assert_eq!(
-// ///   exec_template(json!([{t: 'c'}, {t: 'a'}, {t: 'b'}]), r#"{{#each_with_sort . 't'}}{{#each .}}{{t}}{{/each}}{{/each_with_sort}}"#),
-// ///   "abc"
-// /// );
-// /// assert_eq!(
-// ///   exec_template(json!({[]}), r#"{{#each_with_sort . .}}{{/each_with_sort}}"#),
-// ///   ""
-// /// );
-// /// assert_eq!(
-// ///   exec_template(json!({ a : {}, b : {} }), r#"{{#each_with_sort .}}{{#each .}}{{@key}}{{/each}}{{/each_with_sort}}"#),
-// ///   "ab"
-// /// );
-// /// assert_eq!(
-// ///   exec_template(json!({ b : {}, a : {} }), r#"{{#each_with_sort .}}{{#each .}}{{@key}}{{/each}}{{/each_with_sort}}"#),
-// ///   "ab"
-// /// );
-// /// assert_eq!(
-// ///   exec_template(json!({\r\n{\r\n "swagger": "2.0",\r\n "info": {\r\n "title": "Marketplace Gateway API - Feeds",\r\n ...), r#"{{#each_with_sort parameters}}{{#each .}}{{@key}},{{/each}}{{/each_with_sort}}"#),
-// ///   "accountIdParameter,credentialParameter,feedTypeParameter,marketplaceBusinessCodeParameter,publicationIdParameter,"
-// /// );
-// ///```
-pub struct EachWithSortHelper;
+///// Trim end of a block output
+///// (all arguments are converted to string and case insensitive compared)
+/////```
+///// # use codegenr::helpers::*;
+///// # use serde_json::json;
+///// assert_eq!(
+/////   exec_template(json!([{"t": "c"}, {"t": "a"}, {"t": "b"}]), r#"{{#each this}}{{t}}{{/each}}"#),
+/////   "cab"
+///// );
+///// assert_eq!(
+/////   exec_template(json!([{"t": "c"}, {"t": "a"}, {"t": "b"}]), r#"{{#each_with_sort this "t/a/"}}{{t}}{{/each_with_sort}}"#),
+/////   "abc"
+///// );
+///// assert_eq!(
+/////   exec_template(json!([{t: 'c'}, {t: 'a'}, {t: 'b'}]), r#"{{#each_with_sort . 't'}}{{#each .}}{{t}}{{/each}}{{/each_with_sort}}"#),
+/////   "abc"
+///// );
+///// assert_eq!(
+/////   exec_template(json!({[]}), r#"{{#each_with_sort . .}}{{/each_with_sort}}"#),
+/////   ""
+///// );
+///// assert_eq!(
+/////   exec_template(json!({ a : {}, b : {} }), r#"{{#each_with_sort .}}{{#each .}}{{@key}}{{/each}}{{/each_with_sort}}"#),
+/////   "ab"
+///// );
+///// assert_eq!(
+/////   exec_template(json!({ b : {}, a : {} }), r#"{{#each_with_sort .}}{{#each .}}{{@key}}{{/each}}{{/each_with_sort}}"#),
+/////   "ab"
+///// );
+///// assert_eq!(
+/////   exec_template(json!({\r\n{\r\n "swagger": "2.0",\r\n "info": {\r\n "title": "Marketplace Gateway API - Feeds",\r\n ...), r#"{{#each_with_sort parameters}}{{#each .}}{{@key}},{{/each}}{{/each_with_sort}}"#),
+/////   "accountIdParameter,credentialParameter,feedTypeParameter,marketplaceBusinessCodeParameter,publicationIdParameter,"
+///// );
+/////```
+// #[derive(Clone, Copy)]
+// pub struct EachWithSortHelper;
 
-impl HelperDef for EachWithSortHelper {
-  fn call<'reg: 'rc, 'rc>(
-    &self,
-    h: &handlebars::Helper<'reg, 'rc>,
-    handle: &'reg handlebars::Handlebars<'reg>,
-    ctx: &'rc handlebars::Context,
-    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
-    out: &mut dyn handlebars::Output,
-  ) -> handlebars::HelperResult {
-    let value = h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
-    let template = h.template();
+// /*
 
-    match template {
-      None => Ok(()),
-      Some(t) => match *value.value() {
-        _ => {
-          if let Some(else_template) = h.inverse() {
-            else_template.render(handle, ctx, render_ctx, out)
-          } else if handle.strict_mode() {
-            Err(RenderError::strict_error(value.relative_path()))
-          } else {
-            Ok(())
-          }
-        }
-        Value::Array(ref list) => {
-          if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) {
-            let block_context = create_block(value);
-            render_ctx.push_block(block_context);
+//  FULL =  { data: { t: { a: "b" }, ttt: [ 42 ]  }}
 
-            let len = list.len();
+//   {{#each data}}    ScopedJson:Context (FULL, vec!())
+//     {{#with t}}     ScopedJson:Context (FULL, vec!("data/0"))
+//       {{../ttt}}    ScopedJson:Derived ({ a: "b" }, vec!())
+//     {{/with}}
+//   {{/each}}
 
-            let array_path = value.context_path();
+// */
+// impl HelperDef for EachWithSortHelper {
+//   fn call<'reg: 'rc, 'rc>(
+//     &self,
+//     h: &Helper<'reg, 'rc>,
+//     r: &'reg handlebars::Handlebars<'reg>,
+//     ctx: &'rc handlebars::Context,
+//     rc: &mut handlebars::RenderContext<'reg, 'rc>,
+//     out: &mut dyn handlebars::Output,
+//   ) -> handlebars::HelperResult {
+//     let value = h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
+//     let j_path = h.get_param_as_str(1).unwrap_or("");
 
-            for (i, v) in list.iter().enumerate().take(len) {
-              if let Some(ref mut block) = render_ctx.block_mut() {
-                let is_first = i == 0usize;
-                let is_last = i == len - 1;
+//     let template = h.template();
 
-                let index = to_json(i);
-                block.set_local_var("first", to_json(is_first));
-                block.set_local_var("last", to_json(is_last));
-                block.set_local_var("index", index.clone());
+//     match template {
+//       Some(t) => match *value.value() {
+//         Value::Array(ref list) if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) => {
+//           let mut to_sort = list.clone();
 
-                update_block_context(block, array_path, i.to_string(), is_first, v);
-                set_block_param(block, h, array_path, &index, v)?;
-              }
+//           to_sort.sort_by(|a, b| {
+//             todo!("Find a way !!");
+//             std::cmp::Ordering::Greater
+//           });
 
-              t.render(handle, ctx, render_ctx, out)?;
-            }
+//           let block_context = create_block(value);
+//           rc.push_block(block_context);
 
-            render_ctx.pop_block();
-            Ok(())
-          } else {
-            Ok(())
-          }
-        }
-        Value::Object(ref obj) => {
-          if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) {
-            {
-              let block_context = create_block(value);
-              render_ctx.push_block(block_context);
+//           let len = list.len();
 
-              let len = obj.len();
+//           let array_path = value.context_path();
 
-              let obj_path = value.context_path();
+//           for (i, v) in to_sort.iter().enumerate().take(len) {
+//             if let Some(ref mut block) = rc.block_mut() {
+//               let is_first = i == 0usize;
+//               let is_last = i == len - 1;
 
-              for (i, (k, v)) in obj.iter().enumerate() {
-                if let Some(ref mut block) = render_ctx.block_mut() {
-                  let is_first = i == 0usize;
-                  let is_last = i == len - 1;
+//               let index = to_json(i);
+//               block.set_local_var("first", to_json(is_first));
+//               block.set_local_var("last", to_json(is_last));
+//               block.set_local_var("index", index.clone());
 
-                  let key = to_json(k);
-                  block.set_local_var("first", to_json(is_first));
-                  block.set_local_var("last", to_json(is_last));
-                  block.set_local_var("key", key.clone());
+//               update_block_context(block, array_path, i.to_string(), is_first, v);
+//               set_block_param(block, h, array_path, &index, v)?;
+//             }
 
-                  update_block_context(block, obj_path, k.to_string(), is_first, v);
-                  set_block_param(block, h, obj_path, &key, v)?;
-                }
+//             t.render(r, ctx, rc, out)?;
+//           }
 
-                t.render(handle, ctx, render_ctx, out)?;
-              }
+//           rc.pop_block();
+//           Ok(())
+//         }
+//         Value::Object(ref obj) if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) => {
+//           let block_context = create_block(value);
+//           rc.push_block(block_context);
 
-              render_ctx.pop_block();
-              Ok(())
-            }
-          } else {
-            Ok(())
-          }
-        }
-      },
-    }
-  }
-}
+//           let len = obj.len();
 
-fn update_block_context<'reg>(
-  block: &mut BlockContext<'reg>,
-  base_path: Option<&Vec<String>>,
-  relative_path: String,
-  is_first: bool,
-  value: &Json,
-) {
-  if let Some(p) = base_path {
-    if is_first {
-      *block.base_path_mut() = copy_on_push_vec(p, relative_path);
-    } else if let Some(ptr) = block.base_path_mut().last_mut() {
-      *ptr = relative_path;
-    }
-  } else {
-    block.set_base_value(value.clone());
-  }
-}
+//           let obj_path = value.context_path();
 
-fn set_block_param<'reg: 'rc, 'rc>(
-  block: &mut BlockContext<'reg>,
-  h: &Helper<'reg, 'rc>,
-  base_path: Option<&Vec<String>>,
-  k: &Json,
-  v: &Json,
-) -> Result<(), RenderError> {
-  if let Some(bp_val) = h.block_param() {
-    let mut params = BlockParams::new();
-    if base_path.is_some() {
-      params.add_path(bp_val, Vec::with_capacity(0))?;
-    } else {
-      params.add_value(bp_val, v.clone())?;
-    }
+//           for (i, (k, v)) in obj.iter().enumerate() {
+//             if let Some(ref mut block) = rc.block_mut() {
+//               let is_first = i == 0usize;
+//               let is_last = i == len - 1;
 
-    block.set_block_params(params);
-  } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
-    let mut params = BlockParams::new();
-    if base_path.is_some() {
-      params.add_path(bp_val, Vec::with_capacity(0))?;
-    } else {
-      params.add_value(bp_val, v.clone())?;
-    }
-    params.add_value(bp_key, k.clone())?;
+//               let key = to_json(k);
+//               block.set_local_var("first", to_json(is_first));
+//               block.set_local_var("last", to_json(is_last));
+//               block.set_local_var("key", key.clone());
 
-    block.set_block_params(params);
-  }
+//               update_block_context(block, obj_path, k.to_string(), is_first, v);
+//               set_block_param(block, h, obj_path, &key, v)?;
+//             }
 
-  Ok(())
-}
+//             t.render(r, ctx, rc, out)?;
+//           }
 
-pub fn create_block<'reg: 'rc, 'rc>(param: &'rc PathAndJson<'reg, 'rc>) -> BlockContext<'reg> {
-  let mut block = BlockContext::new();
+//           rc.pop_block();
+//           Ok(())
+//         }
+//         _ => {
+//           if let Some(else_template) = h.inverse() {
+//             else_template.render(r, ctx, rc, out)
+//           } else if r.strict_mode() {
+//             Err(RenderError::strict_error(value.relative_path()))
+//           } else {
+//             Ok(())
+//           }
+//         }
+//       },
+//       None => Ok(()),
+//     }
+//   }
+// }
 
-  if let Some(new_path) = param.context_path() {
-    *block.base_path_mut() = new_path.clone();
-  } else {
-    // use clone for now
-    block.set_base_value(param.value().clone());
-  }
+// fn update_block_context<'reg>(
+//   block: &mut BlockContext<'reg>,
+//   base_path: Option<&Vec<String>>,
+//   relative_path: String,
+//   is_first: bool,
+//   value: &Value,
+// ) {
+//   if let Some(p) = base_path {
+//     if is_first {
+//       *block.base_path_mut() = copy_on_push_vec(p, relative_path);
+//     } else if let Some(ptr) = block.base_path_mut().last_mut() {
+//       *ptr = relative_path;
+//     }
+//   } else {
+//     block.set_base_value(value.clone());
+//   }
+// }
 
-  block
-}
+// fn set_block_param<'reg: 'rc, 'rc>(
+//   block: &mut BlockContext<'reg>,
+//   h: &Helper<'reg, 'rc>,
+//   base_path: Option<&Vec<String>>,
+//   k: &Value,
+//   v: &Value,
+// ) -> Result<(), RenderError> {
+//   if let Some(bp_val) = h.block_param() {
+//     let mut params = BlockParams::new();
+//     if base_path.is_some() {
+//       params.add_path(bp_val, Vec::with_capacity(0))?;
+//     } else {
+//       params.add_value(bp_val, v.clone())?;
+//     }
 
-fn copy_on_push_vec<T>(input: &[T], el: T) -> Vec<T>
-where
-  T: Clone,
-{
-  let mut new_vec = Vec::with_capacity(input.len() + 1);
-  new_vec.extend_from_slice(input);
-  new_vec.push(el);
-  new_vec
-}
+//     block.set_block_params(params);
+//   } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
+//     let mut params = BlockParams::new();
+//     if base_path.is_some() {
+//       params.add_path(bp_val, Vec::with_capacity(0))?;
+//     } else {
+//       params.add_value(bp_val, v.clone())?;
+//     }
+//     params.add_value(bp_key, k.clone())?;
+
+//     block.set_block_params(params);
+//   }
+
+//   Ok(())
+// }
+
+// pub fn create_block<'reg: 'rc, 'rc>(param: &'rc PathAndJson<'reg, 'rc>) -> BlockContext<'reg> {
+//   let mut block = BlockContext::new();
+
+//   if let Some(new_path) = param.context_path() {
+//     *block.base_path_mut() = new_path.clone();
+//   } else {
+//     // use clone for now
+//     block.set_base_value(param.value().clone());
+//   }
+
+//   block
+// }
+
+// fn copy_on_push_vec<T>(input: &[T], el: T) -> Vec<T>
+// where
+//   T: Clone,
+// {
+//   let mut new_vec = Vec::with_capacity(input.len() + 1);
+//   new_vec.extend_from_slice(input);
+//   new_vec.push(el);
+//   new_vec
+// }
