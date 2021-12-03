@@ -52,7 +52,7 @@ impl HelperDef for GlobalparameterHelper {
         "{}, error: The key or the associated value to itself doesn't exist helper.",
         GLOBAL_PARAMETERS_HELPER
       ))),
-      Some(_) => Ok(handlebars::ScopedJson::Derived(value.unwrap().clone())),
+      Some(v) => Ok(handlebars::ScopedJson::Derived(v.clone())),
     }
 
     //Ok(handlebars::ScopedJson::Derived(value))
