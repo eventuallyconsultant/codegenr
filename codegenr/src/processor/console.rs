@@ -8,7 +8,7 @@ impl Instruction for ConsoleInstruction {
   fn command_name(&self) -> &'static str {
     CONSOLE
   }
-  fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, anyhow::Error> {
+  fn start(&self, _params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, anyhow::Error> {
     Ok(Box::new(ConsoleLineHandler) as Box<dyn InstructionLineHandler>)
   }
 }

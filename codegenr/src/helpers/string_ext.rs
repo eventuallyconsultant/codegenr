@@ -139,11 +139,7 @@ impl StringExt for String {
   }
 
   fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
-<<<<<<< HEAD
-    todo!()
-=======
     self.as_str().regex_extract(regex_extractor, regex_replacer, separator)
->>>>>>> 22578e4e220230ce3c5fd0d79c355b18ac342927
   }
 }
 

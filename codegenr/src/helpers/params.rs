@@ -26,29 +26,17 @@ pub const GLOBAL_PARAMETERS_HELPER: &str = "global_parameter";
 /// # use codegenr::helpers::*;
 /// exec_template_with_global_params(json!({}), r#"{{global_parameter "k"}}"#, Default::default());
 /// ```
-<<<<<<< HEAD
-pub struct GlobalparameterHelper {
-  values: HashMap<String, Value>,
-}
-
-impl GlobalparameterHelper {
-=======
 pub struct GlobalParameterHelper {
   values: HashMap<String, Value>,
 }
 
 impl GlobalParameterHelper {
->>>>>>> 22578e4e220230ce3c5fd0d79c355b18ac342927
   pub fn new(values: HashMap<String, Value>) -> Self {
     Self { values }
   }
 }
 
-<<<<<<< HEAD
-impl HelperDef for GlobalparameterHelper {
-=======
 impl HelperDef for GlobalParameterHelper {
->>>>>>> 22578e4e220230ce3c5fd0d79c355b18ac342927
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
     h: &handlebars::Helper<'reg, 'rc>,
@@ -58,12 +46,6 @@ impl HelperDef for GlobalParameterHelper {
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, RenderError> {
     h.ensure_arguments_count(1, GLOBAL_PARAMETERS_HELPER)?;
     let key = h.get_param_as_str_or_fail(0, GLOBAL_PARAMETERS_HELPER)?.to_string();
-<<<<<<< HEAD
-
-    let value = todo!("value from self.values.get(&key)...");
-
-    todo!("denis")
-=======
     self
       .values
       .get(&key)
@@ -74,6 +56,5 @@ impl HelperDef for GlobalParameterHelper {
           GLOBAL_PARAMETERS_HELPER
         ))
       })
->>>>>>> 22578e4e220230ce3c5fd0d79c355b18ac342927
   }
 }

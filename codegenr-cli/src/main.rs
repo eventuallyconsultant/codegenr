@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use codegenr::{run_codegenr, Options};
 use structopt::StructOpt;
 
