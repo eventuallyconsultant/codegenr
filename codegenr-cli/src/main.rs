@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use codegenr::{run_codegenr, Options};
 use structopt::StructOpt;
 
@@ -27,9 +29,24 @@ struct Opt {
   #[structopt(
     long,
     short,
-    help = "Global parameters values formatted `key=value`. Values will be parsed as json or strings if the json parsing fails."
+    help = "Global parameters values formatted `key=value`. Values will be parsed as json or strings if the json parsing fails.",
+    parse(try_from_str = parse_key_val)
   )]
-  pub globalparameter: Vec<String>,
+  pub global_parameters: Vec<(String, serde_json::Value)>,
+}
+
+// From here: https://github.com/TeXitoi/structopt/blob/master/examples/keyvalue.rs
+use std::error::Error;
+/// Parse a single key-value pair
+fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error>>
+where
+  T: std::str::FromStr,
+  T::Err: Error + 'static,
+  U: std::str::FromStr,
+  U::Err: Error + 'static,
+{
+  let pos = s.find('=').ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
+  Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
 impl From<Opt> for Options {
@@ -40,12 +57,14 @@ impl From<Opt> for Options {
       template: opt.template,
       intermediate: opt.intermediate,
       customhelpers: opt.customhelpers,
-      globalparameter: opt.globalparameter,
+      global_parameters: opt.global_parameters.into_iter().collect(),
     }
   }
 }
 
 fn main() -> Result<(), anyhow::Error> {
   let options: Options = Opt::from_args().into();
-  run_codegenr(options)
+  dbg!(options);
+  // run_codegenr(options)
+  Ok(())
 }

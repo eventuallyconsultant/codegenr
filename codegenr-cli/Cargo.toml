@@ -14,5 +14,7 @@ categories = ["development-tools"]
 
 [dependencies]
 codegenr = { path="../codegenr" }
-structopt = "0.3.23"
+
 anyhow = "1.0.44"
+structopt = "0.3.23"
+serde_json = { version = "1.0.68", features = ["preserve_order"] }

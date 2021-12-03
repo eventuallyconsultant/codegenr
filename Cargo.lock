@@ -164,6 +164,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "codegenr",
+ "serde_json",
  "structopt",
 ]
 
