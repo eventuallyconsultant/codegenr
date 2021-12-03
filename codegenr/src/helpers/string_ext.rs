@@ -77,10 +77,11 @@ impl StringExt for Option<String> {
   }
 
   fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
-    // self.as_ref().map_or(Default::default(), |s| {
-    //   s.regex_extract(regex_extractor, regex_replacer, separator
-    // })
-    todo!()
+    self
+      .as_ref()
+      .map(|s| s.regex_extract(regex_extractor, regex_replacer, separator))
+      .transpose()
+      .map(|s| s.unwrap_or_default())
   }
 }
 

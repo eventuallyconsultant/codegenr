@@ -55,7 +55,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(IF_SET_HELPER, Box::new(IfGetHelper::new(&map)));
   handlebars.register_helper(CLEAR_HELPER, Box::new(ClearHelper::new(&map)));
 
-  handlebars.register_helper(GLOBAL_PARAMETERS_HELPER, Box::new(GlobalparameterHelper::new(global_params)));
+  handlebars.register_helper(GLOBAL_PARAMETERS_HELPER, Box::new(GlobalParameterHelper::new(global_params)));
 }
 
 pub fn exec_template(json: serde_json::Value, template: &str) -> String {

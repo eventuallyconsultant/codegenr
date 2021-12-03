@@ -12,7 +12,7 @@ pub const GLOBAL_PARAMETERS_HELPER: &str = "global_parameter";
 /// # use serde_json::json;
 /// # use std::collections::HashMap;
 /// let mut params = HashMap::<_,_>::new();
-/// params.insert("key".to_string(), json!("v"));
+/// params.insert("k".to_string(), json!("v"));
 ///
 /// assert_eq!(
 ///   exec_template_with_global_params(json!({}), r#"{{global_parameter "k"}}"#, params),
@@ -26,17 +26,17 @@ pub const GLOBAL_PARAMETERS_HELPER: &str = "global_parameter";
 /// # use codegenr::helpers::*;
 /// exec_template_with_global_params(json!({}), r#"{{global_parameter "k"}}"#, Default::default());
 /// ```
-pub struct GlobalparameterHelper {
+pub struct GlobalParameterHelper {
   values: HashMap<String, Value>,
 }
 
-impl GlobalparameterHelper {
+impl GlobalParameterHelper {
   pub fn new(values: HashMap<String, Value>) -> Self {
     Self { values }
   }
 }
 
-impl HelperDef for GlobalparameterHelper {
+impl HelperDef for GlobalParameterHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
     h: &handlebars::Helper<'reg, 'rc>,
@@ -46,15 +46,15 @@ impl HelperDef for GlobalparameterHelper {
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, RenderError> {
     h.ensure_arguments_count(1, GLOBAL_PARAMETERS_HELPER)?;
     let key = h.get_param_as_str_or_fail(0, GLOBAL_PARAMETERS_HELPER)?.to_string();
-    let value = self.values.get(&key);
-    match value {
-      None => anyhow::private::Err(RenderError::new(format!(
-        "{}, error: The key or the associated value to itself doesn't exist helper.",
-        GLOBAL_PARAMETERS_HELPER
-      ))),
-      Some(v) => Ok(handlebars::ScopedJson::Derived(v.clone())),
-    }
-
-    //Ok(handlebars::ScopedJson::Derived(value))
+    self
+      .values
+      .get(&key)
+      .map(|v| handlebars::ScopedJson::Derived(v.clone()))
+      .ok_or_else(|| {
+        RenderError::new(format!(
+          "{}, error: The key or the associated value to itself doesn't exist.",
+          GLOBAL_PARAMETERS_HELPER
+        ))
+      })
   }
 }
