@@ -1,4 +1,5 @@
 use codegenr::{run_codegenr, Options};
+use serde_json::Value;
 use structopt::StructOpt;
 
 //https://docs.rs/structopt/latest/structopt/#specifying-argument-types
@@ -34,17 +35,16 @@ struct Opt {
 }
 
 // From here: https://github.com/TeXitoi/structopt/blob/master/examples/keyvalue.rs
-use std::error::Error;
-/// Parse a single key-value pair
-fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error>>
-where
-  T: std::str::FromStr,
-  T::Err: Error + 'static,
-  U: std::str::FromStr,
-  U::Err: Error + 'static,
-{
-  let pos = s.find('=').ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
-  Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
+// Parse a single key-value pair
+fn parse_key_val(s: &str) -> Result<(String, Value), anyhow::Error> {
+  let pos = s
+    .find('=')
+    .ok_or_else(|| anyhow::anyhow!("invalid KEY=value: no `=` found in `{}`", s))?;
+  let value = &s[pos + 1..];
+  Ok((
+    s[..pos].parse()?,
+    value.parse().unwrap_or_else(|_| Value::String(value.to_string())),
+  ))
 }
 
 impl From<Opt> for Options {
@@ -62,7 +62,7 @@ impl From<Opt> for Options {
 
 fn main() -> Result<(), anyhow::Error> {
   let options: Options = Opt::from_args().into();
-  dbg!(options);
-  // run_codegenr(options)
+  // dbg!(&options);
+  run_codegenr(options)?;
   Ok(())
 }
