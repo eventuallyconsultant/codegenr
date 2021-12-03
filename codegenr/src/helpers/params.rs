@@ -46,9 +46,15 @@ impl HelperDef for GlobalparameterHelper {
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, RenderError> {
     h.ensure_arguments_count(1, GLOBAL_PARAMETERS_HELPER)?;
     let key = h.get_param_as_str_or_fail(0, GLOBAL_PARAMETERS_HELPER)?.to_string();
+    let value = self.values.get(&key);
+    match value {
+      None => anyhow::private::Err(RenderError::new(format!(
+        "{}, error: The key or the associated value to itself doesn't exist helper.",
+        GLOBAL_PARAMETERS_HELPER
+      ))),
+      Some(_) => Ok(handlebars::ScopedJson::Derived(value.unwrap().clone())),
+    }
 
-    let value = todo!("value from self.values.get(&key)...");
-
-    todo!("denis")
+    //Ok(handlebars::ScopedJson::Derived(value))
   }
 }
