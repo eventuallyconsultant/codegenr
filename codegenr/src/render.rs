@@ -122,6 +122,7 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, any
 #[cfg(test)]
 mod test {
   use super::*;
+  use crate::helpers::handlebars_setup;
   use crate::loader::DocumentPath;
   use crate::resolver::resolve_refs;
 
@@ -132,13 +133,10 @@ mod test {
     let list = get_templates_from_directory("_samples/render/test_denis")?;
     let collection = TemplateCollection::from_list(list)?;
 
-    // println!("{:?}", json);
-
-    let result = collection.render(&json, Handlebars::new())?;
+    let mut h = Handlebars::new();
+    handlebars_setup(&mut h, Default::default());
+    let result = collection.render(&json, h)?;
     dbg!(result);
-    // let mut reg = Handlebars::nemw();
-    // reg.register_template_string("tpl_1", "Good afternoon, {{name}}")?;
-    // println!("{}", reg.render("tpl_1", &json)?);
 
     Ok(())
   }

@@ -2,7 +2,7 @@
 name = "codegenr-cli"
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name <your@email.com>"]
+authors = ["Jérôme Rx & contributors <jerome@eventuallyconsultant.com>"]
 description = "Fast json/yaml/openapi code generator base on handlebars templating."
 readme = "README.md"
 homepage = "https://github.com/eventuallyconsultant/codegenr/"

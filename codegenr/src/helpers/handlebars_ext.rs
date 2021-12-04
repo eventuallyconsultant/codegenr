@@ -62,7 +62,7 @@ impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
   fn get_param_as_str_or_fail(&self, index: usize, helper_name: &str) -> Result<&str, RenderError> {
     self
       .get_param_as_str(index)
-      .ok_or_else(|| RenderError::new(format!("Argument {}, of '{}' helper should be a string.", index, helper_name)))
+      .ok_or_else(|| RenderError::new(format!("Argument {} of '{}' helper should be a string.", index, helper_name)))
   }
 
   fn get_param_as_json(&self, index: usize) -> Option<&Value> {

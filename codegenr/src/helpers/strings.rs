@@ -4,14 +4,10 @@ use handlebars::{BlockContext, HelperDef, RenderError, Renderable, StringOutput}
 use serde_json::Value;
 
 pub const TRIM_HELPER: &str = "trim";
-pub const UPPERCASE_FIRST_LETTER_HELPER: &str = "uppercase_first_letter";
-pub const LOWERCASE_FIRST_LETTER_HELPER: &str = "lowercase_first_letter";
 pub const SPLIT_GET_FIRST_HELPER: &str = "split_get_first";
 pub const SPLIT_GET_LAST_HELPER: &str = "split_get_last";
 pub const TRIM_START_HELPER: &str = "trim_start";
 pub const TRIM_END_HELPER: &str = "trim_end";
-pub const LOWER_CASE_HELPER: &str = "lower_case";
-pub const UPPER_CASE_HELPER: &str = "upper_case";
 pub const START_WITH_HELPER: &str = "start_with";
 pub const WITH_MATCHING_HELPER: &str = "with_matching";
 pub const IF_ARRAY_CONTAINS: &str = "if_array_contains";
@@ -53,64 +49,6 @@ impl HelperDef for TrimHelper {
     let trimmer = h.get_param_as_str(1).map(|s| s.to_string());
 
     Ok(Value::String(to_trim.trim_char(trimmer)).into())
-  }
-}
-
-/// Returns a string with the first letter in Uppercase
-/// ```
-/// # use codegenr::helpers::*;
-/// # use serde_json::json;
-/// assert_eq!(
-///   exec_template(json!({ "value": "tEsT" }), "{{uppercase_first_letter value}}"),
-///   "TEsT"
-/// );
-/// ```
-pub struct UppercaseFirstLetterHelper;
-
-impl HelperDef for UppercaseFirstLetterHelper {
-  fn call_inner<'reg: 'rc, 'rc>(
-    &self,
-    h: &handlebars::Helper<'reg, 'rc>,
-    _: &'reg handlebars::Handlebars<'reg>,
-    _: &'rc handlebars::Context,
-    _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
-    h.ensure_arguments_count_min(1, UPPERCASE_FIRST_LETTER_HELPER)?;
-    h.ensure_arguments_count_max(1, UPPERCASE_FIRST_LETTER_HELPER)?;
-
-    let to_uppercase = h.get_param_as_str_or_fail(0, UPPERCASE_FIRST_LETTER_HELPER)?;
-    Ok(handlebars::ScopedJson::Derived(Value::String(
-      to_uppercase.uppercase_first_letter(),
-    )))
-  }
-}
-
-/// Returns a string with the first letter in Lowercase
-/// ```
-/// # use codegenr::helpers::*;
-/// # use serde_json::json;
-/// assert_eq!(
-///   exec_template(json!({ "value": "TEST" }), "{{lowercase_first_letter value}}"),
-///   "tEST"
-/// );
-/// ```
-pub struct LowercaseFirstLetterHelper;
-
-impl HelperDef for LowercaseFirstLetterHelper {
-  fn call_inner<'reg: 'rc, 'rc>(
-    &self,
-    h: &handlebars::Helper<'reg, 'rc>,
-    _: &'reg handlebars::Handlebars<'reg>,
-    _: &'rc handlebars::Context,
-    _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
-    h.ensure_arguments_count_min(1, LOWERCASE_FIRST_LETTER_HELPER)?;
-    h.ensure_arguments_count_max(1, LOWERCASE_FIRST_LETTER_HELPER)?;
-
-    let to_lowercase = h.get_param_as_str_or_fail(0, LOWERCASE_FIRST_LETTER_HELPER)?;
-    Ok(handlebars::ScopedJson::Derived(Value::String(
-      to_lowercase.lowercase_first_letter(),
-    )))
   }
 }
 
@@ -711,8 +649,12 @@ impl HelperDef for NoEmptyLinesHelper {
       let mut buffer = StringOutput::new();
       t.render(handle, ctx, render_ctx, &mut buffer)?;
       let s = buffer.into_string()?;
-      let result: String = s.lines().filter(|s| !s.trim().is_empty()).collect::<Vec<_>>().join("\n");
-      out.write(&result)?;
+      for (count, line) in s.lines().filter(|s| !s.trim().is_empty()).enumerate() {
+        if count != 0 {
+          out.write("\n")?;
+        }
+        out.write(line)?;
+      }
     };
     Ok(())
   }
