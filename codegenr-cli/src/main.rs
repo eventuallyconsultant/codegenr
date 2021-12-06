@@ -24,7 +24,7 @@ struct Opt {
   )]
   pub intermediate: Option<String>,
   #[structopt(long, short, help = "Path to custom helper files.")]
-  pub customhelpers: Vec<String>,
+  pub custom_helpers: Vec<String>,
   #[structopt(
     long,
     short,
@@ -54,7 +54,7 @@ impl From<Opt> for Options {
       output: opt.output,
       template: opt.template,
       intermediate: opt.intermediate,
-      customhelpers: opt.customhelpers,
+      custom_helpers: opt.custom_helpers,
       global_parameters: opt.global_parameters.into_iter().collect(),
     }
   }

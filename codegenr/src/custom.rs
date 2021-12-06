@@ -2,11 +2,12 @@ use std::path::Path;
 
 use handlebars::Handlebars;
 
-pub fn handlebars_setup(handlebars: &mut Handlebars) -> Result<(), anyhow::Error> {
+pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: Vec<String>) -> Result<(), anyhow::Error> {
   handlebars_add_script(handlebars, "./_samples/rhai/param_0_len.rhai")?;
   handlebars_add_script(handlebars, "./_samples/rhai/concat.rhai")?;
   Ok(())
 }
+
 pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: &str) -> Result<(), anyhow::Error> {
   let name = Path::new(script_file)
     .file_stem()
@@ -19,7 +20,7 @@ pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: &str) -> 
 
 pub fn exec_template(json: serde_json::Value, template: &str) -> String {
   let mut h = Handlebars::new();
-  handlebars_setup(&mut h).expect("Could not setup handlebars.");
+  handlebars_setup(&mut h, vec![]).expect("Could not setup handlebars.");
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
 }

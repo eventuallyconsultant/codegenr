@@ -8,6 +8,8 @@ use clean::*;
 use console::*;
 use file::*;
 
+use crate::helpers::string_ext::StringExt;
+
 static INSTRUCTION_LINE_REGEX: once_cell::sync::Lazy<regex::Regex> =
   once_cell::sync::Lazy::new(|| regex::Regex::new("^###.*$").expect("The INSTRUCTION_LINE_REGEX regex did not compile."));
 
@@ -38,31 +40,46 @@ fn get_instructions() -> HashMap<&'static str, Box<dyn Instruction>> {
 
 pub fn process(content: &str) -> Result<(), anyhow::Error> {
   let instructions = get_instructions();
-  let mut active_handlers: Vec<Box<dyn InstructionLineHandler>> = vec![];
+  let mut active_handlers = HashMap::<String, Box<dyn InstructionLineHandler>>::new();
 
   for (line_number, line) in content.lines().enumerate() {
     let captures = INSTRUCTION_LINE_REGEX.find(line);
     match captures {
       Some(_match) => {
-        let mut words = line.split(' ').skip(1).map(|s| s.trim()).filter(|s| !s.is_empty());
-        dbg!(&words.clone().collect::<Vec<_>>());
+        let net_line = line.trim_start_matches('#').trim_start();
+        let is_closing = net_line.starts_with('/');
+        let net_line = net_line.trim_start_matches('/').trim_start();
+
+        let mut words = net_line.split(' ').map(|s| s.trim()).filter(|s| !s.is_empty());
         let instruction_name = words
           .next()
-          .ok_or_else(|| anyhow::anyhow!("Instruction name not found on line {} : '{}'", line_number, line))?
+          .ok_or_else(|| anyhow::anyhow!("Instruction name not found on line {}: '{}'.", line_number, line))?
           .to_uppercase();
 
-        let instruction = instructions
-          .get(&instruction_name.as_ref())
-          .ok_or_else(|| anyhow::anyhow!("Instruction {} not found.", instruction_name))?;
-
-        let handler = instruction.start(words.map(Into::into).collect())?;
-
-        active_handlers.push(handler);
-        dbg!("OK");
+        if is_closing {
+          active_handlers.remove(&instruction_name).ok_or_else(|| {
+            anyhow::anyhow!(
+              "Missing openning tag for '{}' instruction. Line {}: '{}'.",
+              instruction_name,
+              line_number,
+              line
+            )
+          })?;
+        } else {
+          let instruction = instructions.get(&instruction_name.as_ref()).ok_or_else(|| {
+            anyhow::anyhow!(
+              "Instruction '{}' doest not exist. Line {}: '{}'.",
+              instruction_name,
+              line_number,
+              line
+            )
+          })?;
+          let handler = instruction.start(words.map(Into::into).collect())?;
+          active_handlers.insert(instruction_name, handler);
+        }
       }
       None => {
-        dbg!(line);
-        for h in active_handlers.iter() {
+        for (_, h) in active_handlers.iter() {
           h.handle_line(line)?;
         }
       }
@@ -81,8 +98,15 @@ mod test {
   fn process_test() -> Result<(), anyhow::Error> {
     process(
       r#"
-### FILE plop.rs test.rs
+### FILE plop.rs
 test
+### /FILE
+### CONSOLE
+Hello
+###/ console
+### FILE plop2.rs
+test2
+### / FILE
     "#,
     )?;
 

@@ -19,7 +19,7 @@ pub struct Options {
   pub output: String,
   pub template: Vec<String>,
   pub intermediate: Option<String>,
-  pub customhelpers: Vec<String>,
+  pub custom_helpers: Vec<String>,
   pub global_parameters: HashMap<String, serde_json::Value>,
 }
 
@@ -36,6 +36,7 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
 
   let mut handlebars = Handlebars::new();
   helpers::handlebars_setup(&mut handlebars, options.global_parameters);
+  custom::handlebars_setup(&mut handlebars, options.custom_helpers);
   // todo: custom::handlebars_setup(&mut handlebars);
 
   let rendered = templates.render(&json, handlebars)?;
