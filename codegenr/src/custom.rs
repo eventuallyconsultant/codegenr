@@ -1,35 +1,52 @@
+use handlebars::Handlebars;
 use std::path::Path;
 
-use handlebars::Handlebars;
-
 pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: Vec<String>) -> Result<(), anyhow::Error> {
-  handlebars_add_script(handlebars, "./_samples/rhai/param_0_len.rhai")?;
-  handlebars_add_script(handlebars, "./_samples/rhai/concat.rhai")?;
+  for path in custom_helpers_folders {
+    let p = Path::new(&path);
+    if p.is_file() {
+      handlebars_add_script(handlebars, p)?;
+    } else if p.is_dir() {
+      let pattern = p.join("**/*.rhai");
+      let str_pattern = pattern
+        .to_str()
+        .ok_or_else(|| anyhow::anyhow!("Error converting PathBuf to str."))?;
+      dbg!(&pattern, &str_pattern);
+      for f in glob::glob(str_pattern)?.flatten() {
+        handlebars_add_script(handlebars, f.as_path())?;
+      }
+    }
+  }
   Ok(())
 }
 
-pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: &str) -> Result<(), anyhow::Error> {
-  let name = Path::new(script_file)
+pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: impl AsRef<Path> + Clone) -> Result<(), anyhow::Error> {
+  let name = script_file
+    .as_ref()
     .file_stem()
     .ok_or_else(|| anyhow::anyhow!("File path passed has no file stem."))?
     .to_str()
     .ok_or_else(|| anyhow::anyhow!("Error converting OsStr to str."))?;
-  handlebars.register_script_helper_file(name, script_file)?;
+  dbg!("Adding script", name);
+  handlebars.register_script_helper_file(name, script_file.clone())?;
   Ok(())
-}
-
-pub fn exec_template(json: serde_json::Value, template: &str) -> String {
-  let mut h = Handlebars::new();
-  handlebars_setup(&mut h, vec![]).expect("Could not setup handlebars.");
-  h.register_template_string("test", template).expect("Could not register template.");
-  h.render("test", &json).expect("Template render returned an error.")
 }
 
 #[cfg(test)]
 mod test {
   use super::*;
   use serde_json::json;
-  // use test_case::test_case;
+
+  pub fn exec_template(json: serde_json::Value, template: &str) -> String {
+    let mut h = Handlebars::new();
+    handlebars_setup(
+      &mut h,
+      vec!["./_samples/rhai/param_0_len.rhai".into(), "./_samples/rhai/concat.rhai".into()],
+    )
+    .expect("Could not setup handlebars.");
+    h.register_template_string("test", template).expect("Could not register template.");
+    h.render("test", &json).expect("Template render returned an error.")
+  }
 
   #[test]
   fn tests() {
