@@ -1,4 +1,4 @@
-# CodeGenR -- WORK IN PROGRESS [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://github.com/eventuallyconsultant/codegenr)
+# CodeGenR -- WORK IN PROGRESS [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/eventuallyconsultant/codegenr)
 
 A `Rust` rewrite of `C#` [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 
