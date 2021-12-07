@@ -11,7 +11,6 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: Vec
       let str_pattern = pattern
         .to_str()
         .ok_or_else(|| anyhow::anyhow!("Error converting PathBuf to str."))?;
-      dbg!(&pattern, &str_pattern);
       for f in glob::glob(str_pattern)?.flatten() {
         handlebars_add_script(handlebars, f.as_path())?;
       }
@@ -27,7 +26,6 @@ pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: impl AsRe
     .ok_or_else(|| anyhow::anyhow!("File path passed has no file stem."))?
     .to_str()
     .ok_or_else(|| anyhow::anyhow!("Error converting OsStr to str."))?;
-  dbg!("Adding script", name);
   handlebars.register_script_helper_file(name, script_file.clone())?;
   Ok(())
 }

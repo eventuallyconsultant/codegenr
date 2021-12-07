@@ -17,7 +17,7 @@ use handlebars::Handlebars;
 pub struct Options {
   pub source: String,
   pub output: String,
-  pub template: Vec<String>,
+  pub templates: Vec<String>,
   pub intermediate: Option<String>,
   pub custom_helpers: Vec<String>,
   pub global_parameters: HashMap<String, serde_json::Value>,
@@ -28,7 +28,7 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
   let json = resolve_refs(document)?;
 
   let mut all_templates = vec![];
-  for t in options.template {
+  for t in options.templates {
     let templates = get_templates_from_directory(&t)?;
     all_templates.extend(templates);
   }
@@ -36,8 +36,7 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
 
   let mut handlebars = Handlebars::new();
   helpers::handlebars_setup(&mut handlebars, options.global_parameters);
-  custom::handlebars_setup(&mut handlebars, options.custom_helpers);
-  // todo: custom::handlebars_setup(&mut handlebars);
+  custom::handlebars_setup(&mut handlebars, options.custom_helpers)?;
 
   let rendered = templates.render(&json, handlebars)?;
 

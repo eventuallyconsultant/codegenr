@@ -16,7 +16,7 @@ struct Opt {
     short,
     help = "Templates folder(s), in which only one .hbs file should have no `_` as prefix (Underscored templates are partial templates)."
   )]
-  pub template: Vec<String>,
+  pub templates: Vec<String>,
   #[structopt(
     long,
     short,
@@ -52,7 +52,7 @@ impl From<Opt> for Options {
     Self {
       source: opt.source,
       output: opt.output,
-      template: opt.template,
+      templates: opt.templates,
       intermediate: opt.intermediate,
       custom_helpers: opt.custom_helpers,
       global_parameters: opt.global_parameters.into_iter().collect(),
