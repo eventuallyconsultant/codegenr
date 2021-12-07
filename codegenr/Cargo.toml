@@ -28,3 +28,4 @@ rhai = "1.2.1"
 
 [dev-dependencies]
 test-case = "1.2.1"
+tempdir = "0.3"

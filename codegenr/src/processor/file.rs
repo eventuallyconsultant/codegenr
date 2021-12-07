@@ -1,10 +1,18 @@
-use std::{cell::RefCell, fs::File, io::Write};
+use std::{cell::RefCell, fs::File, io::Write, path::Path};
 
 use super::*;
 
 pub const FILE: &str = "FILE";
 
-pub struct FileInstruction;
+pub struct FileInstruction {
+  output_folder: String,
+}
+
+impl FileInstruction {
+  pub fn new(output_folder: String) -> Self {
+    Self { output_folder }
+  }
+}
 
 impl Instruction for FileInstruction {
   fn command_name(&self) -> &'static str {

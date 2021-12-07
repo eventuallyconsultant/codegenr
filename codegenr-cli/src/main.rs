@@ -20,7 +20,7 @@ struct Opt {
   #[structopt(
     long,
     short,
-    help = "Optional path to a file where the intermediate json representation of resolved source(s) will be output."
+    help = "Optional path to a file where the intermediate json representation of resolved source(s) will be output. The resolved json will be output as <file>.resolved.json, the full text rendered result will be output as <file>.rendered.txt"
   )]
   pub intermediate: Option<String>,
   #[structopt(long, short, help = "Path to custom helper files.")]
@@ -39,7 +39,7 @@ struct Opt {
 fn parse_key_val(s: &str) -> Result<(String, Value), anyhow::Error> {
   let pos = s
     .find('=')
-    .ok_or_else(|| anyhow::anyhow!("invalid KEY=value: no `=` found in `{}`", s))?;
+    .ok_or_else(|| anyhow::anyhow!("Invalid key=value: no `=` found in `{}`.", s))?;
   let value = &s[pos + 1..];
   Ok((
     s[..pos].parse()?,

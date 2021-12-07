@@ -8,7 +8,7 @@ use clean::*;
 use console::*;
 use file::*;
 
-use crate::helpers::string_ext::StringExt;
+use crate::{helpers::string_ext::StringExt, Options};
 
 static INSTRUCTION_LINE_REGEX: once_cell::sync::Lazy<regex::Regex> =
   once_cell::sync::Lazy::new(|| regex::Regex::new("^###.*$").expect("The INSTRUCTION_LINE_REGEX regex did not compile."));
@@ -30,16 +30,16 @@ impl InstructionLineHandler for TranscientLineHandler {
   }
 }
 
-fn get_instructions() -> HashMap<&'static str, Box<dyn Instruction>> {
+fn get_instructions(output: String) -> HashMap<&'static str, Box<dyn Instruction>> {
   let mut hash: HashMap<&'static str, Box<dyn Instruction>> = HashMap::<_, _>::with_capacity(3);
-  hash.insert(CLEAN, Box::new(CleanInstruction) as Box<dyn Instruction>);
-  hash.insert(FILE, Box::new(FileInstruction) as Box<dyn Instruction>);
+  hash.insert(CLEAN, Box::new(CleanInstruction::new(output.clone())) as Box<dyn Instruction>);
+  hash.insert(FILE, Box::new(FileInstruction::new(output)) as Box<dyn Instruction>);
   hash.insert(CONSOLE, Box::new(ConsoleInstruction) as Box<dyn Instruction>);
   hash
 }
 
-pub fn process(content: &str) -> Result<(), anyhow::Error> {
-  let instructions = get_instructions();
+pub fn process(content: &str, output: String) -> Result<(), anyhow::Error> {
+  let instructions = get_instructions(output);
   let mut active_handlers = HashMap::<String, Box<dyn InstructionLineHandler>>::new();
 
   for (line_number, line) in content.lines().enumerate() {
@@ -108,6 +108,7 @@ Hello
 test2
 ### / FILE
     "#,
+      ".".into(),
     )?;
 
     Ok(())
