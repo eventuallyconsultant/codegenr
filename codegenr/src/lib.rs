@@ -28,7 +28,7 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
   let json = resolve_refs(document)?;
 
   if options.intermediate.is_some() {
-    save_intermediate(&options.intermediate, "resolved.json", &json.to_string())?;
+    save_intermediate(&options.intermediate, "resolved.json", &format!("{:#}", json))?;
   }
 
   let mut all_templates = vec![];
