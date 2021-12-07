@@ -42,7 +42,9 @@ impl FileLineHandler {
 
 impl InstructionLineHandler for FileLineHandler {
   fn handle_line(&self, line: &str) -> Result<(), anyhow::Error> {
-    self.file.borrow_mut().write_all(line.as_bytes())?;
+    let mut f = self.file.borrow_mut();
+    f.write_all(line.as_bytes())?;
+    f.write_all("\n".as_bytes())?;
     Ok(())
   }
 }
