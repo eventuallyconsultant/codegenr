@@ -50,7 +50,7 @@ mod test {
 
   #[test]
   pub fn clean_a_single_file() -> anyhow::Result<()> {
-    let tmp = TempDir::new("clean_tests")?;
+    let tmp = TempDir::new("CLEAN_tests")?;
     let instruction = CleanInstruction::new(tmp.path().to_string_lossy().into());
     let (_, file_path) = create_file(tmp.path(), "plop.rs")?;
     assert!(file_path.exists());
@@ -61,7 +61,7 @@ mod test {
 
   #[test]
   pub fn clean_a_pattern() -> anyhow::Result<()> {
-    let tmp = TempDir::new("clean_tests")?;
+    let tmp = TempDir::new("CLEAN_tests")?;
     let instruction = CleanInstruction::new(tmp.path().to_string_lossy().into());
     let (_, file_path1) = create_file(tmp.path(), "plop.rs")?;
     let (_, file_path2) = create_file(tmp.path(), "sub/plop.rs")?;
