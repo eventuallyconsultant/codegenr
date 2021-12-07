@@ -139,9 +139,9 @@ fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, a
         if let Value::Object(o) = part {
           part = o
             .get(p)
-            .ok_or_else(|| anyhow::format_err!("Key '{}' was not found in json part '{}'", p, part))?;
+            .ok_or_else(|| anyhow::format_err!("Key `{}` was not found in json part `{}`", p, part))?;
         } else {
-          return Err(anyhow::anyhow!("Could not follow path '{}' as json part is not an object.", p));
+          return Err(anyhow::anyhow!("Could not follow path `{}` as json part is not an object.", p));
         }
       }
       Ok(part.clone())
@@ -228,7 +228,7 @@ mod test {
     let err = failed_test.expect_err("Should be an error");
     assert_eq!(
       err.to_string(),
-      "Key 'not_existing_path' was not found in json part '{\"data1\":{\"value\":42},\"data2\":[1,2,3]}'"
+      "Key `not_existing_path` was not found in json part `{\"data1\":{\"value\":42},\"data2\":[1,2,3]}`"
     );
 
     Ok(())

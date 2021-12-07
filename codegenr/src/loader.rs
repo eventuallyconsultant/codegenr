@@ -47,7 +47,7 @@ impl DocumentPath {
         let new_path = new_path.parse_dot()?;
         let new_path = new_path
           .to_str()
-          .ok_or_else(|| anyhow::anyhow!("Unable to append path '{}' to '{}'", path_to, url_from))?;
+          .ok_or_else(|| anyhow::anyhow!("Unable to append path `{}` to `{}`", path_to, url_from))?;
         url.set_path(new_path);
         Url(url)
       }
@@ -61,7 +61,7 @@ impl DocumentPath {
           .parse_dot()?
           .to_str()
           .map(|s| FileName(s.to_owned()))
-          .ok_or_else(|| anyhow::anyhow!("Unable to append path '{}' to '{}'", path_to, path_from))?
+          .ok_or_else(|| anyhow::anyhow!("Unable to append path `{}` to `{}`", path_to, path_from))?
       }
       (FileName(_), Url(url)) => Url(url),
       (FileName(_path_from), None) => refed_from.clone(),
@@ -116,7 +116,7 @@ fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, anyhow::Er
       };
 
       Err(anyhow::anyhow!(
-        "Could not read file content as json:\n-json_error: '{}'\n-yaml_error:'{}'",
+        "Could not read file content as json:\n-json_error: `{}`\n-yaml_error:`{}`",
         json_error,
         yaml_error,
       ))
@@ -133,7 +133,7 @@ fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, anyhow::Er
       };
 
       Err(anyhow::anyhow!(
-        "Could not read file content as json:\n-yaml_error:'{}'\n-json_error: '{}'",
+        "Could not read file content as json:\n-yaml_error:`{}`\n-json_error: `{}`",
         yaml_error,
         json_error,
       ))

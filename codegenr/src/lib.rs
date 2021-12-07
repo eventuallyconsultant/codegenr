@@ -6,8 +6,9 @@ pub mod processor;
 pub mod render;
 pub mod resolver;
 
-use std::{collections::HashMap, fs::File, io::Write};
+use std::collections::HashMap;
 
+use filesystem::save_file_content;
 use handlebars::Handlebars;
 use loader::*;
 use render::*;
@@ -52,8 +53,7 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
 fn save_intermediate(file: &Option<String>, extension: &str, content: &str) -> Result<(), anyhow::Error> {
   if let Some(s) = file {
     let full_file_name = format!("{}.{}", s, extension);
-    let mut f = File::create(full_file_name)?;
-    f.write_all(content.as_bytes())?;
+    save_file_content(".", &full_file_name, content)?;
   }
   Ok(())
 }

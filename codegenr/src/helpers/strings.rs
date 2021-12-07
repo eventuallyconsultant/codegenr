@@ -266,7 +266,7 @@ impl HelperDef for WithMatchingHelper {
     let arguments_count = h.params().len();
     if arguments_count % 2 != 1 {
       return Err(RenderError::new(format!(
-        "Arguments number for the '{}' helper must be an odd number.",
+        "Arguments number for the `{}` helper must be an odd number.",
         WITH_MATCHING_HELPER
       )));
     }
@@ -693,7 +693,7 @@ impl HelperDef for RegexExtractHelper {
     let separator = h.get_param_as_str(3);
     let result = arg
       .regex_extract(regex_patern, Some(regex_replacement), separator)
-      .map_err(|e| RenderError::new(format!("{} error: '{}'.", REGEX_EXTRACT_HELPER, e)))?;
+      .map_err(|e| RenderError::new(format!("{} error: `{}`.", REGEX_EXTRACT_HELPER, e)))?;
     Ok(handlebars::ScopedJson::Derived(Value::String(result)))
   }
 }

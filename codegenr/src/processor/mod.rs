@@ -8,14 +8,15 @@ use clean::*;
 use console::*;
 use file::*;
 
-use crate::{helpers::string_ext::StringExt, Options};
-
 static INSTRUCTION_LINE_REGEX: once_cell::sync::Lazy<regex::Regex> =
   once_cell::sync::Lazy::new(|| regex::Regex::new("^###.*$").expect("The INSTRUCTION_LINE_REGEX regex did not compile."));
 
 pub trait Instruction {
   fn command_name(&self) -> &'static str;
   fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, anyhow::Error>;
+  fn needs_closing(&self) -> bool {
+    false
+  }
 }
 
 pub trait InstructionLineHandler {
@@ -45,6 +46,11 @@ pub fn process(content: &str, output: String) -> Result<(), anyhow::Error> {
   for (line_number, line) in content.lines().enumerate() {
     let captures = INSTRUCTION_LINE_REGEX.find(line);
     match captures {
+      None => {
+        for (_, h) in active_handlers.iter() {
+          h.handle_line(line)?;
+        }
+      }
       Some(_match) => {
         let net_line = line.trim_start_matches('#').trim_start();
         let is_closing = net_line.starts_with('/');
@@ -53,34 +59,43 @@ pub fn process(content: &str, output: String) -> Result<(), anyhow::Error> {
         let mut words = net_line.split(' ').map(|s| s.trim()).filter(|s| !s.is_empty());
         let instruction_name = words
           .next()
-          .ok_or_else(|| anyhow::anyhow!("Instruction name not found on line {}: '{}'.", line_number, line))?
+          .ok_or_else(|| anyhow::anyhow!("Instruction name not found on line {}: `{}`.", line_number, line))?
           .to_uppercase();
 
-        if is_closing {
-          active_handlers.remove(&instruction_name).ok_or_else(|| {
-            anyhow::anyhow!(
-              "Missing openning tag for '{}' instruction. Line {}: '{}'.",
+        let instruction = instructions.get(&instruction_name.as_ref()).ok_or_else(|| {
+          anyhow::anyhow!(
+            "Instruction `{}` doest not exist. Line {}: `{}`.",
+            instruction_name,
+            line_number,
+            line
+          )
+        })?;
+
+        match (is_closing, instruction.needs_closing()) {
+          (true, false) => {
+            return Err(anyhow::anyhow!(
+              "Closing tag found for `{}` instruction while it does not need it. Line {}: `{}`.",
               instruction_name,
               line_number,
               line
-            )
-          })?;
-        } else {
-          let instruction = instructions.get(&instruction_name.as_ref()).ok_or_else(|| {
-            anyhow::anyhow!(
-              "Instruction '{}' doest not exist. Line {}: '{}'.",
-              instruction_name,
-              line_number,
-              line
-            )
-          })?;
-          let handler = instruction.start(words.map(Into::into).collect())?;
-          active_handlers.insert(instruction_name, handler);
-        }
-      }
-      None => {
-        for (_, h) in active_handlers.iter() {
-          h.handle_line(line)?;
+            ));
+          }
+          (true, true) => {
+            active_handlers.remove(&instruction_name).ok_or_else(|| {
+              anyhow::anyhow!(
+                "Missing openning tag for `{}` instruction. Line {}: `{}`.",
+                instruction_name,
+                line_number,
+                line
+              )
+            })?;
+          }
+          (false, _) => {
+            let handler = instruction.start(words.map(Into::into).collect())?;
+            if instruction.needs_closing() {
+              active_handlers.insert(instruction_name, handler);
+            }
+          }
         }
       }
     }

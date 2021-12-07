@@ -11,6 +11,9 @@ impl Instruction for ConsoleInstruction {
   fn start(&self, _params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, anyhow::Error> {
     Ok(Box::new(ConsoleLineHandler) as Box<dyn InstructionLineHandler>)
   }
+  fn needs_closing(&self) -> bool {
+    true
+  }
 }
 
 pub struct ConsoleLineHandler;

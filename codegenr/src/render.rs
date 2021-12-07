@@ -32,7 +32,7 @@ impl TemplateCollection {
         TemplateType::Partial => {
           if let Some(existing) = partials.get(t.template_name()) {
             return Err(anyhow::anyhow!(
-              "2 partial templates are named '{}' : \n-{}\n-{}\nThey should have unique names",
+              "2 partial templates are named `{}` : \n-{}\n-{}\nThey should have unique names",
               existing.template_name(),
               existing.file_path(),
               t.file_path()
@@ -191,7 +191,7 @@ mod test {
 
     let test = TemplateCollection::from_list(list);
     let err = test.expect_err("Should be an error");
-    assert!(err.to_string().starts_with("2 partial templates are named 'plop'"));
+    assert!(err.to_string().starts_with("2 partial templates are named `plop`"));
   }
 
   #[test]

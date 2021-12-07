@@ -60,7 +60,7 @@ impl HelperDef for GetHelper {
     match value {
       Some(v) => Ok(v.into()),
       None => Err(RenderError::new(format!(
-        "Value is not set for key '{}' in '{}' helper.",
+        "Value is not set for key `{}` in `{}` helper.",
         key, GET_HELPER
       ))),
     }
@@ -228,21 +228,21 @@ impl HelperDef for ClearHelper {
 fn get_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_name: &str) -> Result<Option<Value>, RenderError> {
   let lock = values
     .read()
-    .map_err(|_e| RenderError::new(format!("Could not acquire lock in '{}' helper", helper_name)))?;
+    .map_err(|_e| RenderError::new(format!("Could not acquire lock in `{}` helper", helper_name)))?;
   Ok(lock.get(key).map(Clone::clone))
 }
 
 fn has_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_name: &str) -> Result<bool, RenderError> {
   let lock = values
     .read()
-    .map_err(|_e| RenderError::new(format!("Could not acquire lock in '{}' helper", helper_name)))?;
+    .map_err(|_e| RenderError::new(format!("Could not acquire lock in `{}` helper", helper_name)))?;
   Ok(lock.get(key).is_some())
 }
 
 fn set_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: String, value: Value, helper_name: &str) -> Result<(), RenderError> {
   let mut lock = values
     .write()
-    .map_err(|_| RenderError::new(format!("Could not acquire lock in '{}' helper", helper_name)))?;
+    .map_err(|_| RenderError::new(format!("Could not acquire lock in `{}` helper", helper_name)))?;
   lock.insert(key, value);
   Ok(())
 }
@@ -250,7 +250,7 @@ fn set_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: String, value: V
 fn rem_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_name: &str) -> Result<(), RenderError> {
   let mut lock = values
     .write()
-    .map_err(|_| RenderError::new(format!("Could not acquire lock in '{}' helper", helper_name)))?;
+    .map_err(|_| RenderError::new(format!("Could not acquire lock in `{}` helper", helper_name)))?;
   lock.remove(key);
   Ok(())
 }

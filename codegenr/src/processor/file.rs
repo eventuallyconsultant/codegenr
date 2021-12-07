@@ -24,6 +24,9 @@ impl Instruction for FileInstruction {
       .ok_or_else(|| anyhow::anyhow!("{} instruction needs one '<file_name>' parameter.", FILE))?;
     Ok(Box::new(FileLineHandler::new(&self.output_folder, file_path)?) as Box<dyn InstructionLineHandler>)
   }
+  fn needs_closing(&self) -> bool {
+    true
+  }
 }
 
 pub struct FileLineHandler {
@@ -46,18 +49,26 @@ impl InstructionLineHandler for FileLineHandler {
 
 #[cfg(test)]
 mod test {
+  use std::io::Read;
+
   use super::*;
   use crate::filesystem::make_path_from_root;
   use tempdir::TempDir;
 
   #[test]
   pub fn start_not_existing_file_should_create_file() -> anyhow::Result<()> {
+    const CONTENT: &str = "hello ...";
     let tmp = TempDir::new("FILE_tests")?;
     let instruction = FileInstruction::new(tmp.path().to_string_lossy().into());
     let handler = instruction.start(vec!["sub/plop.txt".into()])?;
-    handler.handle_line("hello ...")?;
     let should_exists_path = make_path_from_root(tmp.path(), "sub/plop.txt");
     assert!(should_exists_path.exists());
+    handler.handle_line(CONTENT)?;
+    assert!(should_exists_path.exists());
+    drop(handler);
+    let mut content = String::new();
+    File::open(should_exists_path)?.read_to_string(&mut content)?;
+    assert_eq!(content, CONTENT);
     Ok(())
   }
 }

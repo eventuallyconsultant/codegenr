@@ -22,14 +22,18 @@ impl Instruction for CleanInstruction {
   fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, anyhow::Error> {
     let pattern = params
       .get(0)
-      .ok_or_else(|| anyhow::anyhow!("{} instruction needs one '<pattern>' parameter.", CLEAN))?;
+      .ok_or_else(|| anyhow::anyhow!("`{}` instruction needs one `<pattern>` parameter.", CLEAN))?;
 
     let full_path_pattern = Path::new(&self.output_folder).join(pattern);
-    let str_pattern = full_path_pattern.as_path().to_str().ok_or_else(|| anyhow::anyhow!("Anyhow"))?;
-    dbg!(str_pattern);
+    let str_pattern = full_path_pattern
+      .to_str()
+      .ok_or_else(|| anyhow::anyhow!("Error converting PathBuf to str."))?;
     for path in glob(str_pattern)?.flatten() {
-      dbg!(&path);
-      std::fs::remove_file(path)?;
+      if path.is_dir() {
+        std::fs::remove_dir_all(path)?
+      } else if path.is_file() {
+        std::fs::remove_file(path)?;
+      }
     }
     Ok(Box::new(TranscientLineHandler) as Box<dyn InstructionLineHandler>)
   }
@@ -38,7 +42,7 @@ impl Instruction for CleanInstruction {
 #[cfg(test)]
 mod test {
   use super::*;
-  use crate::filesystem::create_file;
+  use crate::filesystem::{create_dir, create_file};
   use tempdir::TempDir;
 
   #[test]
@@ -70,6 +74,17 @@ mod test {
     assert!(!file_path1.exists());
     assert!(!file_path2.exists());
     assert!(file_path3.exists());
+    Ok(())
+  }
+
+  #[test]
+  pub fn clean_a_directory() -> anyhow::Result<()> {
+    let tmp = TempDir::new("CLEAN_tests")?;
+    let instruction = CleanInstruction::new(tmp.path().to_string_lossy().into());
+    let dir_path = create_dir(tmp.path(), "directory")?;
+    assert!(dir_path.exists() && dir_path.is_dir());
+    instruction.start(vec!["directory".into()])?;
+    assert!(!dir_path.exists());
     Ok(())
   }
 }
