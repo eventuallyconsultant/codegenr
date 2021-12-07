@@ -59,18 +59,17 @@ mod test {
 
   #[test]
   pub fn start_not_existing_file_should_create_file() -> anyhow::Result<()> {
-    const CONTENT: &str = "hello ...";
     let tmp = TempDir::new("FILE_tests")?;
     let instruction = FileInstruction::new(tmp.path().to_string_lossy().into());
     let handler = instruction.start(vec!["sub/plop.txt".into()])?;
     let should_exists_path = make_path_from_root(tmp.path(), "sub/plop.txt");
     assert!(should_exists_path.exists());
-    handler.handle_line(CONTENT)?;
+    handler.handle_line("hello ...")?;
     assert!(should_exists_path.exists());
     drop(handler);
     let mut content = String::new();
     File::open(should_exists_path)?.read_to_string(&mut content)?;
-    assert_eq!(content, CONTENT);
+    assert_eq!(content, "hello ...\n");
     Ok(())
   }
 }
