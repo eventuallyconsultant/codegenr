@@ -675,7 +675,7 @@ impl HelperDef for NoEmptyLinesHelper {
 /// );
 /// assert_eq!(
 ///   exec_template(json!({"test": "/user/{username}/{id}"}), r#"{{regex_extract test "\\{([^}]*)}" "<$1>" "|" }}"#),
-///   "&lt;username&gt;|&lt;id&gt;"
+///   "<username>|<id>"
 /// );
 ///```
 pub struct RegexExtractHelper;
