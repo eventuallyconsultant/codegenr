@@ -62,7 +62,7 @@ impl From<Opt> for Options {
 
 fn main() -> Result<(), anyhow::Error> {
   let options: Options = Opt::from_args().into();
-  dbg!(&options);
+  // dbg!(&options);
   run_codegenr(options)?;
   Ok(())
 }
