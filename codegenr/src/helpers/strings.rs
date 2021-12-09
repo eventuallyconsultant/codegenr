@@ -622,15 +622,15 @@ impl HelperDef for OneLineHelper {
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#no_empty_lines}} {{/no_empty_lines}}"),
-/// ""
+/// "\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#no_empty_lines}}a\n \t \nb{{/no_empty_lines}}"),
-/// "a\nb"
+/// "a\nb\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#no_empty_lines}}\r\na\n \t \nb\r\nc\r\n\r\n{{/no_empty_lines}}"),
-/// "a\nb\nc"
+/// "a\nb\nc\n"
 /// );
 ///```
 pub struct NoEmptyLinesHelper;
