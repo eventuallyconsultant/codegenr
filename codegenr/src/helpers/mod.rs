@@ -28,8 +28,8 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
     handlebars.set_dev_mode(true);
   }
   handlebars.register_escape_fn(handlebars::no_escape);
-  handlebars.register_helper("debug", Box::new(DebugHelper));
-  handlebars.register_helper("debug_ctx", Box::new(DebugCtxHelper));
+  handlebars.register_helper(DEBUG, Box::new(DebugHelper));
+  handlebars.register_helper(DEBUG_CTX, Box::new(DebugCtxHelper));
   handlebars.register_helper(IF_EMPTY_HELPER, Box::new(IfEmptyHelper));
   handlebars.register_helper(IF_NOT_EMPTY_HELPER, Box::new(IfNotEmptyHelper));
   handlebars.register_helper(IF_EQUALS_HELPER, Box::new(IfEqualsHelper));
