@@ -56,7 +56,7 @@ impl HelperDef for LowercaseHelper {
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(1, LOWERCASE_HELPER)?;
-    let to_case = h.get_param_as_str_or_fail(0, LOWERCASE_FIRST_LETTER_HELPER)?;
+    let to_case = h.get_param_as_str_or_fail(0, LOWERCASE_HELPER)?;
     Ok(handlebars::ScopedJson::Derived(Value::String(to_case.to_lowercase())))
   }
 }
@@ -81,7 +81,6 @@ impl HelperDef for UppercaseFirstLetterHelper {
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(1, UPPERCASE_FIRST_LETTER_HELPER)?;
-
     let to_case = h.get_param_as_str_or_fail(0, UPPERCASE_FIRST_LETTER_HELPER)?;
     Ok(handlebars::ScopedJson::Derived(Value::String(to_case.uppercase_first_letter())))
   }
@@ -107,7 +106,6 @@ impl HelperDef for LowercaseFirstLetterHelper {
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(1, LOWERCASE_FIRST_LETTER_HELPER)?;
-
     let to_case = h.get_param_as_str_or_fail(0, LOWERCASE_FIRST_LETTER_HELPER)?;
     Ok(handlebars::ScopedJson::Derived(Value::String(to_case.lowercase_first_letter())))
   }
@@ -133,7 +131,7 @@ impl HelperDef for PascalcaseHelper {
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(1, PASCAL_CASE_HELPER)?;
-    let to_case = h.get_param_as_str_or_fail(0, LOWERCASE_FIRST_LETTER_HELPER)?;
+    let to_case = h.get_param_as_str_or_fail(0, PASCAL_CASE_HELPER)?;
     Ok(handlebars::ScopedJson::Derived(Value::String(to_case.pascal_case())))
   }
 }
