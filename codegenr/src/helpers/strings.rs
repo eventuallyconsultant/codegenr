@@ -655,6 +655,7 @@ impl HelperDef for NoEmptyLinesHelper {
         }
         out.write(line)?;
       }
+      out.write("\n")?;
     };
     Ok(())
   }
