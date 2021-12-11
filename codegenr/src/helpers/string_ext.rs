@@ -19,6 +19,7 @@ pub trait StringExt {
   fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String;
 
   fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error>;
+  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, anyhow::Error>;
 }
 
 // impl<T> StringExt for T where T: AsRef<str> {}
@@ -83,6 +84,13 @@ impl StringExt for Option<String> {
       .transpose()
       .map(|s| s.unwrap_or_default())
   }
+  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, anyhow::Error> {
+    self
+      .as_ref()
+      .map(|s| s.regex_transform(regex_pattern, regex_replacer))
+      .transpose()
+      .map(|s| s.unwrap_or_default())
+  }
 }
 
 impl StringExt for String {
@@ -140,6 +148,9 @@ impl StringExt for String {
 
   fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
     self.as_str().regex_extract(regex_extractor, regex_replacer, separator)
+  }
+  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, anyhow::Error> {
+    self.as_str().regex_transform(regex_pattern, regex_replacer)
   }
 }
 
@@ -292,6 +303,12 @@ impl StringExt for &str {
 
     Ok(values.join(separator))
   }
+
+  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, anyhow::Error> {
+    let regex_extr = Regex::new(regex_pattern)?;
+    let transformed = regex_extr.replace_all(self, regex_replacer);
+    Ok(transformed.into())
+  }
 }
 
 static ONE_LINER_REGEX: once_cell::sync::Lazy<regex::Regex> =
@@ -311,6 +328,14 @@ mod test {
   #[test_case("/user/{username}/{id}", "\\{([^}]*)}", Some("<$1>"), Some("|"), "<username>|<id>")]
   fn regex_extract_tests(arg: &str, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>, expected: &str) {
     let result = arg.regex_extract(regex_extractor, regex_replacer, separator).unwrap();
+    assert_eq!(result, expected);
+  }
+
+  #[test_case("/user/{username}", "\\{([^}]*)}", "$1", "/user/username")]
+  #[test_case("/user/{user}/{id}", "\\{([^}]*)}", "$1", "/user/user/id")]
+  #[test_case("/user/{username}/{id}", "\\{([^}]*)}", "<$1>", "/user/<username>/<id>")]
+  fn regex_transform_tests(arg: &str, regex_extractor: &str, regex_replacer: &str, expected: &str) {
+    let result = arg.regex_transform(regex_extractor, regex_replacer).unwrap();
     assert_eq!(result, expected);
   }
 

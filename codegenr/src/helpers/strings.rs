@@ -17,8 +17,6 @@ pub const TRIM_BLOCK_START_HELPER: &str = "trim_block_start";
 pub const TRIM_BLOCK_END_HELPER: &str = "trim_block_end";
 pub const ONE_LINE_HELPER: &str = "one_line";
 pub const NO_EMPTY_LINES_HELPER: &str = "no_empty_lines";
-pub const REGEX_EXTRACT_HELPER: &str = "regex_extract";
-
 /// Returns a string slice with leading and trailing whitespace removed.
 /// ```
 /// # use codegenr::helpers::*;
@@ -658,44 +656,6 @@ impl HelperDef for NoEmptyLinesHelper {
       out.write("\n")?;
     };
     Ok(())
-  }
-}
-
-/// Extract and transform a list of values.
-///```
-/// # use codegenr::helpers::*;
-/// # use serde_json::json;
-/// assert_eq!(
-///   exec_template(json!({"test": "/user/{username}"}), r#"{{regex_extract test "\\{([^}]*)}" "$1"}}"#),
-///   "username"
-/// );
-/// assert_eq!(
-///   exec_template(json!({"test": "/user/{username}/{id}"}), r#"{{regex_extract test "\\{([^}]*)}" "$1"}}"#),
-///   "username, id"
-/// );
-/// assert_eq!(
-///   exec_template(json!({"test": "/user/{username}/{id}"}), r#"{{regex_extract test "\\{([^}]*)}" "<$1>" "|" }}"#),
-///   "<username>|<id>"
-/// );
-///```
-pub struct RegexExtractHelper;
-
-impl HelperDef for RegexExtractHelper {
-  fn call_inner<'reg: 'rc, 'rc>(
-    &self,
-    h: &handlebars::Helper<'reg, 'rc>,
-    _: &'reg handlebars::Handlebars<'reg>,
-    _: &'rc handlebars::Context,
-    _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
-    let arg = h.get_param_as_str_or_fail(0, REGEX_EXTRACT_HELPER)?;
-    let regex_patern = h.get_param_as_str_or_fail(1, REGEX_EXTRACT_HELPER)?;
-    let regex_replacement = h.get_param_as_str_or_fail(2, REGEX_EXTRACT_HELPER)?;
-    let separator = h.get_param_as_str(3);
-    let result = arg
-      .regex_extract(regex_patern, Some(regex_replacement), separator)
-      .map_err(|e| RenderError::new(format!("{} error: `{}`.", REGEX_EXTRACT_HELPER, e)))?;
-    Ok(handlebars::ScopedJson::Derived(Value::String(result)))
   }
 }
 

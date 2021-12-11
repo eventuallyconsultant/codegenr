@@ -9,8 +9,10 @@ pub trait HandlebarsExt {
   fn get_param_as_str_or_fail(&self, index: usize, helper_name: &str) -> Result<&str, RenderError>;
   fn get_param_as_json(&self, index: usize) -> Option<&Value>;
   fn get_param_as_json_or_fail(&self, index: usize, helper_name: &str) -> Result<&Value, RenderError>;
+  fn get_param_as_array(&self, index: usize) -> Option<&Vec<Value>>;
   fn get_param_as_array_or_fail(&self, index: usize, helper_name: &str) -> Result<&Vec<Value>, RenderError>;
   fn get_param_as_bool(&self, index: usize) -> Option<bool>;
+  fn get_param_as_bool_or_fail(&self, index: usize, helper_name: &str) -> Result<bool, RenderError>;
   fn get_param_as_integer(&self, index: usize) -> Option<u64>;
 }
 
@@ -75,6 +77,10 @@ impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
       .ok_or_else(|| RenderError::new(format!("There should be a {} argument for `{}` helper.", index, helper_name)))
   }
 
+  fn get_param_as_array(&self, index: usize) -> Option<&Vec<Value>> {
+    self.get_param_as_json(index).map(|value| value.as_array()).flatten()
+  }
+
   fn get_param_as_array_or_fail(&self, index: usize, helper_name: &str) -> Result<&Vec<Value>, RenderError> {
     match self.get_param_as_json_or_fail(index, helper_name)? {
       Value::Array(a) => Ok(a),
@@ -84,9 +90,17 @@ impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
       ))),
     }
   }
+
   fn get_param_as_bool(&self, index: usize) -> Option<bool> {
     self.param(index).map(|p| is_truthy(p.value()))
   }
+
+  fn get_param_as_bool_or_fail(&self, index: usize, helper_name: &str) -> Result<bool, RenderError> {
+    self
+      .get_param_as_bool(index)
+      .ok_or_else(|| RenderError::new(format!("There should be a {} argument for `{}` helper.", index, helper_name)))
+  }
+
   fn get_param_as_integer(&self, index: usize) -> Option<u64> {
     self.param(index).map(|p| p.value().as_u64()).flatten()
   }
