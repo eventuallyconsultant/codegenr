@@ -45,10 +45,7 @@ impl HelperDef for DistinctiveHelper {
       .map_err(|_| RenderError::new(format!("Could not acquire lock in `{}` helper", DISTINCTIVE)))?;
     let values_for_this_key = lock.entry(key.into()).or_default();
 
-    // let before = values_for_this_key.clone();
     let inserted = values_for_this_key.insert(value.into());
-    // println!("{} : {:?} <= {}, {}", key, before, value, inserted);
-
     let temp = if inserted { h.template() } else { h.inverse() };
 
     match temp {
