@@ -49,11 +49,12 @@ impl TemplateCollection {
   }
 
   pub fn render(&self, json: &Value, mut handlebars: Handlebars) -> Result<String, anyhow::Error> {
-    handlebars.register_template_file("main", self.main.file_path())?;
+    let template_name = self.main.template_name();
+    handlebars.register_template_file(template_name, self.main.file_path())?;
     for (_, value) in self.partials.iter() {
       handlebars.register_template_file(value.template_name(), value.file_path())?
     }
-    Ok(handlebars.render("main", json)?)
+    Ok(handlebars.render(template_name, json)?)
   }
 }
 
