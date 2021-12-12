@@ -18,6 +18,7 @@ A `Rust` rewrite of `C#` [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 - [ ] Better Errors (typed ones)
 - [ ] Verbose/Tracing? mode
 - [ ] Smol strings optimisation ?
+- [ ] Resolved Json Cache optimisation
 - [ ] Rename `codegenr-cli` to `codegenr` & `codegenr` to `codegenr-lib`
 - [ ] Publish on `crates.io`
 - [ ] Be able to have a `codegenr.toml` on a workspace root to describe all the templates to execute around the workspace, and watch for the file changes
