@@ -1,6 +1,5 @@
 use crate::helpers::handlebars_ext::HandlebarsExt;
-use crate::helpers::string_ext::StringExt;
-use handlebars::{HelperDef, RenderError};
+use handlebars::HelperDef;
 use serde_json::Value;
 
 pub const JSON_HELPER: &str = "json";
