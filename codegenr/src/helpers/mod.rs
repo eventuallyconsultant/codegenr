@@ -36,7 +36,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(IF_EQUALS_HELPER, Box::new(IfEqualsHelper));
   handlebars.register_helper(IF_NOT_EQUALS_HELPER, Box::new(IfNotEqualsHelper));
   handlebars.register_helper(JSON_HELPER, Box::new(JsonHelper));
-  handlebars.register_helper("hex", Box::new(Hex));
+  handlebars.register_helper(HEX, Box::new(Hex));
   handlebars.register_helper(TRIM_HELPER, Box::new(TrimHelper));
   handlebars.register_helper(TRIM_START_HELPER, Box::new(TrimStartHelper));
   handlebars.register_helper(TRIM_END_HELPER, Box::new(TrimEndHelper));

@@ -1,5 +1,7 @@
 use handlebars::handlebars_helper;
 
+pub const HEX: &str = "hex";
+
 /// Return the hexadecimal representation of the integer value
 /// ```
 /// # use codegenr::helpers::*;
