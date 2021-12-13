@@ -18,3 +18,4 @@ codegenr = { path="../codegenr" }
 anyhow = "1.0.44"
 structopt = "0.3.23"
 serde_json = { version = "1.0.68", features = ["preserve_order"] }
+toml = "0.5.8"

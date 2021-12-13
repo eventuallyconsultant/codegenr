@@ -1,3 +1,6 @@
+use serde::Deserialize;
+use std::collections::HashMap;
+
 pub mod custom;
 pub(crate) mod filesystem;
 pub mod helpers;
@@ -6,15 +9,13 @@ pub mod processor;
 pub mod render;
 pub mod resolver;
 
-use std::collections::HashMap;
-
 use filesystem::save_file_content;
 use handlebars::Handlebars;
 use loader::*;
 use render::*;
 use resolver::*;
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Options {
   pub source: String,
   pub output: String,

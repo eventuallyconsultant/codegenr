@@ -2,8 +2,9 @@ use codegenr::{run_codegenr, Options};
 use serde_json::Value;
 use structopt::StructOpt;
 
-//https://docs.rs/structopt/latest/structopt/#specifying-argument-types
+const CODEGENR_CONFIG_FILE: &str = "codegenr.toml";
 
+//https://docs.rs/structopt/latest/structopt/#specifying-argument-types
 #[derive(StructOpt, Debug)]
 #[structopt(name = "codegenr")]
 struct Opt {
@@ -61,8 +62,20 @@ impl From<Opt> for Options {
 }
 
 fn main() -> Result<(), anyhow::Error> {
-  let options: Options = Opt::from_args().into();
-  // dbg!(&options);
-  run_codegenr(options)?;
+  let codegen_file = std::fs::read_to_string(CODEGENR_CONFIG_FILE);
+  let options = Opt::from_args_safe();
+  match (codegen_file, options) {
+    (Ok(_ignored_config_file), Ok(options)) => run_codegenr(options.into())?,
+    (Ok(config_file), Err(_)) => {
+      let opts: std::collections::HashMap<String, Options> = toml::from_str(&config_file)?;
+      for (name, options) in opts {
+        if let Err(e) = run_codegenr(options) {
+          println!("Error while executing the `{}` section: `{}`", name, e);
+        }
+      }
+    }
+    (Err(_), Ok(options)) => run_codegenr(options.into())?,
+    (Err(_), Err(clap_error)) => clap_error.exit(),
+  }
   Ok(())
 }
