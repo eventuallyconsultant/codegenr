@@ -6,21 +6,21 @@ pub mod handlebars_ext;
 pub mod string_ext;
 
 mod cases;
-pub use cases::*;
 mod debug;
-pub use debug::*;
+mod distinct;
 mod empty;
-pub use empty::*;
-mod strings;
-pub use strings::*;
-mod math;
-pub use math::*;
-mod getset;
-pub use getset::*;
 mod equals;
-pub use equals::*;
+mod getset;
+mod json;
+mod math;
+mod openapi3;
 mod params;
-pub use params::*;
+mod regex;
+mod strings;
+
+pub use {
+  self::regex::*, cases::*, debug::*, distinct::*, empty::*, equals::*, getset::*, json::*, math::*, openapi3::*, params::*, strings::*,
+};
 
 pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<String, Value>) {
   #[cfg(debug_assertions)]
@@ -30,10 +30,12 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_escape_fn(handlebars::no_escape);
   handlebars.register_helper(DEBUG, Box::new(DebugHelper));
   handlebars.register_helper(DEBUG_CTX, Box::new(DebugCtxHelper));
+  handlebars.register_helper(DISTINCTIVE, Box::new(DistinctiveHelper::default()));
   handlebars.register_helper(IF_EMPTY_HELPER, Box::new(IfEmptyHelper));
   handlebars.register_helper(IF_NOT_EMPTY_HELPER, Box::new(IfNotEmptyHelper));
   handlebars.register_helper(IF_EQUALS_HELPER, Box::new(IfEqualsHelper));
   handlebars.register_helper(IF_NOT_EQUALS_HELPER, Box::new(IfNotEqualsHelper));
+  handlebars.register_helper(JSON_HELPER, Box::new(JsonHelper));
   handlebars.register_helper("hex", Box::new(Hex));
   handlebars.register_helper(TRIM_HELPER, Box::new(TrimHelper));
   handlebars.register_helper(TRIM_START_HELPER, Box::new(TrimStartHelper));
@@ -56,13 +58,25 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(ONE_LINE_HELPER, Box::new(OneLineHelper));
   handlebars.register_helper(NO_EMPTY_LINES_HELPER, Box::new(NoEmptyLinesHelper));
   handlebars.register_helper(REGEX_EXTRACT_HELPER, Box::new(RegexExtractHelper));
+  handlebars.register_helper(REGEX_TRANSFORM_HELPER, Box::new(RegexTransformHelper));
   //handlebars.register_helper(EACH_WITH_SORT_HELPER, Box::new(EachWithSortHelper));
+
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
   handlebars.register_helper(SET_HELPER, Box::new(SetHelper::new(&map)));
   handlebars.register_helper(WITH_SET_HELPER, Box::new(WithSetHelper::new(&map)));
   handlebars.register_helper(IF_SET_HELPER, Box::new(IfGetHelper::new(&map)));
   handlebars.register_helper(CLEAR_HELPER, Box::new(ClearHelper::new(&map)));
+
+  let oapi3_forced_required = Default::default();
+  handlebars.register_helper(
+    IS_OAPI3_PARAM_REQUIRED,
+    Box::new(IsOApi3ParamRequiredHelper::new(&oapi3_forced_required)),
+  );
+  handlebars.register_helper(
+    IS_OAPI3_PROP_REQUIRED,
+    Box::new(IsOApi3PropRequiredHelper::new(&oapi3_forced_required)),
+  );
 
   handlebars.register_helper(GLOBAL_PARAMETERS_HELPER, Box::new(GlobalParameterHelper::new(global_params)));
 }
