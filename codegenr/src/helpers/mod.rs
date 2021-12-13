@@ -68,15 +68,8 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(IF_SET_HELPER, Box::new(IfGetHelper::new(&map)));
   handlebars.register_helper(CLEAR_HELPER, Box::new(ClearHelper::new(&map)));
 
-  let oapi3_forced_required = Default::default();
-  handlebars.register_helper(
-    IS_OAPI3_PARAM_REQUIRED,
-    Box::new(IsOApi3ParamRequiredHelper::new(&oapi3_forced_required)),
-  );
-  handlebars.register_helper(
-    IS_OAPI3_PROP_REQUIRED,
-    Box::new(IsOApi3PropRequiredHelper::new(&oapi3_forced_required)),
-  );
+  handlebars.register_helper(IS_OAPI3_PARAM_REQUIRED, Box::new(IsOApi3ParamRequiredHelper));
+  handlebars.register_helper(IS_OAPI3_PROP_REQUIRED, Box::new(IsOApi3PropRequiredHelper));
 
   handlebars.register_helper(GLOBAL_PARAMETERS_HELPER, Box::new(GlobalParameterHelper::new(global_params)));
 }

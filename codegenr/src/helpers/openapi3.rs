@@ -1,6 +1,5 @@
 use handlebars::{HelperDef, RenderError, ScopedJson};
 use serde_json::Value;
-use std::sync::{Arc, RwLock};
 
 use super::handlebars_ext::HandlebarsExt;
 
@@ -46,15 +45,7 @@ pub const IS_OAPI3_PROP_REQUIRED: &str = "is_oapi3_property_required";
 /// "#
 /// );
 /// ```
-pub struct IsOApi3ParamRequiredHelper {
-  forced: Arc<RwLock<Option<bool>>>,
-}
-
-impl IsOApi3ParamRequiredHelper {
-  pub fn new(forced: &Arc<RwLock<Option<bool>>>) -> Self {
-    Self { forced: forced.clone() }
-  }
-}
+pub struct IsOApi3ParamRequiredHelper;
 
 impl HelperDef for IsOApi3ParamRequiredHelper {
   fn call_inner<'reg: 'rc, 'rc>(
@@ -65,14 +56,6 @@ impl HelperDef for IsOApi3ParamRequiredHelper {
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(1, IS_OAPI3_PARAM_REQUIRED)?;
-    let forced = self
-      .forced
-      .read()
-      .map_err(|_e| RenderError::new(format!("Could not acquire lock in `{}` helper", IS_OAPI3_PARAM_REQUIRED)))?;
-    if let Some(v) = *forced {
-      return Ok(ScopedJson::Derived(Value::Bool(v)));
-    }
-
     let json = h.get_param_as_json_or_fail(0, IS_OAPI3_PARAM_REQUIRED)?;
     let required = json["required"].as_bool().unwrap_or(false);
     Ok(ScopedJson::Derived(Value::Bool(required)))
@@ -110,15 +93,7 @@ impl HelperDef for IsOApi3ParamRequiredHelper {
 /// "#
 /// );
 /// ```
-pub struct IsOApi3PropRequiredHelper {
-  forced: Arc<RwLock<Option<bool>>>,
-}
-
-impl IsOApi3PropRequiredHelper {
-  pub fn new(forced: &Arc<RwLock<Option<bool>>>) -> Self {
-    Self { forced: forced.clone() }
-  }
-}
+pub struct IsOApi3PropRequiredHelper;
 
 impl HelperDef for IsOApi3PropRequiredHelper {
   fn call_inner<'reg: 'rc, 'rc>(
@@ -129,14 +104,6 @@ impl HelperDef for IsOApi3PropRequiredHelper {
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(2, IS_OAPI3_PROP_REQUIRED)?;
-    let forced = self
-      .forced
-      .read()
-      .map_err(|_e| RenderError::new(format!("Could not acquire lock in `{}` helper", IS_OAPI3_PROP_REQUIRED)))?;
-    if let Some(v) = *forced {
-      return Ok(ScopedJson::Derived(Value::Bool(v)));
-    }
-
     let name = h.get_param_as_json_or_fail(0, IS_OAPI3_PROP_REQUIRED)?;
     let required = h
       .get_param_as_array(1)
