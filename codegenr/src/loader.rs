@@ -1,7 +1,42 @@
 use path_dedot::ParseDot;
 use serde_json::{Map, Value};
 use std::{fs::File, io::Read, path::Path};
+use thiserror::Error;
 use url::Url;
+
+#[derive(Error, Debug)]
+pub enum LoaderError {
+  //
+  // Io
+  //
+  #[error("Io Error: `{0}`.")]
+  Io(#[from] std::io::Error),
+  #[error("Download error: `{0}`.")]
+  DownloadError(#[from] reqwest::Error),
+  //
+  // Path manipulation
+  //
+  #[error("Url `{url}`cannot be a base.")]
+  UrlCannotBeABase { url: Url },
+  #[error("Unable to append path `{from}` to `{to}`.")]
+  UnableToAppendPath { to: String, from: String },
+  #[error("The origin path should be a file and have parent.")]
+  OriginPathShouldBeAFile { path: String },
+  //
+  // Deserialisation
+  //
+  #[error("Couldn't transpile yaml to json : `{0}`.")]
+  YamlToJsonError(&'static str),
+  #[error("Could not read file content as json:\n-json_error: `{json_error}`\n-yaml_error:`{yaml_error}`.")]
+  DeserialisationError {
+    json_error: serde_json::Error,
+    yaml_error: serde_yaml::Error,
+  },
+  #[error("Yaml error: `{0}`.")]
+  YamlError(#[from] serde_yaml::Error),
+  #[error("Json error: `{0}`.")]
+  JsonError(#[from] serde_json::Error),
+}
 
 #[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum DocumentPath {
@@ -24,7 +59,7 @@ pub(crate) enum FormatHint {
 }
 
 impl DocumentPath {
-  pub fn parse(ref_path: &str) -> Result<Self, anyhow::Error> {
+  pub fn parse(ref_path: &str) -> Result<Self, LoaderError> {
     Ok(if ref_path.trim() == "" {
       Self::None
     } else {
@@ -35,19 +70,23 @@ impl DocumentPath {
     })
   }
 
-  pub fn relate_from(self, refed_from: &Self) -> Result<Self, anyhow::Error> {
+  pub fn relate_from(self, refed_from: &Self) -> Result<Self, LoaderError> {
     use DocumentPath::*;
     Ok(match (refed_from, self) {
       (Url(_), Url(url)) => Url(url),
       (Url(url_from), FileName(path_to)) => {
         let mut url = url_from.clone();
-        url.path_segments_mut().map_err(|_| anyhow::anyhow!("Url cannot be a base."))?.pop();
+        url
+          .path_segments_mut()
+          .map_err(|_| LoaderError::UrlCannotBeABase { url: url_from.clone() })?
+          .pop();
         let path = url.path();
         let new_path = Path::new(path).join(&path_to);
         let new_path = new_path.parse_dot()?;
-        let new_path = new_path
-          .to_str()
-          .ok_or_else(|| anyhow::anyhow!("Unable to append path `{}` to `{}`", path_to, url_from))?;
+        let new_path = new_path.to_str().ok_or_else(|| LoaderError::UnableToAppendPath {
+          to: path_to,
+          from: url_from.to_string(),
+        })?;
         url.set_path(new_path);
         Url(url)
       }
@@ -55,13 +94,16 @@ impl DocumentPath {
       (FileName(path_from), FileName(path_to)) => {
         let folder = Path::new(path_from)
           .parent()
-          .ok_or_else(|| anyhow::anyhow!("The origin path should be a file and have parent."))?;
+          .ok_or_else(|| LoaderError::OriginPathShouldBeAFile { path: path_from.clone() })?;
         folder
           .join(&path_to)
           .parse_dot()?
           .to_str()
           .map(|s| FileName(s.to_owned()))
-          .ok_or_else(|| anyhow::anyhow!("Unable to append path `{}` to `{}`", path_to, path_from))?
+          .ok_or_else(|| LoaderError::UnableToAppendPath {
+            to: path_to,
+            from: path_from.clone(),
+          })?
       }
       (FileName(_), Url(url)) => Url(url),
       (FileName(_path_from), None) => refed_from.clone(),
@@ -84,7 +126,7 @@ impl DocumentPath {
     }
   }
 
-  pub fn load_raw(&self) -> Result<Value, anyhow::Error> {
+  pub fn load_raw(&self) -> Result<Value, LoaderError> {
     let hint = self.guess_format();
     match self {
       DocumentPath::Url(url) => {
@@ -102,46 +144,34 @@ impl DocumentPath {
   }
 }
 
-fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, anyhow::Error> {
+fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, LoaderError> {
   match hint {
     FormatHint::Json | FormatHint::NoIdea => {
       let json_error = match serde_json::from_str(content) {
         Ok(json) => return Ok(json),
         Err(e) => e,
       };
-
       let yaml_error = match serde_yaml::from_str(content) {
         Ok(yaml) => return yaml_to_json(yaml),
         Err(e) => e,
       };
-
-      Err(anyhow::anyhow!(
-        "Could not read file content as json:\n-json_error: `{}`\n-yaml_error:`{}`",
-        json_error,
-        yaml_error,
-      ))
+      Err(LoaderError::DeserialisationError { json_error, yaml_error })
     }
     FormatHint::Yaml => {
       let yaml_error = match serde_yaml::from_str(content) {
         Ok(yaml) => return yaml_to_json(yaml),
         Err(e) => e,
       };
-
       let json_error = match serde_json::from_str(content) {
         Ok(json) => return Ok(json),
         Err(e) => e,
       };
-
-      Err(anyhow::anyhow!(
-        "Could not read file content as json:\n-yaml_error:`{}`\n-json_error: `{}`",
-        yaml_error,
-        json_error,
-      ))
+      Err(LoaderError::DeserialisationError { json_error, yaml_error })
     }
   }
 }
 
-fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, anyhow::Error> {
+fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, LoaderError> {
   use serde_yaml::Value::*;
   Ok(match yaml {
     Null => Value::Null,
@@ -155,7 +185,7 @@ fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, anyhow::Error> {
         if let String(s) = key {
           json.insert(s, yaml_to_json(value)?);
         } else {
-          return Err(anyhow::anyhow!("Object keys should be strings."));
+          return Err(LoaderError::YamlToJsonError("Object keys should be strings."));
         }
       }
       Value::Object(json)
@@ -163,19 +193,19 @@ fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, anyhow::Error> {
   })
 }
 
-fn yaml_to_json_number(n: serde_yaml::Number) -> Result<serde_json::Number, anyhow::Error> {
+fn yaml_to_json_number(n: serde_yaml::Number) -> Result<serde_json::Number, LoaderError> {
   use serde_json::Number;
   let number = if n.is_f64() {
-    let f = n.as_f64().ok_or_else(|| anyhow::format_err!("The number should be an f64."))?;
-    Number::from_f64(f).ok_or_else(|| anyhow::format_err!("The number couldn't map to json."))?
+    let f = n.as_f64().ok_or(LoaderError::YamlToJsonError("The number should be an f64."))?;
+    Number::from_f64(f).ok_or(LoaderError::YamlToJsonError("The number couldn't map to json."))?
   } else if n.is_u64() {
-    let u = n.as_u64().ok_or_else(|| anyhow::format_err!("The number should be an u64."))?;
+    let u = n.as_u64().ok_or(LoaderError::YamlToJsonError("The number should be an u64."))?;
     Number::from(u)
   } else if n.is_i64() {
-    let u = n.as_i64().ok_or_else(|| anyhow::format_err!("The number should be an i64."))?;
+    let u = n.as_i64().ok_or(LoaderError::YamlToJsonError("The number should be an i64."))?;
     Number::from(u)
   } else {
-    return Err(anyhow::anyhow!("There is a new number flavor in yaml ?"));
+    return Err(LoaderError::YamlToJsonError("There is a new number flavor in yaml ?"));
   };
   Ok(number)
 }
@@ -212,26 +242,26 @@ mod test {
   }
 
   #[test]
-  fn read_json_file_test() -> Result<(), anyhow::Error> {
+  fn read_json_file_test() -> Result<(), LoaderError> {
     let _result = DocumentPath::parse("./_samples/resolver/Merge1_rest.json")?.load_raw()?;
     Ok(())
   }
 
   #[test]
-  fn read_yaml_file_test() -> Result<(), anyhow::Error> {
+  fn read_yaml_file_test() -> Result<(), LoaderError> {
     let _result = DocumentPath::parse("./_samples/resolver/Merge1.yaml")?.load_raw()?;
     Ok(())
   }
 
   #[test]
   #[ignore]
-  fn read_beezup_openapi() -> Result<(), anyhow::Error> {
+  fn read_beezup_openapi() -> Result<(), LoaderError> {
     let _result = DocumentPath::parse("https://api-docs.beezup.com/swagger.json")?.load_raw()?;
     Ok(())
   }
 
   #[test]
-  fn yaml_to_json_tests() -> Result<(), anyhow::Error> {
+  fn yaml_to_json_tests() -> Result<(), LoaderError> {
     use serde_yaml::Value::*;
     assert_eq!(yaml_to_json(Null)?, Value::Null);
     assert_eq!(yaml_to_json(Bool(true))?, Value::Bool(true));
@@ -258,7 +288,7 @@ mod test {
     map.insert(Null, String("value".into()));
     let expected_failed = yaml_to_json(Mapping(map));
     let e = expected_failed.expect_err("Should be an error");
-    assert_eq!(e.to_string(), "Object keys should be strings.");
+    assert_eq!(e.to_string(), "Couldn't transpile yaml to json : `Object keys should be strings.`.");
 
     Ok(())
   }
@@ -269,7 +299,10 @@ mod test {
 
     let expected_failed_for_f64 = yaml_to_json_number(Number::from(f64::INFINITY));
     let f64_error = expected_failed_for_f64.expect_err("Should be an error");
-    assert_eq!(f64_error.to_string(), "The number couldn't map to json.");
+    assert_eq!(
+      f64_error.to_string(),
+      "Couldn't transpile yaml to json : `The number couldn't map to json.`."
+    );
 
     let _success_for_f64 = yaml_to_json_number(Number::from(256.2))?;
     let _success_for_u64 = yaml_to_json_number(Number::from(-42))?;

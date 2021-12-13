@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 # Errors
 anyhow = "1.0.44"
+thiserror = "1.0.30"
 # File loading & path manipulations
 url = "2.2.2"
 path-dedot = "3.0.14"
