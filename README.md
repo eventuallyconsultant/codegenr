@@ -14,11 +14,13 @@ A `Rust` rewrite of `C#` [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 - [x] Implement some default helper (and make some doc tests about them)
 - [x] A plugin system
 - [x] Migrate C# custom helpers to this new plugin system
-- [ ] A this point, we could use `codegenr` in place of `CodegenUP`, just by calling some commands
+- [x] A this point, we could use `codegenr` in place of `CodegenUP`, just by calling some commands
 - [ ] Better Errors (typed ones)
 - [ ] Verbose/Tracing? mode
 - [ ] Smol strings optimisation ?
 - [ ] Resolved Json Cache optimisation
+- [ ] Better examples
+- [ ] all tests passing on windows too
 - [ ] Rename `codegenr-cli` to `codegenr` & `codegenr` to `codegenr-lib`
 - [ ] Publish on `crates.io`
 - [ ] Be able to have a `codegenr.toml` on a workspace root to describe all the templates to execute around the workspace, and watch for the file changes
