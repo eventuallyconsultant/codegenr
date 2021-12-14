@@ -7,6 +7,8 @@
   "editor.rulers": [
     140
   ],
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs":"active",
   // https://shd101wyy.github.io/markdown-preview-enhanced/
   "markdown-preview-enhanced.previewTheme": "github-light.css",
   //----------------------------------------------------------------------
