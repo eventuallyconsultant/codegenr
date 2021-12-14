@@ -16,7 +16,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  dev-gen-tests:
+  tests:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
