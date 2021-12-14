@@ -45,16 +45,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RUST_LOG: debug
-     
+
     steps:
       - name: Show rustup toolchain version
         run: rustup show
 
       - uses: actions/checkout@v2
-
-      - name: Build
-        run: |
-          cargo build --workspace --release
 
       - name: PublishLib
         run: |
