@@ -1,2 +1,18 @@
 tasks:
   - init: cargo build
+
+vscode:
+  extensions:
+    - matklad.rust-analyzer
+    - 42crunch.vscode-openapi
+    - andrejunges.handlebars
+    - ruhanrk.hbs-snippets
+    - vadimcn.vscode-lldb
+    - ms-vscode.cpptools
+    - bungcip.better-toml
+    - serayuzgur.crates
+    - eamodio.gitlens
+    - ms-vsliveshare.vsliveshare
+    - shd101wyy.markdown-preview-enhanced
+    - usernamehw.errorlens
+    - rhaiscript.vscode-rhai"
