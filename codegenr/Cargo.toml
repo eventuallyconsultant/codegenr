@@ -7,7 +7,7 @@ description = "Fast json/yaml/openapi code generator base on handlebars templati
 readme = "../README.md"
 homepage = "https://github.com/eventuallyconsultant/codegenr/"
 repository = "https://github.com/eventuallyconsultant/codegenr/"
-keywords = ["codegen", "openapi", "api-first", "contract-first", "swagger", "api"]
+keywords = ["codegen", "openapi", "api-first", "contract-first", "api"]
 categories = ["development-tools"]
 license = "GPL-3.0-or-later"
 
