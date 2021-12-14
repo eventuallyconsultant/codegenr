@@ -56,14 +56,24 @@ jobs:
         run: |
           cargo build --workspace --release
 
-      - name: Publish
+      - name: PublishLib
         run: |
           cargo login ${{ secrets.CRATES_IO_CODEGENR_PUBLISH_TOKEN }}
           cd codegenr-lib
           cargo publish
-          cd ..
+        continue-on-error: true
+
+      - name: PublishTool
+        run: |
+          cargo login ${{ secrets.CRATES_IO_CODEGENR_PUBLISH_TOKEN }}
           cd codegenr
           cargo publish
+        continue-on-error: true
+
+      - name: Check on failures
+        if: steps.PublishLib.outputs.status == 'failure' || steps.PublishTool.outputs.status == 'failure'
+        run: exit 1
+
 
 
 
