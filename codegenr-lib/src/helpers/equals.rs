@@ -7,7 +7,7 @@ pub const IF_NOT_EQUALS_HELPER: &str = "if_not_equals";
 /// Execute template if the first argument is equal to any other argument, otherwise execute the inverse
 /// (all arguments are converted to string and case insensitive compared)
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// //assert_eq!(
 ///   //exec_template(json!({}), r#"{{#if_equals "test" "teSt"}}OK{{else}}{{/if_equals}}"#),
@@ -58,7 +58,7 @@ impl HelperDef for IfEqualsHelper {
 /// Execute template if the first argument is not equal to all other arguments, otherwise execute the inverse
 /// (all arguments are converted to string and case insensitive compared)
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// //assert_eq!(
 ///   //exec_template(json!({}), r#"{{#if_not_equals "test" "teSt"}}{{else}}NOK{{/if_not_equals}}"#),

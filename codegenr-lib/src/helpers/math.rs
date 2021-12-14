@@ -4,7 +4,7 @@ pub const HEX: &str = "hex";
 
 /// Return the hexadecimal representation of the integer value
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(serde_json::Value::Null, "{{hex 42}}"),

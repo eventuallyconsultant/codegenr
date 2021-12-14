@@ -8,7 +8,7 @@ pub const IF_EMPTY_HELPER: &str = "if_empty";
 
 /// Call the template if a non empty or whitespaces string is passed as parameter, or any other non null value
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#if_not_empty 42}}OK{{else}}NOK{{/if_not_empty}}"),
@@ -62,7 +62,7 @@ impl HelperDef for IfNotEmptyHelper {
 
 /// Call the template if an empty or whitespaces string is passed as parameter
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({"a": 42}), "{{#if_empty a}}OK{{else}}NOK{{/if_empty}}"),

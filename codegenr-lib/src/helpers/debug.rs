@@ -6,7 +6,7 @@ pub const DEBUG_CTX: &str = "debug_ctx";
 
 /// A debug helper that output a json representation of input parameters
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({"plop": "plop"}), "{{debug 42 \"42\" plop non_existing}}"),
@@ -64,7 +64,7 @@ impl HelperDef for DebugHelper {
 
 /// Does not render anything but outputs the internal handlebars contexts to the commad line
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 ///
 /// let _result = exec_template(json!({"plop": "plop"}), "{{debug_ctx 42 \"42\" plop non_existing}}");

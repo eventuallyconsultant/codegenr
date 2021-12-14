@@ -14,7 +14,7 @@ pub const WITH_SET_HELPER: &str = "with_set";
 
 /// Gets a value from the key/value store
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), r#"{{set "k" "v"}}{{get "k"}}"#),
@@ -33,7 +33,7 @@ pub const WITH_SET_HELPER: &str = "with_set";
 /// An error will be raise if a non existing key is asked
 /// ```should_panic
 /// # use serde_json::json;
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// exec_template(json!({}), r#"{{get "plop"}}"#);
 /// ```
 pub struct GetHelper {
@@ -98,7 +98,7 @@ impl HelperDef for SetHelper {
 
 /// Sets a value in the key/value store and clear it at the end of the block
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "key": "value" }), r#"{{#with_set "key" key}}{{get "key"}}{{/with_set}}"#),
@@ -140,7 +140,7 @@ impl HelperDef for WithSetHelper {
 
 /// Sets a value in the key/value store and clear it at the end of the block
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), r#"{{set "k" 42}}{{#if_set "k"}}OK{{/if_set}}"#),
@@ -184,7 +184,7 @@ impl HelperDef for IfGetHelper {
 
 /// Clear a value in the key/value store
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), r#"{{set "k" 42}}{{clear "k"}}{{#if_set "k"}}OK{{else}}NOK{{/if_set}}"#),

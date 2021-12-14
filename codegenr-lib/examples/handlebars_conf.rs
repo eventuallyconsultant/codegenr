@@ -1,4 +1,4 @@
-use codegenr::helpers::handlebars_setup;
+use codegenr_lib::helpers::handlebars_setup;
 
 fn main() {
   let mut h = handlebars::Handlebars::new();

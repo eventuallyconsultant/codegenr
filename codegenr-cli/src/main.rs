@@ -1,4 +1,4 @@
-use codegenr::{run_codegenr, Options};
+use codegenr_lib::{run_codegenr, Options};
 use serde_json::Value;
 use structopt::StructOpt;
 

@@ -10,7 +10,7 @@ pub const DISTINCTIVE: &str = "distinctive";
 /// Execute template if the first argument is equal to any other argument, otherwise execute the inverse
 /// (all arguments are converted to string and case insensitive compared)
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "a": "42", "b": "42" }), r#"{{#each this}}{{@key}}/{{this}} {{/each}}"#),

@@ -8,7 +8,7 @@ pub const IS_OAPI3_PROP_REQUIRED: &str = "is_oapi3_property_required";
 
 /// Returns true is the current context is an open api 3 required parameter.
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// let json = json!({
 ///   "parameters": [
@@ -65,7 +65,7 @@ impl HelperDef for IsOApi3ParamRequiredHelper {
 /// Returns true is the current context is an open api 3 required component property,
 /// false otherwise
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// let json = json!({
 ///   "type": "object",

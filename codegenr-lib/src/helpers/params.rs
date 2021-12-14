@@ -8,7 +8,7 @@ pub const GLOBAL_PARAMETERS_HELPER: &str = "global_parameter";
 /// Gets a value from the global parameters
 /// (those key=value's would be provided as parameters of `codegenr` execution)
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// # use std::collections::HashMap;
 /// let mut params = HashMap::<_,_>::new();
@@ -27,7 +27,7 @@ pub const GLOBAL_PARAMETERS_HELPER: &str = "global_parameter";
 /// An error will be raise if a non existing key is asked and second parameter is true
 /// ```should_panic
 /// # use serde_json::json;
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// exec_template_with_global_params(json!({}), r#"{{global_parameter "k" true}}"#, Default::default());
 /// ```
 pub struct GlobalParameterHelper {

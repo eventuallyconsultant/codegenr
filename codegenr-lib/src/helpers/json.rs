@@ -7,7 +7,7 @@ pub const JSON_HELPER: &str = "json";
 /// Get the json representation of the first argument passed.
 /// If a second argument is true, the json is beautyfied
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!(42), r#"{{json this}}"#),

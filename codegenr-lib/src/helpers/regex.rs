@@ -8,7 +8,7 @@ pub const REGEX_TRANSFORM_HELPER: &str = "regex_transform";
 
 /// Extract and transform a list of values with regex.
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({"test": "/user/{username}"}), r#"{{regex_extract test "\\{([^}]*)}" "$1"}}"#),
@@ -46,7 +46,7 @@ impl HelperDef for RegexExtractHelper {
 
 /// Extract and transform a list of values.
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({"test": "/user/{username}"}), r#"{{regex_transform test "\\{([^}]*)}" "$1"}}"#),

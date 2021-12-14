@@ -19,7 +19,7 @@ pub const ONE_LINE_HELPER: &str = "one_line";
 pub const NO_EMPTY_LINES_HELPER: &str = "no_empty_lines";
 /// Returns a string slice with leading and trailing whitespace removed.
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "value": " test " }), "{{trim value}}"),
@@ -53,7 +53,7 @@ impl HelperDef for TrimHelper {
 /// Return the first part of a String splited by a definable parameter ('/' by default)
 ///
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "temp": "test/value" }), "{{split_get_first temp}}"),
@@ -88,7 +88,7 @@ impl HelperDef for SplitGetFirstHelper {
 /// Return the last value of a String splited by a definable parameter ('/' by default)
 ///
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "temp": "test/value" }), "{{split_get_last temp}}"),
@@ -122,7 +122,7 @@ impl HelperDef for SplitGetLastHelper {
 /// Return a string trim only at the beggining by a definable parameter (' ' by default)
 ///
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "temp": " test " }), "{{trim_start temp}}"),
@@ -155,7 +155,7 @@ impl HelperDef for TrimStartHelper {
 /// Return a string trim only at the end by a definable parameter (' ' by default)
 ///
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "temp": " test " }), "{{trim_end temp}}"),
@@ -187,7 +187,7 @@ impl HelperDef for TrimEndHelper {
 
 /// Determines whether the beginning of the second argumentmatches the second one
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({"one": "test-one", "two": "one-test"}), r#"{{#start_with "test" one}}OK{{else}}{{/start_with}}"#),
@@ -225,7 +225,7 @@ impl HelperDef for StartWithHelper {
 /// {{#with_matching some_value matching_key1 context1 mateching_key2 context2 ... }}
 /// Render the inverse template if no matching key was found
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 ///
 /// assert_eq!(
@@ -300,7 +300,7 @@ impl HelperDef for WithMatchingHelper {
 /// (values are compared with string insensitive comparison)
 /// (Pas completement fonctionnelle)
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// let json_array = json!({ "type": "object", "required": [ "errorMeSSage", "test" ], "properties": {"errorMessage": {"type": "string"}, "non_required_prop" : {"type" : "int"}}});
 /// assert_eq!(
@@ -349,7 +349,7 @@ impl HelperDef for IfArrayContainsHelper {
 /// Trim start and end of a block output
 /// (all arguments are converted to string and case insensitive compared)
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), r#"{{#trim_block " "}} 1,2,3,4 {{/trim_block}}"#),
@@ -403,7 +403,7 @@ impl HelperDef for TrimBlockHelper {
 /// Trim start of a block output
 /// (all arguments are converted to string and case insensitive compared)
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), r#"{{#trim_block_start}} 1,2,3,4 {{/trim_block_start}}"#),
@@ -457,7 +457,7 @@ impl HelperDef for TrimBlockStartHelper {
 /// Trim end of a block output
 /// (all arguments are converted to string and case insensitive compared)
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), r#"{{#trim_block_end " "}} 1,2,3,4 {{/trim_block_end}}"#),
@@ -510,7 +510,7 @@ impl HelperDef for TrimBlockEndHelper {
 /// Trim end of a block output
 /// (all arguments are converted to string and case insensitive compared)
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}} {{/one_line}}"),
@@ -616,7 +616,7 @@ impl HelperDef for OneLineHelper {
 
 /// Removes empty lines from the block
 ///```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#no_empty_lines}} {{/no_empty_lines}}"),
@@ -662,7 +662,7 @@ impl HelperDef for NoEmptyLinesHelper {
 ///// Trim end of a block output
 ///// (all arguments are converted to string and case insensitive compared)
 /////```
-///// # use codegenr::helpers::*;
+///// # use codegenr_lib::helpers::*;
 ///// # use serde_json::json;
 ///// assert_eq!(
 /////   exec_template(json!([{"t": "c"}, {"t": "a"}, {"t": "b"}]), r#"{{#each this}}{{t}}{{/each}}"#),

@@ -13,7 +13,7 @@ pub const CAMEL_CASE_HELPER: &str = "camel_case";
 
 /// Returns the uppercase version of the string in argument
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "value": "tEsT" }), "{{upper_case value}}"),
@@ -38,7 +38,7 @@ impl HelperDef for UppercaseHelper {
 
 /// Returns the lowercase version of the string in argument
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "value": "TEsT" }), "{{lower_case value}}"),
@@ -63,7 +63,7 @@ impl HelperDef for LowercaseHelper {
 
 /// Returns a string with the first letter in Uppercase
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "value": "tEsT" }), "{{uppercase_first_letter value}}"),
@@ -88,7 +88,7 @@ impl HelperDef for UppercaseFirstLetterHelper {
 
 /// Returns a string with the first letter in Lowercase
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "value": "TEST" }), "{{lowercase_first_letter value}}"),
@@ -113,7 +113,7 @@ impl HelperDef for LowercaseFirstLetterHelper {
 
 /// Returns the pascal case version of the string
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "value": "this should be a function name." }), "{{pascal_case value}}"),
@@ -138,7 +138,7 @@ impl HelperDef for PascalcaseHelper {
 
 /// Returns the snake case version of the string
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "value": "this should be a function name" }), "{{snake_case value}}"),
@@ -163,7 +163,7 @@ impl HelperDef for SnakecaseHelper {
 
 /// Returns the camel case version of the string
 /// ```
-/// # use codegenr::helpers::*;
+/// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({ "value": "this should be a function name." }), "{{camel_case value}}"),
