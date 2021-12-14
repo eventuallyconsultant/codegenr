@@ -2,10 +2,10 @@
 
 [workspace]
 default-members = [
-  "codegenr-cli"
+  "codegenr"
 ]
 
 members = [
   "codegenr-lib",
-  "codegenr-cli"
+  "codegenr"
 ]

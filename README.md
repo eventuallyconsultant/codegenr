@@ -32,5 +32,5 @@ A `Rust` rewrite of `C#` [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 
 ## Some command lines
 
-- `cargo doc --open` to open the documentation for `codegenr`
-- `cargo install --path codegenr-cli` installs codegenr command line from sources
+- `cargo doc --open` compile and open the documentation
+- `cargo install --path codegenr` installs codegenr command line from sources

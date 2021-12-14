@@ -139,7 +139,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "codegenr-cli"
+name = "codegenr"
 version = "0.1.0"
 dependencies = [
  "anyhow",

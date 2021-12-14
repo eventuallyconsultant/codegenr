@@ -1,5 +1,5 @@
 [package]
-name = "codegenr-cli"
+name = "codegenr"
 version = "0.1.0"
 edition = "2021"
 authors = ["Jérôme Rx & contributors <jerome@eventuallyconsultant.com>"]
