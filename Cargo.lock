@@ -140,7 +140,7 @@ dependencies = [
 
 [[package]]
 name = "codegenr"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "codegenr-lib",
@@ -151,7 +151,7 @@ dependencies = [
 
 [[package]]
 name = "codegenr-lib"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "glob",
