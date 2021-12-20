@@ -1,6 +1,6 @@
 use handlebars::Handlebars;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::RangeBounds};
 use walkdir::WalkDir;
 
 const PARTIAL_TEMPLATE_PREFIX: &str = "_";
@@ -100,7 +100,13 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, any
 
     let file_path = entry.path().to_str();
     let file_path = match file_path {
-      Some(f) => f,
+      Some(f) => {
+        if f.contains('\\') {
+          f.replace("\\", "/")
+        } else {
+          f.to_string()
+        }
+      }
       None => continue,
     };
 
