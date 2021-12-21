@@ -15,6 +15,14 @@ type DocumentsHash = HashMap<DocumentPath, Value>;
 pub enum ResolverError {
   #[error("Loading errror: `{0}`.")]
   Loading(#[from] LoaderError),
+  #[error("{0} value should be a String")]
+  ShouldBeString(&'static str),
+  #[error("Key `{key}` was not found in json part `{part2}`")]
+  KeyNotFound { key: String, part2: Value },
+  #[error("Could not follow path `{0}` as json part is not an object.")]
+  NotAnObject(String),
+  #[error("RefInfo parse error: {0}")]
+  NoMoreThanTwoParts(&'static str),
 }
 
 pub struct RefResolver {
@@ -124,7 +132,7 @@ fn resolve_refs_recurse(
             v => return Ok(v),
           }
         } else {
-          return Err(anyhow::anyhow!("{} value should be a String", REF));
+          return Err(ResolverError::ShouldBeString(REF));
         }
       }
       Ok(Value::Object(map))
@@ -137,18 +145,19 @@ fn get_ref_name(path: &str) -> String {
   path.split(PATH_SEP).last().unwrap_or_default().to_string()
 }
 
-fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, anyhow::Error> {
+fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, ResolverError> {
   match path {
     Some(p) => {
       let parts = p.split(PATH_SEP);
       let mut part = json;
       for p in parts.filter(|p| !p.trim().is_empty()) {
         if let Value::Object(o) = part {
-          part = o
-            .get(p)
-            .ok_or_else(|| anyhow::format_err!("Key `{}` was not found in json part `{}`", p, part))?;
+          let key = p.clone().to_string();
+          let part2 = part.clone();
+          part = o.get(p).ok_or_else(|| ResolverError::KeyNotFound { key, part2 })?;
         } else {
-          return Err(anyhow::anyhow!("Could not follow path `{}` as json part is not an object.", p));
+          let key = p.clone().to_string();
+          return Err(ResolverError::NotAnObject(key));
         }
       }
       Ok(part.clone())
@@ -173,13 +182,13 @@ pub struct RefInfo {
 }
 
 impl RefInfo {
-  pub fn parse(doc_path: &DocumentPath, ref_value: &str) -> Result<Self, anyhow::Error> {
+  pub fn parse(doc_path: &DocumentPath, ref_value: &str) -> Result<Self, ResolverError> {
     let mut parts = ref_value.split(SHARP_SEP);
 
     let (ref_doc_path, path) = match (parts.next(), parts.next(), parts.next()) {
       (_, _, Some(_)) => {
-        return Err(anyhow::anyhow!(
-          "There should be no more than 2 parts separated by # in a reference path."
+        return Err(ResolverError::NoMoreThanTwoParts(
+          "There should be no more than 2 parts separated by # in a reference path.",
         ))
       }
       (Some(file), None, None) => (DocumentPath::parse(file)?.relate_from(doc_path)?, None),

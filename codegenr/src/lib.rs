@@ -9,8 +9,16 @@ pub mod resolver;
 
 use std::collections::HashMap;
 
+use errors::CodegenrError;
 use filesystem::save_file_content;
 use handlebars::Handlebars;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum SaverError {
+  #[error("Io Error: `{0}`.")]
+  Io(#[from] std::io::Error),
+}
 
 #[derive(Debug)]
 pub struct Options {
@@ -48,7 +56,7 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
   processor::process(&rendered, options.output)
 }
 
-fn save_intermediate(file: &Option<String>, extension: &str, content: &str) -> Result<(), anyhow::Error> {
+fn save_intermediate(file: &Option<String>, extension: &str, content: &str) -> Result<(), SaverError> {
   if let Some(s) = file {
     let full_file_name = format!("{}.{}", s, extension);
     save_file_content(".", &full_file_name, content)?;

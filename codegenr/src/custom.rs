@@ -1,7 +1,23 @@
+use glob::PatternError;
 use handlebars::Handlebars;
 use std::path::Path;
+use thiserror::Error;
 
-pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: Vec<String>) -> Result<(), anyhow::Error> {
+#[derive(Error, Debug)]
+pub enum CustomError {
+  // #[error("Script Error: `{0}`.")]
+  // ScriptError(#[from] handlebars::error::ScriptError),
+  #[error("Pattern Error: `{0}`.")]
+  PatternError(#[from] PatternError),
+  #[error("Error converting PathBuf to str.")]
+  PathBufError(&'static str),
+  #[error("File path passed has no file stem.")]
+  NoFileStem(&'static str),
+  #[error("Error converting OsStr to str.")]
+  OstrConvertError(&'static str),
+}
+
+pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: Vec<String>) -> Result<(), CustomError> {
   for path in custom_helpers_folders {
     let p = Path::new(&path);
     if p.is_file() {
@@ -10,7 +26,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: Vec
       let pattern = p.join("**/*.rhai");
       let str_pattern = pattern
         .to_str()
-        .ok_or_else(|| anyhow::anyhow!("Error converting PathBuf to str."))?;
+        .ok_or_else(|| CustomError::PathBufError("Error converting PathBuf to str."))?;
       for f in glob::glob(str_pattern)?.flatten() {
         handlebars_add_script(handlebars, f.as_path())?;
       }
@@ -19,13 +35,13 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: Vec
   Ok(())
 }
 
-pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: impl AsRef<Path> + Clone) -> Result<(), anyhow::Error> {
+pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: impl AsRef<Path> + Clone) -> Result<(), CustomError> {
   let name = script_file
     .as_ref()
     .file_stem()
-    .ok_or_else(|| anyhow::anyhow!("File path passed has no file stem."))?
+    .ok_or_else(|| CustomError::NoFileStem("File path passed has no file stem."))?
     .to_str()
-    .ok_or_else(|| anyhow::anyhow!("Error converting OsStr to str."))?;
+    .ok_or_else(|| CustomError::OstrConvertError("Error converting OsStr to str."))?;
   handlebars.register_script_helper_file(name, script_file.clone())?;
   Ok(())
 }

@@ -8,7 +8,7 @@ impl Instruction for ConsoleInstruction {
   fn command_name(&self) -> &'static str {
     CONSOLE
   }
-  fn start(&self, _params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, anyhow::Error> {
+  fn start(&self, _params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, ProcessorError> {
     Ok(Box::new(ConsoleLineHandler) as Box<dyn InstructionLineHandler>)
   }
   fn needs_closing(&self) -> bool {
@@ -19,7 +19,7 @@ impl Instruction for ConsoleInstruction {
 pub struct ConsoleLineHandler;
 
 impl InstructionLineHandler for ConsoleLineHandler {
-  fn handle_line(&self, line: &str) -> Result<(), anyhow::Error> {
+  fn handle_line(&self, line: &str) -> Result<(), ProcessorError> {
     println!("{}", line);
     Ok(())
   }

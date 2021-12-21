@@ -1,4 +1,7 @@
-use crate::{loader::LoaderError, resolver::ResolverError};
+use crate::{
+  custom::CustomError, helpers::HelpersError, loader::LoaderError, processor::ProcessorError, render::RenderError, resolver::ResolverError,
+  SaverError,
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,14 +10,14 @@ pub enum CodegenrError {
   Loading(#[from] LoaderError),
   #[error("Error while resolving ...")]
   Resolving(#[from] ResolverError),
-  // #[error("Error while saving ...")]
-  // Saving(#[from] SaverError),
-  // #[error("Error while processing ...")]
-  // Helpers(#[from] CustomError),
-  // #[error("Error while processing ...")]
-  // Customizing(#[from] CustomError),
-  // #[error("Error while rendering ...")]
-  // Rendering(#[from] RenderError),
-  // #[error("Error while processing ...")]
-  // Processing(#[from] ProcessorError),
+  #[error("Error while saving ...")]
+  Saving(#[from] SaverError),
+  #[error("Error while using helpers ...")]
+  Helpers(#[from] HelpersError),
+  #[error("Error while customizing ...")]
+  Customizing(#[from] CustomError),
+  #[error("Error while rendering ...")]
+  Rendering(#[from] RenderError),
+  #[error("Error while processing ...")]
+  Processing(#[from] ProcessorError),
 }
