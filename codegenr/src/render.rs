@@ -9,18 +9,18 @@ const HANDLEBARS_TEMPLATE_EXTENSION: &str = ".hbs";
 
 #[derive(Error, Debug)]
 pub enum RenderError {
-  #[error("TemplateRender error: {0}")]
+  #[error("TemplateRender error: `{0}`.")]
   RenderTemp(#[from] handlebars::RenderError),
-  #[error("Template error: {0}")]
+  #[error("Template error: `{0}`.")]
   Template(#[from] TemplateError),
-  #[error("Walkdir error: {0}")]
+  #[error("Walkdir error: `{0}`.")]
   Walkdir(#[from] walkdir::Error),
-  #[error("Template error: {0}")]
+  #[error("Template error: `{0}`.")]
   TwoMainTemp(&'static str),
-  #[error("Template error: {0}")]
-  UniqueNameTemp(&'static str),
-  #[error("Template error: {0}")]
-  NoMainTemp(&'static str),
+  #[error("2 partial templates are named `{0}` they should have unique names.")]
+  UniqueNameTemp(String),
+  #[error("No main template has been detected, we don't know what to execute...")]
+  NoMainTemp(),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -46,16 +46,14 @@ impl TemplateCollection {
         }
         TemplateType::Partial => {
           if let Some(existing) = partials.get(t.template_name()) {
-            return Err(RenderError::UniqueNameTemp(
-              "2 partial templates are named, they should have unique names",
-            ));
+            return Err(RenderError::UniqueNameTemp(existing.template_name().into()));
           };
           partials.insert(t.template_name().into(), t);
         }
       }
     }
 
-    let main = main.ok_or_else(|| RenderError::NoMainTemp("No main template has been detected, we don't know what to execute..."))?;
+    let main = main.ok_or(RenderError::NoMainTemp)?;
 
     Ok(Self { main, partials })
   }
@@ -186,7 +184,7 @@ mod test {
 
     let test = TemplateCollection::from_list(list);
     let err = test.expect_err("Should be an error");
-    assert!(err.to_string().starts_with("2 main templates were found"));
+    assert!(err.to_string().starts_with("Template error: `2 main templates were found"));
   }
 
   #[test]
@@ -204,7 +202,10 @@ mod test {
 
     let test = TemplateCollection::from_list(list);
     let err = test.expect_err("Should be an error");
-    assert!(err.to_string().starts_with("2 partial templates are named `plop`"));
+    assert_eq!(
+      err.to_string(),
+      "Template error: 2 partial templates are named `plop` they should have unique names."
+    );
   }
 
   #[test]
@@ -223,7 +224,7 @@ mod test {
     let err = test.expect_err("Should be an error");
     assert!(err
       .to_string()
-      .starts_with("No main template has been detected, we don't know what to execute..."));
+      .starts_with("Template error: `No main template has been detected, we don't know what to execute..."));
   }
 
   #[test]

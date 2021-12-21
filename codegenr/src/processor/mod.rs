@@ -20,13 +20,13 @@ pub enum ProcessorError {
   #[error("Pattern Error: {0}.")]
   Pattern(#[from] PatternError),
   #[error("Instruction name not found on line {0}: `{1}`.")]
-  InstructionNotFound(usize, &'static str),
+  InstructionNotFound(usize, String),
   #[error("Instruction `{0}` doest not exist. Line {1}: `{2}`.")]
-  InstructionNotExisting(String, usize, &'static str),
+  InstructionNotExisting(String, usize, String),
   #[error("Closing tag found for `{0}` instruction while it does not need it. Line {1}: `{2}`.")]
-  ClosingTagFound(String, usize, &'static str),
+  ClosingTagFound(String, usize, String),
   #[error("Missing openning tag for `{0}` instruction. Line {1}: `{2}`.")]
-  MissingOpeningTag(String, usize, &'static str),
+  MissingOpeningTag(String, usize, String),
   #[error("{0} instruction needs one '<file_name>' parameter.")]
   Instruction(&'static str),
   #[error("`{0}` instruction needs one `<pattern>` parameter.")]
@@ -83,21 +83,21 @@ pub fn process(content: &str, output: String) -> Result<(), ProcessorError> {
         let mut words = net_line.split(' ').map(|s| s.trim()).filter(|s| !s.is_empty());
         let instruction_name = words
           .next()
-          .ok_or_else(|| ProcessorError::InstructionNotFound(line_number, line))?
+          .ok_or_else(|| ProcessorError::InstructionNotFound(line_number, line.into()))?
           .to_uppercase();
 
         let instruction = instructions
           .get(&instruction_name.as_ref())
-          .ok_or_else(|| ProcessorError::InstructionNotExisting(instruction_name, line_number, line))?;
+          .ok_or_else(|| ProcessorError::InstructionNotExisting(instruction_name.clone(), line_number, line.into()))?;
 
         match (is_closing, instruction.needs_closing()) {
           (true, false) => {
-            return Err(ProcessorError::ClosingTagFound(instruction_name, line_number, line));
+            return Err(ProcessorError::ClosingTagFound(instruction_name, line_number, line.into()));
           }
           (true, true) => {
             active_handlers
               .remove(&instruction_name)
-              .ok_or_else(|| ProcessorError::MissingOpeningTag(instruction_name, line_number, line))?;
+              .ok_or_else(|| ProcessorError::MissingOpeningTag(instruction_name, line_number, line.into()))?;
           }
           (false, _) => {
             let handler = instruction.start(words.map(Into::into).collect())?;

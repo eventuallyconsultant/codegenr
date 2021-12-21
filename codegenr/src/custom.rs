@@ -5,8 +5,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CustomError {
-  // #[error("Script Error: `{0}`.")]
-  // ScriptError(#[from] handlebars::error::ScriptError),
+  #[error("Script Error: `{0}`.")]
+  ScriptError(String),
   #[error("Pattern Error: `{0}`.")]
   PatternError(#[from] PatternError),
   #[error("Error converting PathBuf to str.")]
@@ -42,7 +42,10 @@ pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: impl AsRe
     .ok_or_else(|| CustomError::NoFileStem("File path passed has no file stem."))?
     .to_str()
     .ok_or_else(|| CustomError::OstrConvertError("Error converting OsStr to str."))?;
-  handlebars.register_script_helper_file(name, script_file.clone())?;
+  // handlebars.register_script_helper_file(name, script_file.clone())?;
+  handlebars
+    .register_script_helper_file(name, script_file.clone())
+    .map_err(|script_error| CustomError::ScriptError(format!("{}", script_error)))?;
   Ok(())
 }
 

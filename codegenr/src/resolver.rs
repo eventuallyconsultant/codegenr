@@ -15,13 +15,13 @@ type DocumentsHash = HashMap<DocumentPath, Value>;
 pub enum ResolverError {
   #[error("Loading errror: `{0}`.")]
   Loading(#[from] LoaderError),
-  #[error("{0} value should be a String")]
+  #[error("`{0}` value should be a String.")]
   ShouldBeString(&'static str),
-  #[error("Key `{key}` was not found in json part `{part2}`")]
+  #[error("Key `{key}` was not found in json part `{part2}`.")]
   KeyNotFound { key: String, part2: Value },
   #[error("Could not follow path `{0}` as json part is not an object.")]
   NotAnObject(String),
-  #[error("RefInfo parse error: {0}")]
+  #[error("RefInfo parse error: `{0}`.")]
   NoMoreThanTwoParts(&'static str),
 }
 
@@ -152,11 +152,11 @@ fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, R
       let mut part = json;
       for p in parts.filter(|p| !p.trim().is_empty()) {
         if let Value::Object(o) = part {
-          let key = p.clone().to_string();
+          let key = p.to_string();
           let part2 = part.clone();
-          part = o.get(p).ok_or_else(|| ResolverError::KeyNotFound { key, part2 })?;
+          part = o.get(p).ok_or(ResolverError::KeyNotFound { key, part2 })?;
         } else {
-          let key = p.clone().to_string();
+          let key = p.to_string();
           return Err(ResolverError::NotAnObject(key));
         }
       }
@@ -244,7 +244,7 @@ mod test {
     let err = failed_test.expect_err("Should be an error");
     assert_eq!(
       err.to_string(),
-      "Key `not_existing_path` was not found in json part `{\"data1\":{\"value\":42},\"data2\":[1,2,3]}`"
+      "Key `not_existing_path` was not found in json part `{\"data1\":{\"value\":42},\"data2\":[1,2,3]}`."
     );
 
     Ok(())
@@ -544,7 +544,7 @@ mod test {
     let err = failed.expect_err("Should be an error");
     assert_eq!(
       err.to_string(),
-      "There should be no more than 2 parts separated by # in a reference path."
+      "RefInfo parse error: `There should be no more than 2 parts separated by # in a reference path.`."
     );
   }
 

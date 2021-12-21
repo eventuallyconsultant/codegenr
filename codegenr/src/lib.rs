@@ -9,7 +9,6 @@ pub mod resolver;
 
 use std::collections::HashMap;
 
-use errors::CodegenrError;
 use filesystem::save_file_content;
 use handlebars::Handlebars;
 use thiserror::Error;
@@ -30,7 +29,7 @@ pub struct Options {
   pub global_parameters: HashMap<String, serde_json::Value>,
 }
 
-pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
+pub fn run_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
   let document = loader::DocumentPath::parse(&options.source)?;
   let json = resolver::resolve_refs(document)?;
 
@@ -53,7 +52,8 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
 
   save_intermediate(&options.intermediate, "rendered.txt", &rendered)?;
 
-  processor::process(&rendered, options.output)
+  processor::process(&rendered, options.output)?;
+  Ok(())
 }
 
 fn save_intermediate(file: &Option<String>, extension: &str, content: &str) -> Result<(), SaverError> {

@@ -14,7 +14,7 @@ pub enum CodegenrError {
   Saving(#[from] SaverError),
   #[error("Error while using helpers ...")]
   Helpers(#[from] HelpersError),
-  #[error("Error while customizing ...")]
+  #[error("Error while customizing : `{0}`")]
   Customizing(#[from] CustomError),
   #[error("Error while rendering ...")]
   Rendering(#[from] RenderError),

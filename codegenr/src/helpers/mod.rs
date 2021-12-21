@@ -25,8 +25,8 @@ pub use {
 
 #[derive(Error, Debug)]
 pub enum HelpersError {
-  // #[error("regex Error: `{0}`.")]
-// Regex(#[from] regex::Error),
+  #[error("regex Error: `{0}`.")]
+  Regex(#[from] ::regex::Error),
 }
 
 pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<String, Value>) {
