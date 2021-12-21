@@ -1,6 +1,7 @@
-use crate::loader::DocumentPath;
+use crate::loader::{DocumentPath, LoaderError};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use thiserror::Error;
 
 const REF: &str = "$ref";
 const PATH_SEP: char = '/';
@@ -9,6 +10,12 @@ const FROM_REF: &str = "x-fromRef";
 const REF_NAME: &str = "x-refName";
 
 type DocumentsHash = HashMap<DocumentPath, Value>;
+
+#[derive(Error, Debug)]
+pub enum ResolverError {
+  #[error("Loading errror: `{0}`.")]
+  Loading(#[from] LoaderError),
+}
 
 pub struct RefResolver {
   _hash: DocumentsHash,
@@ -61,11 +68,11 @@ impl RefResolver {
 
 // https://github.com/BeezUP/dotnet-codegen/tree/master/tests/CodegenUP.DocumentRefLoader.Tests
 
-pub fn resolve_refs_raw(json: Value) -> Result<Value, anyhow::Error> {
+pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
   resolve_refs_recurse(&DocumentPath::None, json.clone(), &json, &mut RefResolver::new())
 }
 
-pub fn resolve_refs(document: DocumentPath) -> Result<Value, anyhow::Error> {
+pub fn resolve_refs(document: DocumentPath) -> Result<Value, ResolverError> {
   let json = document.load_raw()?;
   resolve_refs_recurse(&document, json.clone(), &json, &mut RefResolver::new())
 }
@@ -75,7 +82,7 @@ fn resolve_refs_recurse(
   json: Value,
   original: &Value,
   cache: &mut RefResolver,
-) -> Result<Value, anyhow::Error> {
+) -> Result<Value, ResolverError> {
   match json {
     Value::Array(a) => {
       let mut new = Vec::<_>::with_capacity(a.len());
