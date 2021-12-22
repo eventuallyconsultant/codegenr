@@ -15,8 +15,8 @@ pub enum RenderError {
   Template(#[from] TemplateError),
   #[error("Walkdir error: `{0}`.")]
   Walkdir(#[from] walkdir::Error),
-  #[error("Template error: `{0}`.")]
-  TwoMainTemp(&'static str),
+  #[error("2 main templates were found,\n {0} \n {1} \n their should be only one in all the template directories.")]
+  TwoMainTemp(String, String),
   #[error("2 partial templates are named `{0}` they should have unique names.")]
   UniqueNameTemp(String),
   #[error("No main template has been detected, we don't know what to execute...")]
@@ -39,7 +39,8 @@ impl TemplateCollection {
         TemplateType::Main => {
           if let Some(existing) = main.as_ref() {
             return Err(RenderError::TwoMainTemp(
-              "2 main templates were found, their should be only one in all the template directories",
+              existing.template_name().to_string(),
+              t.template_name().to_string(),
             ));
           };
           main = Some(t);
@@ -53,7 +54,7 @@ impl TemplateCollection {
       }
     }
 
-    let main = main.ok_or(RenderError::NoMainTemp)?;
+    let main = main.ok_or(RenderError::NoMainTemp())?;
 
     Ok(Self { main, partials })
   }
@@ -184,7 +185,10 @@ mod test {
 
     let test = TemplateCollection::from_list(list);
     let err = test.expect_err("Should be an error");
-    assert!(err.to_string().starts_with("Template error: `2 main templates were found"));
+    assert_eq!(
+      err.to_string(),
+      "2 main templates were found,\n plop \n test \n their should be only one in all the template directories."
+    );
   }
 
   #[test]
@@ -204,7 +208,7 @@ mod test {
     let err = test.expect_err("Should be an error");
     assert_eq!(
       err.to_string(),
-      "Template error: 2 partial templates are named `plop` they should have unique names."
+      "2 partial templates are named `plop` they should have unique names."
     );
   }
 
