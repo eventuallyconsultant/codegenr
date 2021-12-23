@@ -89,8 +89,15 @@ impl TryFrom<Command> for HashMap<String, Options> {
   fn try_from(cmd: Command) -> Result<Self, Self::Error> {
     match cmd {
       Command::FromFile { file } => {
-        let config = read_to_string(file)?;
-        let opts: HashMap<String, Options> = toml::from_str(&config)?;
+        let config = read_to_string(&file).map_err(|e| {
+          anyhow::anyhow!(
+            "Unable to read `{}` file: `{}`. Did you run codegenr in the right directory ?",
+            file,
+            e
+          )
+        })?;
+        let opts: HashMap<String, Options> =
+          toml::from_str(&config).map_err(|e| anyhow::anyhow!("Unable to deserialize `{}` config file: `{}`.", file, e))?;
         Ok(opts)
       }
       Command::FromLine {
