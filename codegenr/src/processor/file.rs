@@ -51,10 +51,9 @@ impl InstructionLineHandler for FileLineHandler {
 
 #[cfg(test)]
 mod test {
-  use std::io::Read;
-
   use super::*;
   use crate::filesystem::make_path_from_root;
+  use std::io::Read;
   use tempdir::TempDir;
 
   #[test]
