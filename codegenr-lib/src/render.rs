@@ -111,13 +111,7 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, Ren
 
     let file_path = entry.path().to_str();
     let file_path = match file_path {
-      Some(f) => {
-        if f.contains('\\') {
-          f.replace("\\", "/")
-        } else {
-          f.to_string()
-        }
-      }
+      Some(f) => f,
       None => continue,
     };
 
@@ -163,17 +157,33 @@ mod test {
   fn get_templates_from_directory_test() -> Result<(), anyhow::Error> {
     let mut templates = get_templates_from_directory("./_samples/render/templates")?;
     templates.sort_by_key(|t| t.file_path.clone());
-    let expected = vec![
-      Template::new(
-        TemplateType::Partial,
-        "_other_partial.hbs",
-        "./_samples/render/templates/_other_partial.hbs",
-      ),
-      Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
-      Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates/sub/_plop.hbs"),
-      Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
-      Template::new(TemplateType::Main, "test.hbs", "./_samples/render/templates/test.hbs"),
-    ];
+    let expected: Vec<Template>;
+    if cfg!(windows) {
+      expected = vec![
+        Template::new(
+          TemplateType::Partial,
+          "_other_partial.hbs",
+          "./_samples/render/templates\\_other_partial.hbs",
+        ),
+        Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates\\_partial.hbs"),
+        Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates\\sub\\_plop.hbs"),
+        Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates\\sub\\plop.hbs"),
+        Template::new(TemplateType::Main, "test.hbs", "./_samples/render/templates\\test.hbs"),
+      ];
+    } else {
+      expected = vec![
+        Template::new(
+          TemplateType::Partial,
+          "_other_partial.hbs",
+          "./_samples/render/templates/_other_partial.hbs",
+        ),
+        Template::new(TemplateType::Partial, "_partial.hbs", "./_samples/render/templates/_partial.hbs"),
+        Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates/sub/_plop.hbs"),
+        Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
+        Template::new(TemplateType::Main, "test.hbs", "./_samples/render/templates/test.hbs"),
+      ];
+    }
+
     // dbg!(&templates, &expected);
     assert_eq!(templates, expected);
 

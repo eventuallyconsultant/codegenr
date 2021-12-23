@@ -215,30 +215,40 @@ mod test {
   use super::*;
   use test_case::test_case;
 
-  #[test_case("h://f", "h://f", "h://f")]
-  #[test_case("h://w.com/api.yaml", "components.yaml", "h://w.com/components.yaml")]
-  #[test_case("h://w.com/v1/api.yaml", "../v2/components.yaml", "h://w.com/v2/components.yaml")]
-  #[test_case("file.yaml", "other.json", "other.json")]
-  #[test_case("test/file.yaml", "other.json", "test/other.json")]
-  #[test_case("test/file.yaml", "./other2.json", "test/other2.json")]
-  #[test_case("test/file.yaml", "../other3.json", "other3.json")]
-  #[test_case("test/file.yaml", "plop/other.json", "test/plop/other.json")]
-  #[test_case("file.yaml", "http://w.com/other.json", "http://w.com/other.json")]
-  #[test_case("file.json", "", "file.json")]
-  #[test_case("", "f", "f")]
-  #[test_case("", "h://f", "h://f")]
-  #[test_case("_samples/petshop_with_external.yaml", "petshop_externals.yaml", "_samples/petshop_externals.yaml")]
-  // #[test_case(
-  //   "./_samples/petshop_with_external.yaml",
-  //   "petshop_externals.yaml",
-  //   "./_samples/petshop_externals.yaml"
-  // )]
-  fn relate_test(doc_path: &str, ref_path: &str, expected_related: &str) {
+  #[test_case("h://f", "h://f", "h://f", "h://f")]
+  #[test_case("h://w.com/api.yaml", "components.yaml", "h://w.com/components.yaml", "h://w.com/components.yaml")]
+  #[test_case(
+    "h://w.com/v1/api.yaml",
+    "../v2/components.yaml",
+    "h://w.com/v2/components.yaml",
+    "h://w.com/\\v2\\components.yaml"
+  )]
+  #[test_case("file.yaml", "other.json", "other.json", "other.json")]
+  #[test_case("test/file.yaml", "other.json", "test/other.json", "test\\other.json")]
+  #[test_case("test/file.yaml", "./other2.json", "test/other2.json", "test\\other2.json")]
+  #[test_case("test/file.yaml", "../other3.json", "other3.json", "other3.json")]
+  #[test_case("test/file.yaml", "plop/other.json", "test/plop/other.json", "test\\plop/other.json")]
+  #[test_case("file.yaml", "http://w.com/other.json", "http://w.com/other.json", "http://w.com/other.json")]
+  #[test_case("file.json", "", "file.json", "file.json")]
+  #[test_case("", "f", "f", "f")]
+  #[test_case("", "h://f", "h://f", "h://f")]
+  #[test_case(
+    "_samples/petshop_with_external.yaml",
+    "petshop_externals.yaml",
+    "_samples/petshop_externals.yaml",
+    "_samples\\petshop_externals.yaml"
+  )]
+  fn relate_test(doc_path: &str, ref_path: &str, expected_related: &str, win_expected: &str) {
     let doc_path = DocumentPath::parse(doc_path).expect("?");
     let r_path = DocumentPath::parse(ref_path).expect("?");
-    let expected_related = DocumentPath::parse(expected_related).expect("?");
     let related = r_path.relate_from(&doc_path).expect("?");
-    assert_eq!(related, expected_related);
+    if cfg!(windows) {
+      let expected_related = DocumentPath::parse(win_expected).expect("?");
+      assert_eq!(related, expected_related);
+    } else {
+      let expected_related = DocumentPath::parse(expected_related).expect("?");
+      assert_eq!(related, expected_related);
+    }
   }
 
   #[test]
