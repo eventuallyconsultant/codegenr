@@ -27,12 +27,10 @@ pub enum ProcessorError {
   ClosingTagFound(String, usize, String),
   #[error("Missing openning tag for `{0}` instruction. Line {1}: `{2}`.")]
   MissingOpeningTag(String, usize, String),
-  #[error("{0} instruction needs one '<file_name>' parameter.")]
-  Instruction(&'static str),
-  #[error("`{0}` instruction needs one `<pattern>` parameter.")]
-  OnePatternParam(&'static str),
-  #[error("Path buf error: `{0}`.")]
-  PathBufConvert(&'static str),
+  #[error("`{0}` instruction needs one '<{}>' parameter.")]
+  InstructionParameterMissing(&'static str, &'static str),
+  #[error("Error converting PathBuf to str.")]
+  PathBufToStrConvert,
 }
 
 pub trait Instruction {

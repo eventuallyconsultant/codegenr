@@ -19,12 +19,10 @@ impl Instruction for CleanInstruction {
     CLEAN
   }
   fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, ProcessorError> {
-    let pattern = params.get(0).ok_or_else(|| ProcessorError::OnePatternParam(CLEAN))?;
+    let pattern = params.get(0).ok_or(ProcessorError::InstructionParameterMissing(CLEAN, "pattern"))?;
 
     let full_path_pattern = Path::new(&self.output_folder).join(pattern);
-    let str_pattern = full_path_pattern
-      .to_str()
-      .ok_or_else(|| ProcessorError::PathBufConvert("Error converting PathBuf to str."))?;
+    let str_pattern = full_path_pattern.to_str().ok_or(ProcessorError::PathBufToStrConvert)?;
     for path in glob(str_pattern)?.flatten() {
       if path.is_dir() {
         std::fs::remove_dir_all(path)?

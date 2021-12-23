@@ -19,7 +19,9 @@ impl Instruction for FileInstruction {
     FILE
   }
   fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, ProcessorError> {
-    let file_path = params.get(0).ok_or_else(|| ProcessorError::Instruction(FILE))?;
+    let file_path = params
+      .get(0)
+      .ok_or(ProcessorError::InstructionParameterMissing(FILE, "file_name"))?;
     Ok(Box::new(FileLineHandler::new(&self.output_folder, file_path)?) as Box<dyn InstructionLineHandler>)
   }
   fn needs_closing(&self) -> bool {

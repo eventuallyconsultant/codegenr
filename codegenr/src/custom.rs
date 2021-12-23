@@ -10,11 +10,11 @@ pub enum CustomError {
   #[error("Pattern Error: `{0}`.")]
   PatternError(#[from] PatternError),
   #[error("Error converting PathBuf to str.")]
-  PathBufError(&'static str),
+  PathBufToStrConvert,
   #[error("File path passed has no file stem.")]
-  NoFileStem(&'static str),
-  #[error("Error converting OsStr to str.")]
-  OstrConvertError(&'static str),
+  NoFileStem,
+  #[error("Couldn't convert OsStr to str.")]
+  OsStrConvertError,
 }
 
 pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: Vec<String>) -> Result<(), CustomError> {
@@ -24,9 +24,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: Vec
       handlebars_add_script(handlebars, p)?;
     } else if p.is_dir() {
       let pattern = p.join("**/*.rhai");
-      let str_pattern = pattern
-        .to_str()
-        .ok_or_else(|| CustomError::PathBufError("Error converting PathBuf to str."))?;
+      let str_pattern = pattern.to_str().ok_or(CustomError::PathBufToStrConvert)?;
       for f in glob::glob(str_pattern)?.flatten() {
         handlebars_add_script(handlebars, f.as_path())?;
       }
@@ -39,13 +37,14 @@ pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: impl AsRe
   let name = script_file
     .as_ref()
     .file_stem()
-    .ok_or_else(|| CustomError::NoFileStem("File path passed has no file stem."))?
+    .ok_or(CustomError::NoFileStem)?
     .to_str()
-    .ok_or_else(|| CustomError::OstrConvertError("Error converting OsStr to str."))?;
-  // handlebars.register_script_helper_file(name, script_file.clone())?;
+    .ok_or(CustomError::OsStrConvertError)?;
+
   handlebars
     .register_script_helper_file(name, script_file.clone())
     .map_err(|script_error| CustomError::ScriptError(format!("{}", script_error)))?;
+
   Ok(())
 }
 

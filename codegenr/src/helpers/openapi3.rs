@@ -1,4 +1,4 @@
-use handlebars::{HelperDef, RenderError, ScopedJson};
+use handlebars::{HelperDef, ScopedJson};
 use serde_json::Value;
 
 use super::handlebars_ext::HandlebarsExt;
