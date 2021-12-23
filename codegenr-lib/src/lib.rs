@@ -2,6 +2,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 pub mod custom;
+pub mod errors;
 pub(crate) mod filesystem;
 pub mod helpers;
 pub mod loader;
@@ -11,9 +12,13 @@ pub mod resolver;
 
 use filesystem::save_file_content;
 use handlebars::Handlebars;
-use loader::*;
-use render::*;
-use resolver::*;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum SaverError {
+  #[error("Io Error: `{0}`.")]
+  Io(#[from] std::io::Error),
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -25,9 +30,9 @@ pub struct Options {
   pub global_parameters: HashMap<String, serde_json::Value>,
 }
 
-pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
-  let document = DocumentPath::parse(&options.source)?;
-  let json = resolve_refs(document)?;
+pub fn run_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
+  let document = loader::DocumentPath::parse(&options.source)?;
+  let json = resolver::resolve_refs(document)?;
 
   if options.intermediate.is_some() {
     save_intermediate(&options.intermediate, "resolved.json", &format!("{:#}", json))?;
@@ -35,10 +40,10 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
 
   let mut all_templates = vec![];
   for t in options.templates {
-    let templates = get_templates_from_directory(&t)?;
+    let templates = render::get_templates_from_directory(&t)?;
     all_templates.extend(templates);
   }
-  let templates = TemplateCollection::from_list(all_templates)?;
+  let templates = render::TemplateCollection::from_list(all_templates)?;
 
   let mut handlebars = Handlebars::new();
   helpers::handlebars_setup(&mut handlebars, options.global_parameters);
@@ -48,10 +53,11 @@ pub fn run_codegenr(options: Options) -> Result<(), anyhow::Error> {
 
   save_intermediate(&options.intermediate, "rendered.txt", &rendered)?;
 
-  processor::process(&rendered, options.output)
+  processor::process(&rendered, options.output)?;
+  Ok(())
 }
 
-fn save_intermediate(file: &Option<String>, extension: &str, content: &str) -> Result<(), anyhow::Error> {
+fn save_intermediate(file: &Option<String>, extension: &str, content: &str) -> Result<(), SaverError> {
   if let Some(s) = file {
     let full_file_name = format!("{}.{}", s, extension);
     save_file_content(".", &full_file_name, content)?;
