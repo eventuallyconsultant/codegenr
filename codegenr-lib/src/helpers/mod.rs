@@ -1,6 +1,7 @@
 use handlebars::Handlebars;
 use serde_json::Value;
 use std::collections::HashMap;
+use thiserror::Error;
 
 pub mod handlebars_ext;
 pub mod string_ext;
@@ -21,6 +22,12 @@ mod strings;
 pub use {
   self::regex::*, cases::*, debug::*, distinct::*, empty::*, equals::*, getset::*, json::*, math::*, openapi3::*, params::*, strings::*,
 };
+
+#[derive(Error, Debug)]
+pub enum HelpersError {
+  #[error("regex Error: `{0}`.")]
+  Regex(#[from] ::regex::Error),
+}
 
 pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<String, Value>) {
   #[cfg(debug_assertions)]

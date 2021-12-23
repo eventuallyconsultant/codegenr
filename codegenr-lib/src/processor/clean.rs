@@ -1,7 +1,6 @@
-use std::path::Path;
-
 use super::*;
 use glob::glob;
+use std::path::Path;
 
 pub const CLEAN: &str = "CLEAN";
 
@@ -19,15 +18,11 @@ impl Instruction for CleanInstruction {
   fn command_name(&self) -> &'static str {
     CLEAN
   }
-  fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, anyhow::Error> {
-    let pattern = params
-      .get(0)
-      .ok_or_else(|| anyhow::anyhow!("`{}` instruction needs one `<pattern>` parameter.", CLEAN))?;
+  fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, ProcessorError> {
+    let pattern = params.get(0).ok_or(ProcessorError::InstructionParameterMissing(CLEAN, "pattern"))?;
 
     let full_path_pattern = Path::new(&self.output_folder).join(pattern);
-    let str_pattern = full_path_pattern
-      .to_str()
-      .ok_or_else(|| anyhow::anyhow!("Error converting PathBuf to str."))?;
+    let str_pattern = full_path_pattern.to_str().ok_or(ProcessorError::PathBufToStrConvert)?;
     for path in glob(str_pattern)?.flatten() {
       if path.is_dir() {
         std::fs::remove_dir_all(path)?

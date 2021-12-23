@@ -1,5 +1,7 @@
 use regex::Regex;
 
+use super::HelpersError;
+
 pub trait StringExt {
   fn is_empty_or_whitespaces(&self) -> bool;
   fn split_get_first(&self, splitter: Option<String>) -> String;
@@ -16,10 +18,10 @@ pub trait StringExt {
   fn camel_case(&self) -> String;
   fn snake_case(&self) -> String;
 
-  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String;
+  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>, replacer: Option<&str>) -> String;
 
-  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error>;
-  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, anyhow::Error>;
+  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, HelpersError>;
+  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, HelpersError>;
 }
 
 // impl<T> StringExt for T where T: AsRef<str> {}
@@ -73,18 +75,20 @@ impl StringExt for Option<String> {
     self.as_ref().map_or(Default::default(), |s| s.snake_case())
   }
 
-  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String {
-    self.as_ref().map_or(Default::default(), |s| s.on_one_line(indent, line_break))
+  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>, replacer: Option<&str>) -> String {
+    self
+      .as_ref()
+      .map_or(Default::default(), |s| s.on_one_line(indent, line_break, replacer))
   }
 
-  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
+  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, HelpersError> {
     self
       .as_ref()
       .map(|s| s.regex_extract(regex_extractor, regex_replacer, separator))
       .transpose()
       .map(|s| s.unwrap_or_default())
   }
-  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, anyhow::Error> {
+  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, HelpersError> {
     self
       .as_ref()
       .map(|s| s.regex_transform(regex_pattern, regex_replacer))
@@ -142,14 +146,14 @@ impl StringExt for String {
     self.as_str().snake_case()
   }
 
-  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String {
-    self.as_str().on_one_line(indent, line_break)
+  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>, replacer: Option<&str>) -> String {
+    self.as_str().on_one_line(indent, line_break, replacer)
   }
 
-  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
+  fn regex_extract(&self, regex_extractor: &str, regex_replacer: Option<&str>, separator: Option<&str>) -> Result<String, HelpersError> {
     self.as_str().regex_extract(regex_extractor, regex_replacer, separator)
   }
-  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, anyhow::Error> {
+  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, HelpersError> {
     self.as_str().regex_transform(regex_pattern, regex_replacer)
   }
 }
@@ -279,8 +283,9 @@ impl StringExt for &str {
     snake
   }
 
-  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>) -> String {
-    let r = ONE_LINER_REGEX.replace_all(self, "");
+  fn on_one_line(&self, indent: Option<u64>, line_break: Option<bool>, replacer: Option<&str>) -> String {
+    let replacer = replacer.unwrap_or("");
+    let r = ONE_LINER_REGEX.replace_all(self, replacer);
 
     let eol = if line_break.unwrap_or(true) { "\n" } else { "" };
     let indent = indent.unwrap_or_default();
@@ -289,7 +294,7 @@ impl StringExt for &str {
     result
   }
 
-  fn regex_extract(&self, regex_extractor: &str, replacer: Option<&str>, separator: Option<&str>) -> Result<String, anyhow::Error> {
+  fn regex_extract(&self, regex_extractor: &str, replacer: Option<&str>, separator: Option<&str>) -> Result<String, HelpersError> {
     let regex_extr = Regex::new(regex_extractor)?;
     let replacer = replacer.unwrap_or("$1");
     let separator = separator.unwrap_or(", ");
@@ -304,7 +309,7 @@ impl StringExt for &str {
     Ok(values.join(separator))
   }
 
-  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, anyhow::Error> {
+  fn regex_transform(&self, regex_pattern: &str, regex_replacer: &str) -> Result<String, HelpersError> {
     let regex_extr = Regex::new(regex_pattern)?;
     let transformed = regex_extr.replace_all(self, regex_replacer);
     Ok(transformed.into())

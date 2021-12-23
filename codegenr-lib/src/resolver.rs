@@ -1,6 +1,7 @@
-use crate::loader::DocumentPath;
+use crate::loader::{DocumentPath, LoaderError};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use thiserror::Error;
 
 const REF: &str = "$ref";
 const PATH_SEP: char = '/';
@@ -9,6 +10,20 @@ const FROM_REF: &str = "x-fromRef";
 const REF_NAME: &str = "x-refName";
 
 type DocumentsHash = HashMap<DocumentPath, Value>;
+
+#[derive(Error, Debug)]
+pub enum ResolverError {
+  #[error("Loading errror: `{0}`.")]
+  Loading(#[from] LoaderError),
+  #[error("`{0}` value should be a String.")]
+  ShouldBeString(&'static str),
+  #[error("Key `{key}` was not found in json part `{part2}`.")]
+  KeyNotFound { key: String, part2: Value },
+  #[error("Could not follow path `{0}` as json part is not an object.")]
+  NotAnObject(String),
+  #[error("RefInfo parse error: `{0}`.")]
+  NoMoreThanTwoParts(&'static str),
+}
 
 pub struct RefResolver {
   _hash: DocumentsHash,
@@ -61,11 +76,11 @@ impl RefResolver {
 
 // https://github.com/BeezUP/dotnet-codegen/tree/master/tests/CodegenUP.DocumentRefLoader.Tests
 
-pub fn resolve_refs_raw(json: Value) -> Result<Value, anyhow::Error> {
+pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
   resolve_refs_recurse(&DocumentPath::None, json.clone(), &json, &mut RefResolver::new())
 }
 
-pub fn resolve_refs(document: DocumentPath) -> Result<Value, anyhow::Error> {
+pub fn resolve_refs(document: DocumentPath) -> Result<Value, ResolverError> {
   let json = document.load_raw()?;
   resolve_refs_recurse(&document, json.clone(), &json, &mut RefResolver::new())
 }
@@ -75,7 +90,7 @@ fn resolve_refs_recurse(
   json: Value,
   original: &Value,
   cache: &mut RefResolver,
-) -> Result<Value, anyhow::Error> {
+) -> Result<Value, ResolverError> {
   match json {
     Value::Array(a) => {
       let mut new = Vec::<_>::with_capacity(a.len());
@@ -117,7 +132,7 @@ fn resolve_refs_recurse(
             v => return Ok(v),
           }
         } else {
-          return Err(anyhow::anyhow!("{} value should be a String", REF));
+          return Err(ResolverError::ShouldBeString(REF));
         }
       }
       Ok(Value::Object(map))
@@ -130,18 +145,19 @@ fn get_ref_name(path: &str) -> String {
   path.split(PATH_SEP).last().unwrap_or_default().to_string()
 }
 
-fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, anyhow::Error> {
+fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, ResolverError> {
   match path {
     Some(p) => {
       let parts = p.split(PATH_SEP);
       let mut part = json;
       for p in parts.filter(|p| !p.trim().is_empty()) {
         if let Value::Object(o) = part {
-          part = o
-            .get(p)
-            .ok_or_else(|| anyhow::format_err!("Key `{}` was not found in json part `{}`", p, part))?;
+          let key = p.to_string();
+          let part2 = part.clone();
+          part = o.get(p).ok_or(ResolverError::KeyNotFound { key, part2 })?;
         } else {
-          return Err(anyhow::anyhow!("Could not follow path `{}` as json part is not an object.", p));
+          let key = p.to_string();
+          return Err(ResolverError::NotAnObject(key));
         }
       }
       Ok(part.clone())
@@ -166,13 +182,13 @@ pub struct RefInfo {
 }
 
 impl RefInfo {
-  pub fn parse(doc_path: &DocumentPath, ref_value: &str) -> Result<Self, anyhow::Error> {
+  pub fn parse(doc_path: &DocumentPath, ref_value: &str) -> Result<Self, ResolverError> {
     let mut parts = ref_value.split(SHARP_SEP);
 
     let (ref_doc_path, path) = match (parts.next(), parts.next(), parts.next()) {
       (_, _, Some(_)) => {
-        return Err(anyhow::anyhow!(
-          "There should be no more than 2 parts separated by # in a reference path."
+        return Err(ResolverError::NoMoreThanTwoParts(
+          "There should be no more than 2 parts separated by # in a reference path.",
         ))
       }
       (Some(file), None, None) => (DocumentPath::parse(file)?.relate_from(doc_path)?, None),
@@ -228,7 +244,7 @@ mod test {
     let err = failed_test.expect_err("Should be an error");
     assert_eq!(
       err.to_string(),
-      "Key `not_existing_path` was not found in json part `{\"data1\":{\"value\":42},\"data2\":[1,2,3]}`"
+      "Key `not_existing_path` was not found in json part `{\"data1\":{\"value\":42},\"data2\":[1,2,3]}`."
     );
 
     Ok(())
@@ -533,7 +549,7 @@ mod test {
     let err = failed.expect_err("Should be an error");
     assert_eq!(
       err.to_string(),
-      "There should be no more than 2 parts separated by # in a reference path."
+      "RefInfo parse error: `There should be no more than 2 parts separated by # in a reference path.`."
     );
   }
 

@@ -18,10 +18,10 @@ impl Instruction for FileInstruction {
   fn command_name(&self) -> &'static str {
     FILE
   }
-  fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, anyhow::Error> {
+  fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, ProcessorError> {
     let file_path = params
       .get(0)
-      .ok_or_else(|| anyhow::anyhow!("{} instruction needs one '<file_name>' parameter.", FILE))?;
+      .ok_or(ProcessorError::InstructionParameterMissing(FILE, "file_name"))?;
     Ok(Box::new(FileLineHandler::new(&self.output_folder, file_path)?) as Box<dyn InstructionLineHandler>)
   }
   fn needs_closing(&self) -> bool {
@@ -34,14 +34,14 @@ pub struct FileLineHandler {
 }
 
 impl FileLineHandler {
-  fn new(output_folder: &str, write_file_path: &str) -> Result<Self, anyhow::Error> {
+  fn new(output_folder: &str, write_file_path: &str) -> Result<Self, ProcessorError> {
     let (file, _) = create_file(output_folder, write_file_path)?;
     Ok(Self { file: RefCell::new(file) })
   }
 }
 
 impl InstructionLineHandler for FileLineHandler {
-  fn handle_line(&self, line: &str) -> Result<(), anyhow::Error> {
+  fn handle_line(&self, line: &str) -> Result<(), ProcessorError> {
     let mut f = self.file.borrow_mut();
     f.write_all(line.as_bytes())?;
     f.write_all("\n".as_bytes())?;
@@ -51,10 +51,9 @@ impl InstructionLineHandler for FileLineHandler {
 
 #[cfg(test)]
 mod test {
-  use std::io::Read;
-
   use super::*;
   use crate::filesystem::make_path_from_root;
+  use std::io::Read;
   use tempdir::TempDir;
 
   #[test]

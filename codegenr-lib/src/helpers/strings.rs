@@ -565,6 +565,10 @@ impl HelperDef for TrimBlockEndHelper {
 /// "az\n"
 /// );
 /// assert_eq!(
+///   exec_template(json!({}), "{{#one_line 2 true \"-\"}}a \r\n \r\n \r\nz{{/one_line}}"),
+/// "  a---z\n"
+/// );
+/// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}test\r\n\r\n\r\ntest{{/one_line}}"),
 /// "testtest\n"
 /// );
@@ -601,13 +605,14 @@ impl HelperDef for OneLineHelper {
     out: &mut dyn handlebars::Output,
   ) -> handlebars::HelperResult {
     if let Some(t) = h.template() {
-      h.ensure_arguments_count_max(2, ONE_LINE_HELPER)?;
+      h.ensure_arguments_count_max(3, ONE_LINE_HELPER)?;
       let mut buffer = StringOutput::new();
       t.render(handle, ctx, render_ctx, &mut buffer)?;
       let s = buffer.into_string()?;
       let indent = h.get_param_as_integer(0);
       let line_break = h.get_param_as_bool(1);
-      out.write(&s.on_one_line(indent, line_break))?;
+      let replacer = h.get_param_as_str(2);
+      out.write(&s.on_one_line(indent, line_break, replacer))?;
     };
 
     Ok(())
