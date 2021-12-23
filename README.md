@@ -1,9 +1,5 @@
 # CodeGenR
 
-A `Rust` rewrite of `C#` [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
-
-You can find some custom handlebars helpers in the documentation tests : [here](https://docs.rs/codegenr-lib/latest/codegenr_lib/helpers/index.html).
-
 ![codegenr graphical explanation](_assets/codegenr.svg)
 
 ## Installation
@@ -14,6 +10,12 @@ And then install `codegenr`
 ```
 cargo install codegenr
 ```
+
+## Documentation
+
+`codegenr` commmand is mostly a launcher for `codegenr-lib`. So most of the documentation can be found in [codegenr_lib documentation](https://docs.rs/codegenr-lib/latest/codegenr_lib/).
+
+The defaults Handlebars helpers are documented [here](https://docs.rs/codegenr-lib/latest/codegenr_lib/helpers/index.html).
 
 ## Contribute
 
@@ -30,6 +32,10 @@ In the command line you can :
 
 - `cargo doc --open` compile and open the documentation
 - `cargo install --path codegenr` installs codegenr command line from sources
+
+## Legacy
+
+This tool is based on the design of a precedent one written in `C#` : [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 
 ## Roadmap :
 
