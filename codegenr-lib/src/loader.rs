@@ -238,21 +238,15 @@ mod test {
     "_samples/petshop_externals.yaml",
     "_samples\\petshop_externals.yaml"
   )]
-  // #[test_case(
-  //   "./_samples/petshop_with_external.yaml",
-  //   "petshop_externals.yaml",
-  //   "./_samples/petshop_externals.yaml"
-  // )]
   fn relate_test(doc_path: &str, ref_path: &str, expected_related: &str, win_expected: &str) {
     let doc_path = DocumentPath::parse(doc_path).expect("?");
     let r_path = DocumentPath::parse(ref_path).expect("?");
+    let related = r_path.relate_from(&doc_path).expect("?");
     if cfg!(windows) {
       let expected_related = DocumentPath::parse(win_expected).expect("?");
-      let related = r_path.relate_from(&doc_path).expect("?");
       assert_eq!(related, expected_related);
     } else {
       let expected_related = DocumentPath::parse(expected_related).expect("?");
-      let related = r_path.relate_from(&doc_path).expect("?");
       assert_eq!(related, expected_related);
     }
   }
