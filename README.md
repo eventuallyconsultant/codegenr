@@ -11,6 +11,12 @@ And then install `codegenr`
 cargo install codegenr
 ```
 
+or install the development version
+
+```
+cargo install --git https://github.com/eventuallyconsultant/codegenr --branch dev
+```
+
 ## Documentation
 
 `codegenr` commmand is mostly a launcher for `codegenr-lib`. So most of the documentation can be found in [codegenr_lib documentation](https://docs.rs/codegenr-lib/latest/codegenr_lib/).
