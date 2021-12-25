@@ -1,5 +1,6 @@
 use serde::Deserialize;
-use std::collections::HashMap;
+use serde_json::Value;
+use std::{collections::HashMap, rc::Rc};
 
 pub mod custom;
 pub mod errors;
@@ -13,6 +14,8 @@ pub mod resolver;
 use filesystem::save_file_content;
 use handlebars::Handlebars;
 use thiserror::Error;
+
+type DocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
 
 #[derive(Error, Debug)]
 pub enum SaverError {
@@ -30,9 +33,9 @@ pub struct Options {
   pub global_parameters: HashMap<String, serde_json::Value>,
 }
 
-pub fn run_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
+pub fn run_codegenr(options: Options, cache: Option<&mut DocumentsHash>) -> Result<(), errors::CodegenrError> {
   let document = loader::DocumentPath::parse(&options.source)?;
-  let json = resolver::resolve_refs(document)?;
+  let json = resolver::resolve_refs(document, cache)?;
 
   if options.intermediate.is_some() {
     save_intermediate(&options.intermediate, "resolved.json", &format!("{:#}", json))?;

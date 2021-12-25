@@ -1,6 +1,9 @@
-use crate::loader::{DocumentPath, LoaderError};
+use crate::{
+  loader::{DocumentPath, LoaderError},
+  DocumentsHash,
+};
 use serde_json::{Map, Value};
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 use thiserror::Error;
 
 const REF: &str = "$ref";
@@ -8,8 +11,6 @@ const PATH_SEP: char = '/';
 const SHARP_SEP: char = '#';
 const FROM_REF: &str = "x-fromRef";
 const REF_NAME: &str = "x-refName";
-
-type DocumentsHash = HashMap<DocumentPath, Rc<Value>>;
 
 #[derive(Error, Debug)]
 pub enum ResolverError {
@@ -25,23 +26,23 @@ pub enum ResolverError {
   NoMoreThanTwoParts(&'static str),
 }
 
-pub struct RefResolver {
-  _hash: DocumentsHash,
-}
+// pub struct RefResolver {
+//   _hash: DocumentsHash,
+// }
 
-impl RefResolver {
-  fn new() -> Self {
-    Self { _hash: Default::default() }
-  }
+// impl RefResolver {
+//   fn new() -> Self {
+//     Self { _hash: Default::default() }
+//   }
 
-  // fn jump<'a>(&'a mut self, parent_document_path: DocumentPath, parent_json: Value) -> RefResolverJump<'a> {
-  //   self.hash.insert(parent_document_path.clone(), parent_json);
-  //   RefResolverJump {
-  //     ref_resolver: self,
-  //     parent_document_path,
-  //   }
-  // }
-}
+//   // fn jump<'a>(&'a mut self, parent_document_path: DocumentPath, parent_json: Value) -> RefResolverJump<'a> {
+//   //   self.hash.insert(parent_document_path.clone(), parent_json);
+//   //   RefResolverJump {
+//   //     ref_resolver: self,
+//   //     parent_document_path,
+//   //   }
+//   // }
+// }
 
 // pub struct RefResolverJump<'a> {
 //   pub ref_resolver: &'a RefResolver,
@@ -80,10 +81,18 @@ pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
   resolve_refs_recurse(&DocumentPath::None, json.clone(), &json, &mut Default::default())
 }
 
-pub fn resolve_refs(document: DocumentPath) -> Result<Value, ResolverError> {
-  let mut cache = Default::default();
-  let json = load_raw_json(&document, &mut cache)?;
-  resolve_refs_recurse(&document, (*json).clone(), &json, &mut cache)
+pub fn resolve_refs(document: DocumentPath, cache: Option<&mut DocumentsHash>) -> Result<Value, ResolverError> {
+  match cache {
+    Some(c) => {
+      let json = load_raw_json(&document, c)?;
+      resolve_refs_recurse(&document, (*json).clone(), &json, c)
+    }
+    None => {
+      let mut cache = Default::default();
+      let json = load_raw_json(&document, &mut cache)?;
+      resolve_refs_recurse(&document, (*json).clone(), &json, &mut cache)
+    }
+  }
 }
 
 fn resolve_refs_recurse(
@@ -160,28 +169,6 @@ fn load_raw_json(doc_path: &DocumentPath, cache: &mut DocumentsHash) -> Result<R
       Ok(rc)
     }
   }
-
-  // let getter = cache.get(doc_path);
-  // if let Some(json) = getter {
-  //   return Ok(json.clone());
-  // }
-
-  // let json = doc_path.load_raw()?;
-  // cache.insert(doc_path.clone(), json);
-  // Ok(
-  //   cache
-  //     .get(doc_path)
-  //     .expect("Just inserted the value. For sure its existing!")
-  //     .clone(),
-  // )
-  // match cache.get(&doc_path) {
-  //   Some(json) => Ok(json),
-  //   None => {
-  //     let json = doc_path.load_raw()?;
-  //     cache.insert(doc_path.clone(), json);
-  //     Ok(cache.get(&doc_path).expect("Just inserrted the value. For sure its existing!"))
-  //   }
-  // }
 }
 
 fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, ResolverError> {
@@ -215,9 +202,6 @@ pub struct RefInfo {
   pub document_path: DocumentPath,
   /// Last part of the $ref value
   pub ref_friendly_name: Option<String>,
-  // pub abs_doc_uri: Url,
-  // pub is_false_abs_ref: bool,
-  // public Uri AbsoluteDocumentUri { get; }
 }
 
 impl RefInfo {
@@ -542,7 +526,7 @@ mod test {
   #[test]
   fn should_resolve_external_references() -> Result<(), anyhow::Error> {
     let document = DocumentPath::parse("_samples/resolver/petshop_with_external.yaml")?;
-    let json = resolve_refs(document)?;
+    let json = resolve_refs(document, None)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
     Ok(())
@@ -598,7 +582,7 @@ mod test {
   #[test]
   fn very_tricky_test() -> Result<(), anyhow::Error> {
     let document = DocumentPath::parse("_samples/resolver/simple1.yaml")?;
-    let json = resolve_refs(document)?;
+    let json = resolve_refs(document, None)?;
     let string = json.to_string();
     assert!(!string.contains(REF));
 
