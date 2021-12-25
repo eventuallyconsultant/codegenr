@@ -159,7 +159,7 @@ fn load_raw_json(doc_path: &DocumentPath, cache: &mut DocumentsHash) -> Result<V
   Ok(
     cache
       .get(doc_path)
-      .expect("Just inserrted the value. For sure its existing!")
+      .expect("Just inserted the value. For sure its existing!")
       .clone(),
   )
   // match cache.get(&doc_path) {
