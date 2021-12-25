@@ -1,6 +1,6 @@
 use crate::loader::{DocumentPath, LoaderError};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 use thiserror::Error;
 
 const REF: &str = "$ref";
@@ -9,7 +9,7 @@ const SHARP_SEP: char = '#';
 const FROM_REF: &str = "x-fromRef";
 const REF_NAME: &str = "x-refName";
 
-type DocumentsHash = HashMap<DocumentPath, Value>;
+type DocumentsHash = HashMap<DocumentPath, Rc<Value>>;
 
 #[derive(Error, Debug)]
 pub enum ResolverError {
@@ -81,8 +81,9 @@ pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
 }
 
 pub fn resolve_refs(document: DocumentPath) -> Result<Value, ResolverError> {
-  let json = document.load_raw()?;
-  resolve_refs_recurse(&document, json.clone(), &json, &mut Default::default())
+  let mut cache = Default::default();
+  let json = load_raw_json(&document, &mut cache)?;
+  resolve_refs_recurse(&document, (*json).clone(), &json, &mut cache)
 }
 
 fn resolve_refs_recurse(
@@ -148,20 +149,31 @@ fn get_ref_name(path: &str) -> String {
   path.split(PATH_SEP).last().unwrap_or_default().to_string()
 }
 
-fn load_raw_json(doc_path: &DocumentPath, cache: &mut DocumentsHash) -> Result<Value, ResolverError> {
-  let getter = cache.get(doc_path);
-  if let Some(json) = getter {
-    return Ok(json.clone());
+fn load_raw_json(doc_path: &DocumentPath, cache: &mut DocumentsHash) -> Result<Rc<Value>, ResolverError> {
+  use std::collections::hash_map::Entry::*;
+  match cache.entry(doc_path.clone()) {
+    Occupied(entry) => Ok(entry.get().clone()),
+    Vacant(entry) => {
+      let json = doc_path.load_raw()?;
+      let rc = Rc::new(json);
+      entry.insert(rc.clone());
+      Ok(rc)
+    }
   }
 
-  let json = doc_path.load_raw()?;
-  cache.insert(doc_path.clone(), json);
-  Ok(
-    cache
-      .get(doc_path)
-      .expect("Just inserted the value. For sure its existing!")
-      .clone(),
-  )
+  // let getter = cache.get(doc_path);
+  // if let Some(json) = getter {
+  //   return Ok(json.clone());
+  // }
+
+  // let json = doc_path.load_raw()?;
+  // cache.insert(doc_path.clone(), json);
+  // Ok(
+  //   cache
+  //     .get(doc_path)
+  //     .expect("Just inserted the value. For sure its existing!")
+  //     .clone(),
+  // )
   // match cache.get(&doc_path) {
   //   Some(json) => Ok(json),
   //   None => {
