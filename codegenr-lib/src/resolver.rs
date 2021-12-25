@@ -77,19 +77,19 @@ impl RefResolver {
 // https://github.com/BeezUP/dotnet-codegen/tree/master/tests/CodegenUP.DocumentRefLoader.Tests
 
 pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
-  resolve_refs_recurse(&DocumentPath::None, json.clone(), &json, &mut RefResolver::new())
+  resolve_refs_recurse(&DocumentPath::None, json.clone(), &json, &mut Default::default())
 }
 
 pub fn resolve_refs(document: DocumentPath) -> Result<Value, ResolverError> {
   let json = document.load_raw()?;
-  resolve_refs_recurse(&document, json.clone(), &json, &mut RefResolver::new())
+  resolve_refs_recurse(&document, json.clone(), &json, &mut Default::default())
 }
 
 fn resolve_refs_recurse(
   current_doc: &DocumentPath,
   json: Value,
   original: &Value,
-  cache: &mut RefResolver,
+  cache: &mut DocumentsHash,
 ) -> Result<Value, ResolverError> {
   match json {
     Value::Array(a) => {
@@ -106,6 +106,7 @@ fn resolve_refs_recurse(
           map.insert(key, resolve_refs_recurse(current_doc, value, original, cache)?);
         } else if let Value::String(ref_value) = value {
           let ref_info = RefInfo::parse(current_doc, &ref_value)?;
+
           let is_nested = ref_info.document_path == *current_doc;
 
           let new_value = if is_nested {
@@ -113,7 +114,9 @@ fn resolve_refs_recurse(
             resolve_refs_recurse(current_doc, v, original, cache)?
           } else {
             let doc_path = ref_info.document_path;
-            let json = doc_path.load_raw()?;
+            let json = load_raw_json(&doc_path, cache)?;
+            // let json = cache.entry(doc_path).or_insert_with_key(|key| doc_path.load_raw()?);
+            // let json = doc_path.load_raw()?;
             let v = fetch_reference_value(&json, &ref_info.path)?;
             resolve_refs_recurse(&doc_path, v, &json, cache)?
           };
@@ -143,6 +146,30 @@ fn resolve_refs_recurse(
 
 fn get_ref_name(path: &str) -> String {
   path.split(PATH_SEP).last().unwrap_or_default().to_string()
+}
+
+fn load_raw_json(doc_path: &DocumentPath, cache: &mut DocumentsHash) -> Result<Value, ResolverError> {
+  let getter = cache.get(doc_path);
+  if let Some(json) = getter {
+    return Ok(json.clone());
+  }
+
+  let json = doc_path.load_raw()?;
+  cache.insert(doc_path.clone(), json);
+  Ok(
+    cache
+      .get(doc_path)
+      .expect("Just inserrted the value. For sure its existing!")
+      .clone(),
+  )
+  // match cache.get(&doc_path) {
+  //   Some(json) => Ok(json),
+  //   None => {
+  //     let json = doc_path.load_raw()?;
+  //     cache.insert(doc_path.clone(), json);
+  //     Ok(cache.get(&doc_path).expect("Just inserrted the value. For sure its existing!"))
+  //   }
+  // }
 }
 
 fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, ResolverError> {
