@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, sync::RwLock};
 
 pub mod custom;
 pub mod errors;
@@ -15,7 +15,21 @@ use filesystem::save_file_content;
 use handlebars::Handlebars;
 use thiserror::Error;
 
-type DocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
+pub struct Doc {
+  original: Value,
+  resolving: RwLock<Value>,
+}
+
+impl Doc {
+  fn new(json: Value) -> Self {
+    Self {
+      original: json.clone(),
+      resolving: RwLock::new(json),
+    }
+  }
+}
+
+type DocumentsHash = HashMap<loader::DocumentPath, Rc<Doc>>;
 
 #[derive(Error, Debug)]
 pub enum SaverError {

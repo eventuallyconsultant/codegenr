@@ -1,9 +1,10 @@
 use crate::{
   loader::{DocumentPath, LoaderError},
-  DocumentsHash,
+  Doc, DocumentsHash,
 };
+use core::panic;
 use serde_json::{Map, Value};
-use std::rc::Rc;
+use std::{borrow::BorrowMut, rc::Rc, sync::RwLock};
 use thiserror::Error;
 
 const REF: &str = "$ref";
@@ -16,6 +17,8 @@ const REF_NAME: &str = "x-refName";
 pub enum ResolverError {
   #[error("Loading errror: `{0}`.")]
   Loading(#[from] LoaderError),
+  #[error("Resolved `{0}` value should be an Object to be merged to the importing object.")]
+  ShouldBeObject(&'static str),
   #[error("`{0}` value should be a String.")]
   ShouldBeString(&'static str),
   #[error("Key `{key}` was not found in json part `{part2}`.")]
@@ -24,6 +27,8 @@ pub enum ResolverError {
   NotAnObject(String),
   #[error("RefInfo parse error: `{0}`.")]
   NoMoreThanTwoParts(&'static str),
+  #[error("{0}")]
+  Any(#[from] anyhow::Error),
 }
 
 // pub struct RefResolver {
@@ -78,79 +83,155 @@ pub enum ResolverError {
 // https://github.com/BeezUP/dotnet-codegen/tree/master/tests/CodegenUP.DocumentRefLoader.Tests
 
 pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
-  resolve_refs_recurse(&DocumentPath::None, json.clone(), &json, &mut Default::default())
+  let mut resolving = json.clone();
+  resolve_refs_recurse2(&DocumentPath::None, &mut resolving, &json, &mut Default::default())?;
+  Ok(resolving)
 }
 
 pub fn resolve_refs(document: DocumentPath, cache: Option<&mut DocumentsHash>) -> Result<Value, ResolverError> {
   match cache {
     Some(c) => {
-      let json = load_raw_json(&document, c)?;
-      resolve_refs_recurse(&document, (*json).clone(), &json, c)
+      let doc = load_raw_json(&document, c)?;
+      let mut resolving = doc.resolving.write().unwrap();
+      resolve_refs_recurse2(&document, &mut resolving, &doc.original, c)?;
+      Ok(resolving.clone())
     }
     None => {
       let mut cache = Default::default();
-      let json = load_raw_json(&document, &mut cache)?;
-      resolve_refs_recurse(&document, (*json).clone(), &json, &mut cache)
+      let doc = load_raw_json(&document, &mut cache)?;
+      let mut resolving = doc.resolving.write().unwrap();
+      resolve_refs_recurse2(&document, &mut resolving, &doc.original, &mut cache)?;
+      Ok(resolving.clone())
     }
   }
 }
 
-fn resolve_refs_recurse(
+// fn resolve_refs_recurse(
+//   current_doc: &DocumentPath,
+//   json: Value,
+//   original: &Value,
+//   cache: &mut DocumentsHash,
+// ) -> Result<Value, ResolverError> {
+//   match json {
+//     Value::Array(a) => {
+//       let mut new = Vec::<_>::with_capacity(a.len());
+//       for v in a {
+//         new.push(resolve_refs_recurse(current_doc, v, original, cache)?);
+//       }
+//       Ok(Value::Array(new))
+//     }
+//     Value::Object(obj) => {
+//       let mut map = Map::new();
+//       for (key, value) in obj.into_iter() {
+//         if key != REF {
+//           map.insert(key, resolve_refs_recurse(current_doc, value, original, cache)?);
+//         } else if let Value::String(ref_value) = value {
+//           let ref_info = RefInfo::parse(current_doc, &ref_value)?;
+
+//           let is_nested = ref_info.document_path == *current_doc;
+
+//           let new_value = if is_nested {
+//             let v = fetch_reference_value(original, &ref_info.path)?;
+//             resolve_refs_recurse(current_doc, v, original, cache)?
+//           } else {
+//             let doc_path = ref_info.document_path;
+//             let json = load_raw_json(&doc_path, cache)?;
+//             // let json = cache.entry(doc_path).or_insert_with_key(|key| doc_path.load_raw()?);
+//             // let json = doc_path.load_raw()?;
+//             let v = fetch_reference_value(&json, &ref_info.path)?;
+//             resolve_refs_recurse(&doc_path, v, &json, cache)?
+//           };
+
+//           match new_value {
+//             Value::Object(m) => {
+//               for (k, v) in m {
+//                 map.insert(k, v);
+//               }
+//               map.insert(FROM_REF.into(), Value::String(ref_value.clone()));
+//               map.insert(
+//                 REF_NAME.into(),
+//                 Value::String(ref_info.path.map(|p| get_ref_name(&p)).unwrap_or_default()),
+//               );
+//             }
+//             v => return Ok(v),
+//           }
+//         } else {
+//           return Err(ResolverError::ShouldBeString(REF));
+//         }
+//       }
+//       Ok(Value::Object(map))
+//     }
+//     _ => Ok(json),
+//   }
+// }
+
+fn resolve_refs_recurse2(
   current_doc: &DocumentPath,
-  json: Value,
+  json: &mut Value,
   original: &Value,
   cache: &mut DocumentsHash,
-) -> Result<Value, ResolverError> {
+) -> Result<(), ResolverError> {
   match json {
     Value::Array(a) => {
-      let mut new = Vec::<_>::with_capacity(a.len());
+      // let mut new = Vec::<_>::with_capacity(a.len());
       for v in a {
-        new.push(resolve_refs_recurse(current_doc, v, original, cache)?);
+        resolve_refs_recurse2(current_doc, v, original, cache)?;
+        // new.push(resolve_refs_recurse(current_doc, v, original, cache)?);
       }
-      Ok(Value::Array(new))
+      Ok(())
     }
     Value::Object(obj) => {
-      let mut map = Map::new();
-      for (key, value) in obj.into_iter() {
-        if key != REF {
-          map.insert(key, resolve_refs_recurse(current_doc, value, original, cache)?);
-        } else if let Value::String(ref_value) = value {
+      // panic!("Object");
+
+      if let Some(ref_value) = obj.remove(REF) {
+        // panic!("Ref FOUND");
+        if let Value::String(ref_value) = ref_value {
           let ref_info = RefInfo::parse(current_doc, &ref_value)?;
 
           let is_nested = ref_info.document_path == *current_doc;
 
           let new_value = if is_nested {
-            let v = fetch_reference_value(original, &ref_info.path)?;
-            resolve_refs_recurse(current_doc, v, original, cache)?
+            let mut v = fetch_reference_value(original, &ref_info.path)?;
+            resolve_refs_recurse2(current_doc, &mut v, original, cache)?;
+            v
           } else {
             let doc_path = ref_info.document_path;
-            let json = load_raw_json(&doc_path, cache)?;
-            // let json = cache.entry(doc_path).or_insert_with_key(|key| doc_path.load_raw()?);
-            // let json = doc_path.load_raw()?;
-            let v = fetch_reference_value(&json, &ref_info.path)?;
-            resolve_refs_recurse(&doc_path, v, &json, cache)?
+            let doc = load_raw_json(&doc_path, cache)?;
+            let mut v = fetch_reference_value(&doc.original, &ref_info.path)?;
+            resolve_refs_recurse2(&doc_path, &mut v, &doc.original, cache)?;
+            v
           };
 
-          match new_value {
-            Value::Object(m) => {
-              for (k, v) in m {
-                map.insert(k, v);
-              }
-              map.insert(FROM_REF.into(), Value::String(ref_value.clone()));
-              map.insert(
-                REF_NAME.into(),
-                Value::String(ref_info.path.map(|p| get_ref_name(&p)).unwrap_or_default()),
-              );
+          if let Value::Object(m) = new_value {
+            for (k, v) in m {
+              obj.insert(k, v);
             }
-            v => return Ok(v),
+            obj.insert(FROM_REF.into(), Value::String(ref_value));
+            obj.insert(
+              REF_NAME.into(),
+              Value::String(ref_info.path.map(|p| get_ref_name(&p)).unwrap_or_default()),
+            );
+          } else {
+            return Err(ResolverError::ShouldBeString(REF));
           }
-        } else {
-          return Err(ResolverError::ShouldBeString(REF));
         }
       }
-      Ok(Value::Object(map))
+
+      for (_key, value) in obj.into_iter() {
+        resolve_refs_recurse2(current_doc, value, original, cache)?;
+        // if key != REF {
+        //   //map.insert(key, resolve_refs_recurse(current_doc, value, original, cache)?);
+        // } else if let Value::String(ref_value) = value {
+
+        //   } else {
+        //     return Err(ResolverError::ShouldBeObject(REF));
+        //   }
+        // } else {
+        //   return Err(ResolverError::ShouldBeString(REF));
+      }
+      Ok(())
     }
-    _ => Ok(json),
+    _ => Ok(()),
   }
 }
 
@@ -158,13 +239,13 @@ fn get_ref_name(path: &str) -> String {
   path.split(PATH_SEP).last().unwrap_or_default().to_string()
 }
 
-fn load_raw_json(doc_path: &DocumentPath, cache: &mut DocumentsHash) -> Result<Rc<Value>, ResolverError> {
+fn load_raw_json(doc_path: &DocumentPath, cache: &mut DocumentsHash) -> Result<Rc<Doc>, ResolverError> {
   use std::collections::hash_map::Entry::*;
   match cache.entry(doc_path.clone()) {
     Occupied(entry) => Ok(entry.get().clone()),
     Vacant(entry) => {
       let json = doc_path.load_raw()?;
-      let rc = Rc::new(json);
+      let rc = Rc::new(Doc::new(json));
       entry.insert(rc.clone());
       Ok(rc)
     }
