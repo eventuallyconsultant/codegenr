@@ -1,5 +1,4 @@
 use handlebars::{Handlebars, TemplateError};
-use serde_json::Value;
 use std::collections::HashMap;
 use thiserror::Error;
 use walkdir::WalkDir;

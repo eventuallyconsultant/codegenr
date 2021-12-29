@@ -17,7 +17,7 @@ pub enum CustomError {
   OsStrConvertError,
 }
 
-pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: &Vec<String>) -> Result<(), CustomError> {
+pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: &[String]) -> Result<(), CustomError> {
   for path in custom_helpers_folders {
     let p = Path::new(&path);
     if p.is_file() {
@@ -57,7 +57,7 @@ mod test {
     let mut h = Handlebars::new();
     handlebars_setup(
       &mut h,
-      &vec!["./_samples/rhai/param_0_len.rhai".into(), "./_samples/rhai/concat.rhai".into()],
+      &["./_samples/rhai/param_0_len.rhai".into(), "./_samples/rhai/concat.rhai".into()],
     )
     .expect("Could not setup handlebars.");
     h.register_template_string("test", template).expect("Could not register template.");
