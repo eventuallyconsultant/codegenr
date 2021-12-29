@@ -14,20 +14,18 @@ const REF_NAME: &str = "x-refName";
 
 #[derive(Error, Debug)]
 pub enum ResolverError {
-  #[error("Loading errror: `{0}`.")]
+  #[error("Loading error: `{0}`.")]
   Loading(#[from] LoaderError),
-  #[error("Resolved `{0}` value should be an Object to be merged to the importing object.")]
-  ShouldBeObject(&'static str),
-  #[error("`{0}` value should be a String.")]
-  ShouldBeString(&'static str),
+  #[error("Resolved `$ref` should be an Object to be merged to the importing object.")]
+  ShouldBeObject,
+  #[error("`$ref` value should be a String.")]
+  ShouldBeString,
   #[error("Key `{key}` was not found in json part `{part2}`.")]
   KeyNotFound { key: String, part2: Value },
   #[error("Could not follow path `{0}` as json part is not an object.")]
   NotAnObject(String),
-  #[error("RefInfo parse error: `{0}`.")]
-  NoMoreThanTwoParts(&'static str),
-  #[error("{0}")]
-  Any(#[from] anyhow::Error),
+  #[error("`$ref` value `{0}` parse error. There should be no more than 2 parts separated by # in a reference path.")]
+  NoMoreThanTwoParts(String),
 }
 
 enum Json {
@@ -141,10 +139,10 @@ fn resolve_refs_recurse(
               Value::String(ref_info.path.map(|p| get_ref_name(&p)).unwrap_or_default()),
             );
           } else {
-            return Err(ResolverError::ShouldBeObject(REF));
+            return Err(ResolverError::ShouldBeObject);
           }
         }
-        Some(_) => return Err(ResolverError::ShouldBeString(REF)),
+        Some(_) => return Err(ResolverError::ShouldBeString),
         None => {}
       }
 
@@ -199,11 +197,7 @@ impl RefInfo {
     let mut parts = ref_value.split(SHARP_SEP);
 
     let (ref_doc_path, path) = match (parts.next(), parts.next(), parts.next()) {
-      (_, _, Some(_)) => {
-        return Err(ResolverError::NoMoreThanTwoParts(
-          "There should be no more than 2 parts separated by # in a reference path.",
-        ))
-      }
+      (_, _, Some(_)) => return Err(ResolverError::NoMoreThanTwoParts(ref_value.into())),
       (Some(file), None, None) => (DocumentPath::parse(file)?.relate_from(doc_path)?, None),
       (Some(""), Some(p), None) => (doc_path.clone(), Some(p.to_string())),
       (Some(file), Some(p), None) => (DocumentPath::parse(file)?.relate_from(doc_path)?, Some(p.to_string())),
@@ -565,7 +559,7 @@ mod test {
     let err = failed.expect_err("Should be an error");
     assert_eq!(
       err.to_string(),
-      "RefInfo parse error: `There should be no more than 2 parts separated by # in a reference path.`."
+      "`$ref` value `you.shall#not#path` parse error. There should be no more than 2 parts separated by # in a reference path."
     );
   }
 
