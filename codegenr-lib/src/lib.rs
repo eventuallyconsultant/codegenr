@@ -15,6 +15,8 @@ use filesystem::save_file_content;
 use handlebars::Handlebars;
 use thiserror::Error;
 
+type OptionsMap = HashMap<String, Options>;
+
 type OriginalDocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
 type ResolvedDocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
 
@@ -34,7 +36,24 @@ pub struct Options {
   pub global_parameters: HashMap<String, serde_json::Value>,
 }
 
-pub fn run_codegenr(
+pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), errors::CodegenrError> {
+  let mut original_cache = Default::default();
+  let mut resolved_cache = Default::default();
+  for (name, options) in options_map {
+    if let Err(e) = run_codegenr(options, &mut original_cache, &mut resolved_cache) {
+      println!("Error while executing the `{}` section: `{}`.", name, e);
+    }
+  }
+  Ok(())
+}
+
+pub fn run_one_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
+  let mut original_cache = Default::default();
+  let mut resolved_cache = Default::default();
+  run_codegenr(options, &mut original_cache, &mut resolved_cache)
+}
+
+fn run_codegenr(
   options: Options,
   original_cache: &mut OriginalDocumentsHash,
   resolved_cache: &mut ResolvedDocumentsHash,
