@@ -9,8 +9,6 @@ const HANDLEBARS_TEMPLATE_EXTENSION: &str = ".hbs";
 
 #[derive(Error, Debug)]
 pub enum RenderError {
-  #[error("TemplateRender error: `{0}`.")]
-  RenderTemp(#[from] handlebars::RenderError),
   #[error("Template error: `{0}`.")]
   Template(#[from] TemplateError),
   #[error("Walkdir error: `{0}`.")]
@@ -59,13 +57,16 @@ impl TemplateCollection {
     Ok(Self { main, partials })
   }
 
-  pub fn render(&self, json: &Value, mut handlebars: Handlebars) -> Result<String, RenderError> {
-    let template_name = self.main.template_name();
-    handlebars.register_template_file(template_name, self.main.file_path())?;
+  pub fn setup_handlebars(&self, handlebars: &mut Handlebars) -> Result<(), RenderError> {
+    handlebars.register_template_file(self.main.template_name(), self.main.file_path())?;
     for (_, value) in self.partials.iter() {
       handlebars.register_template_file(value.template_name(), value.file_path())?
     }
-    Ok(handlebars.render(template_name, json)?)
+    Ok(())
+  }
+
+  pub fn main_template_name(&self) -> &str {
+    self.main.template_name()
   }
 }
 
@@ -135,21 +136,15 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, Ren
 mod test {
   use super::*;
   use crate::helpers::handlebars_setup;
-  use crate::loader::DocumentPath;
-  use crate::resolver::resolve_refs;
 
   #[test]
   fn handlebars_loading_test() -> Result<(), anyhow::Error> {
-    let document = DocumentPath::parse("_samples/resolver/petshop_with_external.yaml")?;
-    let json = resolve_refs(document, &mut Default::default(), &mut Default::default())?;
     let list = get_templates_from_directory("_samples/render/test_denis")?;
     let collection = TemplateCollection::from_list(list)?;
-
     let mut h = Handlebars::new();
     handlebars_setup(&mut h, Default::default());
-    let result = collection.render(&json, h)?;
+    let result = collection.setup_handlebars(&mut h)?;
     dbg!(result);
-
     Ok(())
   }
 

@@ -20,4 +20,6 @@ pub enum CodegenrError {
   Rendering(#[from] RenderError),
   #[error("Error while post processing output: `{0}`")]
   Processing(#[from] ProcessorError),
+  #[error("TemplateRender error: `{0}`.")]
+  RenderTemp(#[from] handlebars::RenderError),
 }

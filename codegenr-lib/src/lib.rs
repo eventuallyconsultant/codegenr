@@ -19,6 +19,13 @@ type OptionsMap = HashMap<String, Options>;
 
 type OriginalDocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
 type ResolvedDocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
+type HandlebarsHash<'a> = HashMap<HandlebarsReusableConf, (String, Handlebars<'a>)>;
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct HandlebarsReusableConf {
+  pub templates: Vec<String>,
+  pub custom_helpers: Vec<String>,
+}
 
 #[derive(Error, Debug)]
 pub enum SaverError {
@@ -39,8 +46,9 @@ pub struct Options {
 pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), errors::CodegenrError> {
   let mut original_cache = Default::default();
   let mut resolved_cache = Default::default();
+  let mut reusables = Default::default();
   for (name, options) in options_map {
-    if let Err(e) = run_codegenr(options, &mut original_cache, &mut resolved_cache) {
+    if let Err(e) = run_codegenr(options, &mut original_cache, &mut resolved_cache, &mut reusables) {
       println!("Error while executing the `{}` section: `{}`.", name, e);
     }
   }
@@ -50,13 +58,15 @@ pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), errors::CodegenrE
 pub fn run_one_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
   let mut original_cache = Default::default();
   let mut resolved_cache = Default::default();
-  run_codegenr(options, &mut original_cache, &mut resolved_cache)
+  let mut reusables = Default::default();
+  run_codegenr(options, &mut original_cache, &mut resolved_cache, &mut reusables)
 }
 
 fn run_codegenr(
   options: Options,
   original_cache: &mut OriginalDocumentsHash,
   resolved_cache: &mut ResolvedDocumentsHash,
+  reusables: &mut HandlebarsHash,
 ) -> Result<(), errors::CodegenrError> {
   let document = loader::DocumentPath::parse(&options.source)?;
   let json = resolver::resolve_refs(document, original_cache, resolved_cache)?;
@@ -65,18 +75,29 @@ fn run_codegenr(
     save_intermediate(&options.intermediate, "resolved.json", &format!("{:#}", json))?;
   }
 
-  let mut all_templates = vec![];
-  for t in options.templates {
-    let templates = render::get_templates_from_directory(&t)?;
-    all_templates.extend(templates);
-  }
-  let templates = render::TemplateCollection::from_list(all_templates)?;
+  let (main_template_name, mut handlebars) = reusables
+    .entry(HandlebarsReusableConf {
+      custom_helpers: options.custom_helpers,
+      templates: options.templates,
+    })
+    .or_insert_with_key(|conf| {
+      let mut all_templates = vec![];
+      for t in conf.templates.iter() {
+        let templates = render::get_templates_from_directory(t).unwrap(); //?;
+        all_templates.extend(templates);
+      }
+      let templates = render::TemplateCollection::from_list(all_templates).unwrap(); //?;
 
-  let mut handlebars = Handlebars::new();
+      let mut handlebars = Handlebars::new();
+      templates.setup_handlebars(&mut handlebars).unwrap(); // todo?;
+      custom::handlebars_setup(&mut handlebars, &conf.custom_helpers).unwrap(); //?;
+      (templates.main_template_name().to_owned(), handlebars)
+    })
+    .clone();
+
   helpers::handlebars_setup(&mut handlebars, options.global_parameters);
-  custom::handlebars_setup(&mut handlebars, options.custom_helpers)?;
 
-  let rendered = templates.render(&json, handlebars)?;
+  let rendered = handlebars.render(&main_template_name, &(*json))?;
 
   save_intermediate(&options.intermediate, "rendered.txt", &rendered)?;
 
