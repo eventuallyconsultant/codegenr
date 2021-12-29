@@ -141,7 +141,7 @@ mod test {
   #[test]
   fn handlebars_loading_test() -> Result<(), anyhow::Error> {
     let document = DocumentPath::parse("_samples/resolver/petshop_with_external.yaml")?;
-    let json = resolve_refs(document, None)?;
+    let json = resolve_refs(document, &mut Default::default(), &mut Default::default())?;
     let list = get_templates_from_directory("_samples/render/test_denis")?;
     let collection = TemplateCollection::from_list(list)?;
 

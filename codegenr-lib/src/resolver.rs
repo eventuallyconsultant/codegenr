@@ -1,6 +1,6 @@
 use crate::{
   loader::{DocumentPath, LoaderError},
-  Doc, DocumentsHash,
+  OriginalDocumentsHash, ResolvedDocumentsHash,
 };
 use serde_json::Value;
 use std::rc::Rc;
@@ -30,26 +30,65 @@ pub enum ResolverError {
   Any(#[from] anyhow::Error),
 }
 
+enum Json {
+  Original(Rc<Value>),
+  Resolved(Rc<Value>),
+}
+
+fn ensure_orignal_json(doc_path: &DocumentPath, original_cache: &mut OriginalDocumentsHash) -> Result<Rc<Value>, ResolverError> {
+  use std::collections::hash_map::Entry::*;
+  match original_cache.entry(doc_path.clone()) {
+    Occupied(entry) => Ok(entry.get().clone()),
+    Vacant(entry) => {
+      let json = doc_path.load_raw()?;
+      let rc = Rc::new(json);
+      entry.insert(rc.clone());
+      Ok(rc)
+    }
+  }
+}
+
+fn get_resolved_json(doc_path: &DocumentPath, resolved_cache: &mut ResolvedDocumentsHash) -> Option<Rc<Value>> {
+  resolved_cache.get(doc_path).cloned()
+}
+
+fn get_resolved_or_original(
+  doc_path: &DocumentPath,
+  original_cache: &mut OriginalDocumentsHash,
+  resolved_cache: &mut ResolvedDocumentsHash,
+) -> Result<Json, ResolverError> {
+  match get_resolved_json(doc_path, resolved_cache) {
+    Some(json) => Ok(Json::Resolved(json)),
+    None => ensure_orignal_json(doc_path, original_cache).map(Json::Original),
+  }
+}
+
 pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
   let mut resolving = json.clone();
-  resolve_refs_recurse(&DocumentPath::None, &mut resolving, &json, &mut Default::default())?;
+  resolve_refs_recurse(
+    &DocumentPath::None,
+    &mut resolving,
+    &json,
+    &mut Default::default(),
+    &mut Default::default(),
+  )?;
   Ok(resolving)
 }
 
-pub fn resolve_refs(document: DocumentPath, cache: Option<&mut DocumentsHash>) -> Result<Value, ResolverError> {
-  match cache {
-    Some(c) => {
-      let doc = load_raw_json(&document, c)?;
-      let mut resolving = doc.resolving.write().unwrap();
-      resolve_refs_recurse(&document, &mut resolving, &doc.original, c)?;
-      Ok(resolving.clone())
-    }
-    None => {
-      let mut cache = Default::default();
-      let doc = load_raw_json(&document, &mut cache)?;
-      let mut resolving = doc.resolving.write().unwrap();
-      resolve_refs_recurse(&document, &mut resolving, &doc.original, &mut cache)?;
-      Ok(resolving.clone())
+pub fn resolve_refs(
+  document: DocumentPath,
+  original_cache: &mut OriginalDocumentsHash,
+  resolved_cache: &mut ResolvedDocumentsHash,
+) -> Result<Rc<Value>, ResolverError> {
+  let json = get_resolved_or_original(&document, original_cache, resolved_cache)?;
+  match json {
+    Json::Resolved(j) => Ok(j),
+    Json::Original(j) => {
+      let mut resolving = (*j).clone();
+      resolve_refs_recurse(&document, &mut resolving, &j, original_cache, resolved_cache)?;
+      let resolved = Rc::new(resolving);
+      resolved_cache.insert(document, resolved.clone());
+      Ok(resolved)
     }
   }
 }
@@ -58,12 +97,13 @@ fn resolve_refs_recurse(
   current_doc: &DocumentPath,
   json: &mut Value,
   original: &Value,
-  cache: &mut DocumentsHash,
+  original_cache: &mut OriginalDocumentsHash,
+  resolved_cache: &mut ResolvedDocumentsHash,
 ) -> Result<(), ResolverError> {
   match json {
     Value::Array(a) => {
       for v in a {
-        resolve_refs_recurse(current_doc, v, original, cache)?;
+        resolve_refs_recurse(current_doc, v, original, original_cache, resolved_cache)?;
       }
       Ok(())
     }
@@ -76,14 +116,19 @@ fn resolve_refs_recurse(
 
           let new_value = if is_nested {
             let mut v = fetch_reference_value(original, &ref_info.path)?;
-            resolve_refs_recurse(current_doc, &mut v, original, cache)?;
+            resolve_refs_recurse(current_doc, &mut v, original, original_cache, resolved_cache)?;
             v
           } else {
             let doc_path = ref_info.document_path;
-            let doc = load_raw_json(&doc_path, cache)?;
-            let mut v = fetch_reference_value(&doc.original, &ref_info.path)?;
-            resolve_refs_recurse(&doc_path, &mut v, &doc.original, cache)?;
-            v
+            let json = get_resolved_or_original(&doc_path, original_cache, resolved_cache)?;
+            match json {
+              Json::Resolved(j) => fetch_reference_value(&j, &ref_info.path)?,
+              Json::Original(j) => {
+                let mut v = fetch_reference_value(&j, &ref_info.path)?;
+                resolve_refs_recurse(&doc_path, &mut v, &j, original_cache, resolved_cache)?;
+                v
+              }
+            }
           };
 
           if let Value::Object(m) = new_value {
@@ -104,7 +149,7 @@ fn resolve_refs_recurse(
       }
 
       for (_key, value) in obj.into_iter() {
-        resolve_refs_recurse(current_doc, value, original, cache)?;
+        resolve_refs_recurse(current_doc, value, original, original_cache, resolved_cache)?;
       }
       Ok(())
     }
@@ -114,19 +159,6 @@ fn resolve_refs_recurse(
 
 fn get_ref_name(path: &str) -> String {
   path.split(PATH_SEP).last().unwrap_or_default().to_string()
-}
-
-fn load_raw_json(doc_path: &DocumentPath, cache: &mut DocumentsHash) -> Result<Rc<Doc>, ResolverError> {
-  use std::collections::hash_map::Entry::*;
-  match cache.entry(doc_path.clone()) {
-    Occupied(entry) => Ok(entry.get().clone()),
-    Vacant(entry) => {
-      let json = doc_path.load_raw()?;
-      let rc = Rc::new(Doc::new(json));
-      entry.insert(rc.clone());
-      Ok(rc)
-    }
-  }
 }
 
 fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, ResolverError> {
@@ -484,7 +516,7 @@ mod test {
   #[test]
   fn should_resolve_external_references() -> Result<(), anyhow::Error> {
     let document = DocumentPath::parse("_samples/resolver/petshop_with_external.yaml")?;
-    let json = resolve_refs(document, None)?;
+    let json = resolve_refs(document, &mut Default::default(), &mut Default::default())?;
     let string = json.to_string();
     assert!(!string.contains(REF));
     Ok(())
@@ -540,7 +572,7 @@ mod test {
   #[test]
   fn very_tricky_test() -> Result<(), anyhow::Error> {
     let document = DocumentPath::parse("_samples/resolver/simple1.yaml")?;
-    let json = resolve_refs(document, None)?;
+    let json = resolve_refs(document, &mut Default::default(), &mut Default::default())?;
     let string = json.to_string();
     assert!(!string.contains(REF));
 
@@ -561,7 +593,7 @@ mod test {
         "x-refName": ""
       }
     });
-    assert_eq!(json, expected);
+    assert_eq!(*json, expected);
 
     Ok(())
   }

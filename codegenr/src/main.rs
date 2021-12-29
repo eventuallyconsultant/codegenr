@@ -14,9 +14,10 @@ fn main() -> Result<(), anyhow::Error> {
   let cmd = options.cmd.unwrap_or_default();
   let options_map: HashMap<String, Options> = cmd.try_into()?;
 
-  let mut cache = Default::default();
+  let mut cache1 = Default::default();
+  let mut cache2 = Default::default();
   for (name, options) in options_map {
-    if let Err(e) = run_codegenr(options, Some(&mut cache)) {
+    if let Err(e) = run_codegenr(options, &mut cache1, &mut cache2) {
       println!("Error while executing the `{}` section: `{}`.", name, e);
     }
   }
