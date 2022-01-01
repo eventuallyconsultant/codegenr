@@ -20,8 +20,8 @@ pub enum ResolverError {
   ShouldBeObject,
   #[error("`$ref` value should be a String.")]
   ShouldBeString,
-  #[error("Key `{key}` was not found in json part `{part2}`.")]
-  KeyNotFound { key: String, part2: Value },
+  #[error("Key `{key}` was not found in json part `{part}`.")]
+  KeyNotFound { key: String, part: Value },
   #[error("Could not follow path `{0}` as json part is not an object.")]
   NotAnObject(String),
   #[error("`$ref` value `{0}` parse error. There should be no more than 2 parts separated by # in a reference path.")]
@@ -169,8 +169,7 @@ fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, R
       for p in parts.filter(|p| !p.trim().is_empty()) {
         if let Value::Object(o) = part {
           let key = p.to_string();
-          let part2 = part.clone();
-          part = o.get(p).ok_or(ResolverError::KeyNotFound { key, part2 })?;
+          part = o.get(p).ok_or_else(|| ResolverError::KeyNotFound { key, part: part.clone() })?;
         } else {
           let key = p.to_string();
           return Err(ResolverError::NotAnObject(key));
