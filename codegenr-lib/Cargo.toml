@@ -14,6 +14,8 @@ license = "GPL-3.0-or-later"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# Logging
+tracing = { version = "0.1.29", features = ["log"] }
 # Errors
 thiserror = "1.0.30"
 # File loading & path manipulations

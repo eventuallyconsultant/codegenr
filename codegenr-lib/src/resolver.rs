@@ -61,6 +61,7 @@ fn get_resolved_or_original(
   }
 }
 
+#[::tracing::instrument(level = "trace")]
 pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
   let mut resolving = json.clone();
   resolve_refs_recurse(
@@ -73,6 +74,7 @@ pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
   Ok(resolving)
 }
 
+#[::tracing::instrument(level = "trace")]
 pub fn resolve_refs(
   document: DocumentPath,
   original_cache: &mut OriginalDocumentsHash,

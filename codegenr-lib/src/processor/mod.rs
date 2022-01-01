@@ -61,6 +61,7 @@ fn get_instructions(output: String) -> HashMap<&'static str, Box<dyn Instruction
   hash
 }
 
+#[::tracing::instrument(level = "trace")]
 pub fn process(content: &str, output: String) -> Result<(), ProcessorError> {
   let instructions = get_instructions(output);
   let mut active_handlers = HashMap::<String, Box<dyn InstructionLineHandler>>::new();

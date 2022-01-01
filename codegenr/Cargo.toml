@@ -16,7 +16,10 @@ license = "GPL-3.0-or-later"
 [dependencies]
 codegenr-lib = { path="../codegenr-lib", version = "0.0.1" }
 
-anyhow = "1.0.44"
+tracing = { version = "0.1.29", features = ["log"] }
+tracing-subscriber = { version = "0.3", features = [] }
+
 structopt = "0.3.23"
+anyhow = "1.0.44"
 serde_json = { version = "1.0.68", features = ["preserve_order"] }
 toml = "0.5.8"

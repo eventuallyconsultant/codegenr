@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, rc::Rc};
+use tracing::{error, info};
 
 pub mod custom;
 pub mod errors;
@@ -43,18 +44,21 @@ pub struct Options {
   pub global_parameters: HashMap<String, serde_json::Value>,
 }
 
+#[::tracing::instrument(level = "trace")]
 pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), errors::CodegenrError> {
   let mut original_cache = Default::default();
   let mut resolved_cache = Default::default();
   let mut reusables = Default::default();
   for (name, options) in options_map {
+    info!("Running code generation section `{}`", name);
     if let Err(e) = run_codegenr(options, &mut original_cache, &mut resolved_cache, &mut reusables) {
-      println!("Error while executing the `{}` section: `{}`.", name, e);
+      error!("Error while executing the `{}` section: `{}`.", name, e);
     }
   }
   Ok(())
 }
 
+#[::tracing::instrument(level = "trace")]
 pub fn run_one_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
   let mut original_cache = Default::default();
   let mut resolved_cache = Default::default();
@@ -62,6 +66,7 @@ pub fn run_one_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
   run_codegenr(options, &mut original_cache, &mut resolved_cache, &mut reusables)
 }
 
+#[::tracing::instrument(level = "trace")]
 fn run_codegenr(
   options: Options,
   original_cache: &mut OriginalDocumentsHash,
