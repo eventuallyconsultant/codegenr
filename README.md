@@ -55,12 +55,12 @@ This tool is based on the design of a precedent one written in `C#` : [CodegenUP
 - [x] Rename `codegenr-cli` to `codegenr` & `codegenr` to `codegenr-lib`
 - [x] Publish on `crates.io`
 - [x] Be able to have a `codegenr.toml` on a workspace root to describe all the templates to execute around the workspace
-- [ ] Better Errors (typed ones)
-- [ ] Resolved Json Cache optimisation
+- [x] Better Errors (typed ones)
+- [x] Resolved Json Cache optimisation
+- [x] all tests passing on windows too
 - [ ] Verbose/Tracing? mode
 - [ ] Better examples
 - [ ] Smol strings optimisation ?
-- [ ] all tests passing on windows too
 - [ ] Watch mode for the file changes
 - [ ] Make a VSCode extension about all of this to make it live / super user friendly for `everyone`
 
