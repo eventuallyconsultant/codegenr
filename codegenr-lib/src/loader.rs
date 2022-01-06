@@ -11,8 +11,10 @@ pub enum LoaderError {
   //
   #[error("Io Error: `{0}`.")]
   Io(#[from] std::io::Error),
-  #[error("Download error: `{0}`.")]
-  DownloadError(#[from] reqwest::Error),
+  #[error("Can't read file `{0}`: `{1}`.")]
+  Read(String, std::io::Error),
+  #[error("Can't download file `{0}`: `{1}`.")]
+  DownloadError(String, reqwest::Error),
   //
   // Path manipulation
   //
@@ -130,13 +132,18 @@ impl DocumentPath {
     let hint = self.guess_format();
     match self {
       DocumentPath::Url(url) => {
-        let body = reqwest::blocking::get(url.clone())?.text()?;
+        let body = reqwest::blocking::get(url.clone())
+          .map_err(|e| LoaderError::DownloadError(url.as_str().to_string(), e))?
+          .text()
+          .map_err(|e| LoaderError::DownloadError(url.as_str().to_string(), e))?;
         json_from_string(&body, hint)
       }
       DocumentPath::FileName(file_name) => {
-        let mut file = File::open(file_name)?;
+        let mut file = File::open(file_name).map_err(|e| LoaderError::Read(file_name.clone(), e))?;
         let mut content = String::new();
-        file.read_to_string(&mut content)?;
+        file
+          .read_to_string(&mut content)
+          .map_err(|e| LoaderError::Read(file_name.clone(), e))?;
         json_from_string(&content, hint)
       }
       DocumentPath::None => unreachable!("This is a non sense to try loading a 'None' document path."),
