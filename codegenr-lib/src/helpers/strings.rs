@@ -514,63 +514,63 @@ impl HelperDef for TrimBlockEndHelper {
 /// # use serde_json::json;
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}} {{/one_line}}"),
-/// "\n"
+///   "\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}} |do not < remove please >| {{/one_line}}"),
-///  "|do not < remove please >|\n"
+///   "|do not < remove please >|\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}} \n {{/one_line}}"),
-/// "\n"
+///   "\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}\n {{/one_line}}"),
-/// "\n"
+///   "\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}\n{{/one_line}}"),
-/// "\n"
+///   "\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}} \r\n {{/one_line}}"),
-/// "\n"
+///   "\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}\r\n{{/one_line}}"),
-/// "\n"
+///   "\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}} test{{/one_line}}"),
-/// "test\n"
+///   "test\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}} a \n z {{/one_line}}"),
-/// "az\n"
+///   "az\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}a\n z{{/one_line}}"),
-/// "az\n"
+///   "az\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}a\nz{{/one_line}}"),
-/// "az\n"
+///   "az\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}a \r\n z{{/one_line}}"),
-/// "az\n"
+///   "az\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}a \r\n \r\n \r\nz{{/one_line}}"),
-/// "az\n"
+///   "az\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line 2 true \"-\"}}a \r\n \r\n \r\nz{{/one_line}}"),
-/// "  a---z\n"
+///   "  a---z\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}test\r\n\r\n\r\ntest{{/one_line}}"),
-/// "testtest\n"
+///   "testtest\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line 0 \"true\"}}test\r\n\r\n\r\ntest{{/one_line}}"),
@@ -578,11 +578,11 @@ impl HelperDef for TrimBlockEndHelper {
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line 0 false}}test\r\n\r\n\r\ntest{{/one_line}}"),
-/// "testtest"
+///   "testtest"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}{{/one_line}}"),
-///  "\n"
+///   "\n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#one_line}}   test {{/one_line}}"),
@@ -624,16 +624,20 @@ impl HelperDef for OneLineHelper {
 /// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   exec_template(json!({}), "{{#no_empty_lines}} {{/no_empty_lines}}"),
-/// "\n"
+///   exec_template(json!({}), "{{#no_empty_lines}}{{/no_empty_lines}}"),
+///   ""
 /// );
 /// assert_eq!(
-///   exec_template(json!({}), "{{#no_empty_lines}}a\n \t \nb{{/no_empty_lines}}"),
-/// "a\nb\n"
+///   exec_template(json!({}), "{{#no_empty_lines}} {{/no_empty_lines}}"),
+///   "\n"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), "{{#no_empty_lines}}a\n \t \n b {{/no_empty_lines}}"),
+///   "a\n b \n"
 /// );
 /// assert_eq!(
 ///   exec_template(json!({}), "{{#no_empty_lines}}\r\na\n \t \nb\r\nc\r\n\r\n{{/no_empty_lines}}"),
-/// "a\nb\nc\n"
+///   "a\nb\nc\n"
 /// );
 ///```
 pub struct NoEmptyLinesHelper;
@@ -651,14 +655,29 @@ impl HelperDef for NoEmptyLinesHelper {
       h.ensure_arguments_count_max(2, ONE_LINE_HELPER)?;
       let mut buffer = StringOutput::new();
       t.render(handle, ctx, render_ctx, &mut buffer)?;
-      let s = buffer.into_string()?;
-      for (count, line) in s.lines().filter(|s| !s.trim().is_empty()).enumerate() {
-        if count != 0 {
+      let content = buffer.into_string()?;
+
+      let mut non_empty_lines_count: usize = 0;
+      let mut empty_lines_count: usize = 0;
+      for line in content.lines() {
+        let is_empty = line.trim().is_empty();
+        let (should_write_line, should_right_newline) = match (non_empty_lines_count, empty_lines_count, is_empty) {
+          (0, 0, true) => (false, true),
+          (_, _, true) => (false, false),
+          (_, _, false) => (true, true),
+        };
+        if should_write_line {
+          out.write(line)?;
+        }
+        if should_right_newline {
           out.write("\n")?;
         }
-        out.write(line)?;
+        if is_empty {
+          non_empty_lines_count += 1;
+        } else {
+          empty_lines_count += 1;
+        }
       }
-      out.write("\n")?;
     };
     Ok(())
   }
