@@ -19,9 +19,9 @@ cargo install --git https://github.com/eventuallyconsultant/codegenr --branch de
 
 ## Documentation
 
-`codegenr` commmand is mostly a launcher for `codegenr-lib`. So most of the documentation can be found in [codegenr_lib documentation](https://docs.rs/codegenr-lib/latest/codegenr_lib/).
+[codegenr documentation on docs.rs](https://docs.rs/codegenr/latest)
 
-The defaults Handlebars helpers are documented [here](https://docs.rs/codegenr-lib/latest/codegenr_lib/helpers/index.html).
+The defaults Handlebars helpers are documented [here](https://docs.rs/codegenr/latest/codegenr/helpers/index.html).
 
 ## Contribute
 
@@ -31,14 +31,13 @@ You can also open the repository in GitPod with this button
 In the command line you can :
 
 - `cargo test --workspace` to launch all the unit tests
-- `cargo install --path codegenr` to install the `codegenr` command line tool from source
-- `cargo doc --open` to compile and open the documentation (that you can otherwise find here)
+- `cargo doc --open` to compile and open the local documentation
 
 ## Some command lines
 
 - `cargo doc --open` compile and open the documentation
-- `cargo install --path codegenr --features="bin"` installs codegenr command line from sources
-- `cargo install --git https://github.com/eventuallyconsultant/codegenr --branch dev --features="bin"` installs codegenr command line from the latest github `dev` branch
+- `cargo install --path codegenr` installs codegenr command line from sources
+- `cargo install --git https://github.com/eventuallyconsultant/codegenr --branch dev` installs codegenr command line from the latest github `dev` branch
 
 ## Legacy
 

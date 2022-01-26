@@ -23,7 +23,7 @@ path = "src/bin/main.rs"
 required-features = ["bin"]
 
 [features]
-default = []
+default = ["bin"]
 bin = ["tracing-subscriber", "structopt", "anyhow", "toml"]
 
 [dependencies]
