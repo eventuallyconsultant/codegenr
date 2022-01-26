@@ -6,6 +6,5 @@ default-members = [
 ]
 
 members = [
-  "codegenr-lib",
   "codegenr"
 ]

@@ -1,7 +1,9 @@
-use codegenr_lib::Options;
+use crate::Options;
 use serde_json::Value;
 use std::{collections::HashMap, fs::read_to_string};
 use structopt::StructOpt;
+
+pub const CODEGENR_CONFIG_FILE: &str = "codegenr.toml";
 
 //https://docs.rs/structopt/latest/structopt/#specifying-argument-types
 #[derive(StructOpt, Debug)]
@@ -27,7 +29,7 @@ pub enum Command {
     #[structopt(
         long,
         help = "Path to a full codegenr configuration file. If existing, all other command line parameters are ignored",
-        default_value = crate::CODEGENR_CONFIG_FILE
+        default_value = CODEGENR_CONFIG_FILE
       )]
     file: String,
   },
@@ -65,7 +67,7 @@ pub enum Command {
 impl Default for Command {
   fn default() -> Self {
     Self::FromFile {
-      file: crate::CODEGENR_CONFIG_FILE.into(),
+      file: CODEGENR_CONFIG_FILE.into(),
     }
   }
 }

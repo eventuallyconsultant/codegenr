@@ -281,8 +281,8 @@ mod test {
     });
 
     let resolved = resolve_refs_raw(json)?;
-    println!("{}", resolved.to_string());
-    println!("{}", expected.to_string());
+    println!("{}", resolved);
+    println!("{}", expected);
     assert_eq!(resolved, expected);
     Ok(())
   }
@@ -310,8 +310,8 @@ mod test {
     });
 
     let resolved = resolve_refs_raw(json)?;
-    println!("{}", resolved.to_string());
-    println!("{}", expected.to_string());
+    println!("{}", resolved);
+    println!("{}", expected);
     assert_eq!(resolved, expected);
     Ok(())
   }
@@ -351,8 +351,8 @@ mod test {
     });
 
     let resolved = resolve_refs_raw(json)?;
-    println!("{}", resolved.to_string());
-    println!("{}", expected.to_string());
+    println!("{}", resolved);
+    println!("{}", expected);
     assert_eq!(resolved, expected);
     Ok(())
   }
@@ -422,8 +422,8 @@ mod test {
     });
 
     let resolved = resolve_refs_raw(json)?;
-    println!("{}", resolved.to_string());
-    println!("{}", expected.to_string());
+    println!("{}", resolved);
+    println!("{}", expected);
     assert_eq!(resolved, expected);
     Ok(())
   }
@@ -493,8 +493,8 @@ mod test {
     });
 
     let resolved = resolve_refs_raw(json)?;
-    println!("{}", resolved.to_string());
-    println!("{}", expected.to_string());
+    println!("{}", resolved);
+    println!("{}", expected);
     assert_eq!(resolved, expected);
     Ok(())
   }

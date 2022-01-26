@@ -143,19 +143,6 @@ name = "codegenr"
 version = "0.0.1"
 dependencies = [
  "anyhow",
- "codegenr-lib",
- "serde_json",
- "structopt",
- "toml",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "codegenr-lib"
-version = "0.0.1"
-dependencies = [
- "anyhow",
  "glob",
  "handlebars",
  "once_cell",
@@ -166,10 +153,13 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "structopt",
  "tempdir",
  "test-case",
  "thiserror",
+ "toml",
  "tracing",
+ "tracing-subscriber",
  "url",
  "walkdir",
 ]

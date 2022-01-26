@@ -18,6 +18,7 @@ pub fn create_file(root_dir: impl AsRef<Path>, relative_path: &str) -> Result<(F
   Ok((f, file_path))
 }
 
+#[allow(dead_code)]
 pub fn create_dir(root_dir: impl AsRef<Path>, relative_path: &str) -> Result<PathBuf, std::io::Error> {
   let dir_path = make_path_from_root(root_dir, relative_path);
   create_dir_all(&dir_path)?;

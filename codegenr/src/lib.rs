@@ -8,6 +8,8 @@ pub mod errors;
 pub(crate) mod filesystem;
 pub mod helpers;
 pub mod loader;
+#[cfg(feature = "bin")]
+pub mod opt;
 pub mod processor;
 pub mod render;
 pub mod resolver;

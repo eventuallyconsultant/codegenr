@@ -37,7 +37,8 @@ In the command line you can :
 ## Some command lines
 
 - `cargo doc --open` compile and open the documentation
-- `cargo install --path codegenr` installs codegenr command line from sources
+- `cargo install --path codegenr --features="bin"` installs codegenr command line from sources
+- `cargo install --git https://github.com/eventuallyconsultant/codegenr --branch dev --features="bin"` installs codegenr command line from the latest github `dev` branch
 
 ## Legacy
 
