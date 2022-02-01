@@ -3,11 +3,11 @@ use crate::helpers::string_ext::StringExt;
 use handlebars::{BlockContext, HelperDef, RenderError, Renderable, StringOutput};
 use serde_json::Value;
 
-pub const TRIM_HELPER: &str = "trim";
 pub const SPLIT_GET_FIRST_HELPER: &str = "split_get_first";
 pub const SPLIT_GET_LAST_HELPER: &str = "split_get_last";
-pub const TRIM_START_HELPER: &str = "trim_start";
-pub const TRIM_END_HELPER: &str = "trim_end";
+pub const TRIM_CHAR_HELPER: &str = "trim_char";
+pub const TRIM_CHAR_START_HELPER: &str = "trim_char_start";
+pub const TRIM_CHAR_END_HELPER: &str = "trim_char_end";
 pub const START_WITH_HELPER: &str = "start_with";
 pub const WITH_MATCHING_HELPER: &str = "with_matching";
 pub const IF_ARRAY_CONTAINS: &str = "if_array_contains";
@@ -22,17 +22,17 @@ pub const NO_EMPTY_LINES_HELPER: &str = "no_empty_lines";
 /// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   exec_template(json!({ "value": " test " }), "{{trim value}}"),
+///   exec_template(json!({ "value": " test " }), "{{trim_char value}}"),
 ///   "test"
 /// );
 /// assert_eq!(
-///   exec_template(json!({ "value": "-test-" }), "{{trim value \"-\"}}"),
+///   exec_template(json!({ "value": "-test-" }), "{{trim_char value \"-\"}}"),
 ///   "test"
 /// );
 /// ```
-pub struct TrimHelper;
+pub struct TrimCharHelper;
 
-impl HelperDef for TrimHelper {
+impl HelperDef for TrimCharHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
     h: &handlebars::Helper<'reg, 'rc>,
@@ -40,10 +40,10 @@ impl HelperDef for TrimHelper {
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
-    h.ensure_arguments_count_min(1, TRIM_HELPER)?;
-    h.ensure_arguments_count_max(2, TRIM_HELPER)?;
+    h.ensure_arguments_count_min(1, TRIM_CHAR_HELPER)?;
+    h.ensure_arguments_count_max(2, TRIM_CHAR_HELPER)?;
 
-    let to_trim = h.get_param_as_str_or_fail(0, TRIM_HELPER)?.to_string();
+    let to_trim = h.get_param_as_str_or_fail(0, TRIM_CHAR_HELPER)?.to_string();
     let trimmer = h.get_param_as_str(1).map(|s| s.to_string());
 
     Ok(Value::String(to_trim.trim_char(trimmer)).into())
@@ -120,22 +120,21 @@ impl HelperDef for SplitGetLastHelper {
 }
 
 /// Return a string trim only at the beggining by a definable parameter (' ' by default)
-///
 /// ```
 /// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   exec_template(json!({ "temp": " test " }), "{{trim_start temp}}"),
+///   exec_template(json!({ "temp": " test " }), "{{trim_char_start temp}}"),
 ///   "test "
 /// );
 /// assert_eq!(
-///   exec_template(json!({ "temp": "/test/" }), "{{trim_start temp \"/\"}}"),
+///   exec_template(json!({ "temp": "/test/" }), "{{trim_char_start temp \"/\"}}"),
 ///   "test/"
 /// );
 /// ```
-pub struct TrimStartHelper;
+pub struct TrimCharStartHelper;
 
-impl HelperDef for TrimStartHelper {
+impl HelperDef for TrimCharStartHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
     h: &handlebars::Helper<'reg, 'rc>,
@@ -143,10 +142,10 @@ impl HelperDef for TrimStartHelper {
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
-    h.ensure_arguments_count_min(1, TRIM_START_HELPER)?;
-    h.ensure_arguments_count_max(2, TRIM_START_HELPER)?;
+    h.ensure_arguments_count_min(1, TRIM_CHAR_START_HELPER)?;
+    h.ensure_arguments_count_max(2, TRIM_CHAR_START_HELPER)?;
 
-    let to_trim = h.get_param_as_str_or_fail(0, TRIM_START_HELPER)?;
+    let to_trim = h.get_param_as_str_or_fail(0, TRIM_CHAR_START_HELPER)?;
     let splitter = h.get_param_as_str(1).map(|s| s.to_string());
     Ok(handlebars::ScopedJson::Derived(Value::String(to_trim.trim_start_char(splitter))))
   }
@@ -158,17 +157,17 @@ impl HelperDef for TrimStartHelper {
 /// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   exec_template(json!({ "temp": " test " }), "{{trim_end temp}}"),
+///   exec_template(json!({ "temp": " test " }), "{{trim_char_end temp}}"),
 ///   " test"
 /// );
 /// assert_eq!(
-///   exec_template(json!({ "temp": "/test/" }), "{{trim_end temp \"/\"}}"),
+///   exec_template(json!({ "temp": "/test/" }), "{{trim_char_end temp \"/\"}}"),
 ///   "/test"
 /// );
 /// ```
-pub struct TrimEndHelper;
+pub struct TrimCharEndHelper;
 
-impl HelperDef for TrimEndHelper {
+impl HelperDef for TrimCharEndHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
     h: &handlebars::Helper<'reg, 'rc>,
@@ -176,10 +175,10 @@ impl HelperDef for TrimEndHelper {
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
-    h.ensure_arguments_count_min(1, TRIM_START_HELPER)?;
-    h.ensure_arguments_count_max(2, TRIM_START_HELPER)?;
+    h.ensure_arguments_count_min(1, TRIM_CHAR_START_HELPER)?;
+    h.ensure_arguments_count_max(2, TRIM_CHAR_START_HELPER)?;
 
-    let to_trim = h.get_param_as_str_or_fail(0, TRIM_END_HELPER)?;
+    let to_trim = h.get_param_as_str_or_fail(0, TRIM_CHAR_END_HELPER)?;
     let splitter = h.get_param_as_str(1).map(|s| s.to_string());
     Ok(handlebars::ScopedJson::Derived(Value::String(to_trim.trim_end_char(splitter))))
   }

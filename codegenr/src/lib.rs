@@ -104,6 +104,8 @@ fn run_codegenr(
 
   helpers::handlebars_setup(&mut handlebars, options.global_parameters);
 
+  handlebars_misc_helpers::register(&mut handlebars);
+
   let rendered = handlebars.render(&main_template_name, &(*json))?;
 
   save_intermediate(&options.intermediate, "rendered.txt", &rendered)?;

@@ -44,9 +44,9 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(IF_NOT_EQUALS_HELPER, Box::new(IfNotEqualsHelper));
   handlebars.register_helper(JSON_HELPER, Box::new(JsonHelper));
   handlebars.register_helper(HEX, Box::new(Hex));
-  handlebars.register_helper(TRIM_HELPER, Box::new(TrimHelper));
-  handlebars.register_helper(TRIM_START_HELPER, Box::new(TrimStartHelper));
-  handlebars.register_helper(TRIM_END_HELPER, Box::new(TrimEndHelper));
+  handlebars.register_helper(TRIM_CHAR_HELPER, Box::new(TrimCharHelper));
+  handlebars.register_helper(TRIM_CHAR_START_HELPER, Box::new(TrimCharStartHelper));
+  handlebars.register_helper(TRIM_CHAR_END_HELPER, Box::new(TrimCharEndHelper));
   handlebars.register_helper(UPPERCASE_HELPER, Box::new(UppercaseHelper));
   handlebars.register_helper(LOWERCASE_HELPER, Box::new(LowercaseHelper));
   handlebars.register_helper(UPPERCASE_FIRST_LETTER_HELPER, Box::new(UppercaseFirstLetterHelper));
