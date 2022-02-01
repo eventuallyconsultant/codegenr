@@ -72,7 +72,7 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
   handlebars.register_helper(SET_HELPER, Box::new(SetHelper::new(&map)));
   handlebars.register_helper(WITH_SET_HELPER, Box::new(WithSetHelper::new(&map)));
-  handlebars.register_helper(IF_SET_HELPER, Box::new(IfGetHelper::new(&map)));
+  handlebars.register_helper(IF_SET_HELPER, Box::new(IfSetHelper::new(&map)));
   handlebars.register_helper(CLEAR_HELPER, Box::new(ClearHelper::new(&map)));
 
   handlebars.register_helper(IS_OAPI3_PARAM_REQUIRED, Box::new(IsOApi3ParamRequiredHelper));
