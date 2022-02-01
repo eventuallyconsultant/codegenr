@@ -38,7 +38,7 @@ You can also open the repository in GitPod with this button
 
 In the command line you can :
 
-- `cargo test --workspace` to launch all the unit tests
+- `cargo test` to launch all the unit tests
 - `cargo doc --open` to compile and open the local documentation
 
 ## Some command lines

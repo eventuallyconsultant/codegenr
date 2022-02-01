@@ -51,9 +51,6 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(LOWERCASE_HELPER, Box::new(LowercaseHelper));
   handlebars.register_helper(UPPERCASE_FIRST_LETTER_HELPER, Box::new(UppercaseFirstLetterHelper));
   handlebars.register_helper(LOWERCASE_FIRST_LETTER_HELPER, Box::new(LowercaseFirstLetterHelper));
-  handlebars.register_helper(PASCAL_CASE_HELPER, Box::new(PascalcaseHelper));
-  handlebars.register_helper(SNAKE_CASE_HELPER, Box::new(SnakecaseHelper));
-  handlebars.register_helper(CAMEL_CASE_HELPER, Box::new(CamelcaseHelper));
   handlebars.register_helper(SPLIT_GET_FIRST_HELPER, Box::new(SplitGetFirstHelper));
   handlebars.register_helper(SPLIT_GET_LAST_HELPER, Box::new(SplitGetLastHelper));
   handlebars.register_helper(START_WITH_HELPER, Box::new(StartWithHelper));
