@@ -4,9 +4,6 @@ use super::HelpersError;
 
 pub trait StringExt {
   fn is_empty_or_whitespaces(&self) -> bool;
-  fn split_get_first(&self, splitter: Option<String>) -> String;
-  fn split_get_last(&self, splitter: Option<String>) -> String;
-  fn get_first_char(&self) -> Option<char>;
 
   fn trim_char(&self, trimmer: Option<String>) -> String;
   fn trim_start_char(&self, trimmer: Option<String>) -> String;
@@ -26,18 +23,6 @@ pub trait StringExt {
 impl StringExt for Option<String> {
   fn is_empty_or_whitespaces(&self) -> bool {
     self.as_ref().map_or(true, |s| s.is_empty_or_whitespaces())
-  }
-
-  fn split_get_first(&self, splitter: Option<String>) -> String {
-    self.as_ref().map_or(Default::default(), |s| s.split_get_first(splitter))
-  }
-
-  fn split_get_last(&self, splitter: Option<String>) -> String {
-    self.as_ref().map_or(Default::default(), |s| s.split_get_last(splitter))
-  }
-
-  fn get_first_char(&self) -> Option<char> {
-    self.as_ref().and_then(|s| s.get_first_char())
   }
 
   fn trim_char(&self, trimmer: Option<String>) -> String {
@@ -87,18 +72,6 @@ impl StringExt for String {
     self.as_str().is_empty_or_whitespaces()
   }
 
-  fn split_get_first(&self, splitter: Option<String>) -> String {
-    self.as_str().split_get_first(splitter)
-  }
-
-  fn split_get_last(&self, splitter: Option<String>) -> String {
-    self.as_str().split_get_last(splitter)
-  }
-
-  fn get_first_char(&self) -> Option<char> {
-    self.as_str().get_first_char()
-  }
-
   fn trim_char(&self, trimmer: Option<String>) -> String {
     self.as_str().trim_char(trimmer)
   }
@@ -134,25 +107,6 @@ impl StringExt for String {
 impl StringExt for &str {
   fn is_empty_or_whitespaces(&self) -> bool {
     self.is_empty() || self.trim().is_empty()
-  }
-
-  fn split_get_first(&self, splitter: Option<String>) -> String {
-    let c = splitter.get_first_char().unwrap_or('/');
-    self.split(c).find(|s| !s.is_empty_or_whitespaces()).unwrap_or_default().to_string()
-  }
-
-  fn split_get_last(&self, splitter: Option<String>) -> String {
-    let c = splitter.get_first_char().unwrap_or('/');
-    self
-      .split(c)
-      .filter(|s| !s.is_empty_or_whitespaces())
-      .last()
-      .unwrap_or_default()
-      .to_string()
-  }
-
-  fn get_first_char(&self) -> Option<char> {
-    self.chars().next()
   }
 
   fn trim_char(&self, trimmer: Option<String>) -> String {
@@ -255,28 +209,6 @@ mod test {
     assert_eq!(v.is_empty_or_whitespaces(), expected);
     assert_eq!(v.to_string().is_empty_or_whitespaces(), expected);
     assert_eq!(Some(v.to_string()).is_empty_or_whitespaces(), expected);
-  }
-
-  #[test_case("leave/me/alone", "", "leave")]
-  #[test_case("/leave/me", "", "leave")]
-  #[test_case("/leave/me", "e", "/l")]
-  #[test_case("", "e", "")]
-  fn split_get_first_tests(v: &str, splitter: &str, expected: &str) {
-    let splitter = if splitter.is_empty() { None } else { Some(splitter.to_string()) };
-    assert_eq!(v.split_get_first(splitter.clone()), expected);
-    assert_eq!(v.to_string().split_get_first(splitter.clone()), expected);
-    assert_eq!(Some(v.to_string()).split_get_first(splitter), expected);
-  }
-
-  #[test_case("leave/me/alone", "", "alone")]
-  #[test_case("/leave/me/", "", "me")]
-  #[test_case("/leave/me", "e", "/m")]
-  #[test_case("", "e", "")]
-  fn split_get_last_tests(v: &str, splitter: &str, expected: &str) {
-    let splitter = if splitter.is_empty() { None } else { Some(splitter.to_string()) };
-    assert_eq!(v.split_get_last(splitter.clone()), expected);
-    assert_eq!(v.to_string().split_get_last(splitter.clone()), expected);
-    assert_eq!(Some(v.to_string()).split_get_last(splitter), expected);
   }
 
   #[test_case("", "e", "")]
