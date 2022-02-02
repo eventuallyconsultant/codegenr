@@ -9,7 +9,6 @@ pub mod string_ext;
 mod cases;
 mod debug;
 mod distinct;
-mod empty;
 mod equals;
 mod getset;
 mod math;
@@ -18,7 +17,7 @@ mod params;
 mod regex;
 mod strings;
 
-pub use {self::regex::*, cases::*, debug::*, distinct::*, empty::*, equals::*, getset::*, math::*, openapi3::*, params::*, strings::*};
+pub use {self::regex::*, cases::*, debug::*, distinct::*, equals::*, getset::*, math::*, openapi3::*, params::*, strings::*};
 
 #[derive(Error, Debug)]
 pub enum HelpersError {
