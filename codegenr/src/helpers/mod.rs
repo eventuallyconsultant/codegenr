@@ -47,7 +47,6 @@ pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(SPLIT_GET_LAST_HELPER, Box::new(SplitGetLastHelper));
   handlebars.register_helper(START_WITH_HELPER, Box::new(StartWithHelper));
   handlebars.register_helper(WITH_MATCHING_HELPER, Box::new(WithMatchingHelper));
-  handlebars.register_helper(IF_ARRAY_CONTAINS, Box::new(IfArrayContainsHelper));
   handlebars.register_helper(TRIM_BLOCK_HELPER, Box::new(TrimBlockHelper));
   handlebars.register_helper(TRIM_BLOCK_START_HELPER, Box::new(TrimBlockStartHelper));
   handlebars.register_helper(TRIM_BLOCK_END_HELPER, Box::new(TrimBlockEndHelper));

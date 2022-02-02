@@ -10,7 +10,6 @@ pub const TRIM_CHAR_START_HELPER: &str = "trim_char_start";
 pub const TRIM_CHAR_END_HELPER: &str = "trim_char_end";
 pub const START_WITH_HELPER: &str = "start_with";
 pub const WITH_MATCHING_HELPER: &str = "with_matching";
-pub const IF_ARRAY_CONTAINS: &str = "if_array_contains";
 pub const EACH_WITH_SORT_HELPER: &str = "each_with_sort";
 pub const TRIM_BLOCK_HELPER: &str = "trim_block";
 pub const TRIM_BLOCK_START_HELPER: &str = "trim_block_start";
@@ -289,56 +288,6 @@ impl HelperDef for WithMatchingHelper {
     }
 
     if let Some(t) = h.inverse() {
-      t.render(handle, ctx, render_ctx, out)?
-    };
-    Ok(())
-  }
-}
-
-/// Write the template if the second argument is found in the array passed as first argument
-/// (values are compared with string insensitive comparison)
-/// (Pas completement fonctionnelle)
-///```
-/// # use codegenr_lib::helpers::*;
-/// # use serde_json::json;
-/// let json_array = json!({ "type": "object", "required": [ "errorMeSSage", "test" ], "properties": {"errorMessage": {"type": "string"}, "non_required_prop" : {"type" : "int"}}});
-/// assert_eq!(
-///   exec_template(json_array.clone(), r#"{{#if_array_contains required "errorMeSSage"}}OK{{else}}NOK{{/if_array_contains}}"#),
-///   "OK"
-/// );
-/// //assert_eq!(
-///   //exec_template(json_array.clone(), r#"{{#if_array_contains required "errormessage"}}OK{{else}}NOK{{/if_array_contains}}"#),
-///   //"OK"
-/// //);
-/// assert_eq!(
-///   exec_template(json_array.clone(), r#"{{#if_array_contains required "test"}}OK{{else}}NOK{{/if_array_contains}}"#),
-///   "OK"
-/// );
-/// assert_eq!(
-///   exec_template(json_array.clone(), r#"{{#if_array_contains required "notFound"}}OK{{else}}NOK{{/if_array_contains}}"#),
-///   "NOK"
-/// );
-///```
-pub struct IfArrayContainsHelper;
-
-impl HelperDef for IfArrayContainsHelper {
-  fn call<'reg: 'rc, 'rc>(
-    &self,
-    h: &handlebars::Helper<'reg, 'rc>,
-    handle: &'reg handlebars::Handlebars<'reg>,
-    ctx: &'rc handlebars::Context,
-    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
-    out: &mut dyn handlebars::Output,
-  ) -> handlebars::HelperResult {
-    h.ensure_arguments_count(2, IF_ARRAY_CONTAINS)?;
-    let value = h.get_param_as_array_or_fail(0, IF_ARRAY_CONTAINS)?;
-    let key = h.get_param_as_json_or_fail(1, IF_ARRAY_CONTAINS)?;
-
-    // todo: compare case insensitive when both strings
-    let is_value_found = value.iter().any(|s| s == key);
-    let temp = if is_value_found { h.template() } else { h.inverse() };
-
-    if let Some(t) = temp {
       t.render(handle, ctx, render_ctx, out)?
     };
     Ok(())
