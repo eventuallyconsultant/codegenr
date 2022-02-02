@@ -34,8 +34,7 @@ pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
   handlebars.register_escape_fn(handlebars::no_escape);
   handlebars.register_helper(DEBUG, Box::new(DebugHelper));
   handlebars.register_helper(DEBUG_CTX, Box::new(DebugCtxHelper));
-  handlebars.register_helper(IF_EMPTY_HELPER, Box::new(IfEmptyHelper));
-  handlebars.register_helper(IF_NOT_EMPTY_HELPER, Box::new(IfNotEmptyHelper));
+  handlebars.register_helper(IS_EMPTY_HELPER, Box::new(IsEmptyHelper));
   handlebars.register_helper(IN_HELPER, Box::new(InHelper));
   handlebars.register_helper(HEX, Box::new(Hex));
   handlebars.register_helper(TRIM_CHAR_HELPER, Box::new(TrimCharHelper));
