@@ -3,8 +3,7 @@ use crate::helpers::string_ext::StringExt;
 use handlebars::{BlockContext, HelperDef, RenderError, Renderable, ScopedJson, StringOutput};
 use serde_json::Value;
 
-pub const SPLIT_GET_FIRST_HELPER: &str = "split_get_first";
-pub const SPLIT_GET_LAST_HELPER: &str = "split_get_last";
+pub const SPLIT_HELPER: &str = "split";
 pub const TRIM_CHAR_HELPER: &str = "trim_char";
 pub const TRIM_CHAR_START_HELPER: &str = "trim_char_start";
 pub const TRIM_CHAR_END_HELPER: &str = "trim_char_end";
@@ -51,58 +50,27 @@ impl HelperDef for TrimCharHelper {
   }
 }
 
-/// Return the first part of a String splited by a definable parameter ('/' by default)
-///
+/// Return the array of split values of a String splited by a definable parameter ('/' by default)
 /// ```
 /// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
 /// assert_eq!(
-///   exec_template(json!({ "temp": "test/value" }), "{{split_get_first temp}}"),
+///   exec_template(json!({ "temp": "test/value" }), "{{#each (split temp)}}-{{@this}}+{{/each}}"),
+///   "-test+-value+"
+/// );
+///  assert_eq!(
+///   exec_template(json!({ "temp": "-test-123-" }), "{{#each (split temp \"-\")}}{{#if @first}}{{@this}}{{/if}}{{/each}}"),
 ///   "test"
 /// );
 ///  assert_eq!(
-///   exec_template(json!({ "temp": "-test-123-" }), "{{split_get_first temp \"-\"}}"),
-///   "test"
-/// );
-///
-/// ```
-pub struct SplitGetFirstHelper;
-
-impl HelperDef for SplitGetFirstHelper {
-  fn call_inner<'reg: 'rc, 'rc>(
-    &self,
-    h: &handlebars::Helper<'reg, 'rc>,
-    _: &'reg handlebars::Handlebars<'reg>,
-    _: &'rc handlebars::Context,
-    _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
-    h.ensure_arguments_count_min(1, SPLIT_GET_FIRST_HELPER)?;
-    h.ensure_arguments_count_max(2, SPLIT_GET_FIRST_HELPER)?;
-
-    let to_split = h.get_param_as_str_or_fail(0, SPLIT_GET_FIRST_HELPER)?;
-    let splitter = h.get_param_as_str(1).map(|s| s.to_string());
-
-    Ok(handlebars::ScopedJson::Derived(Value::String(to_split.split_get_first(splitter))))
-  }
-}
-
-/// Return the last value of a String splited by a definable parameter ('/' by default)
-///
-/// ```
-/// # use codegenr_lib::helpers::*;
-/// # use serde_json::json;
-/// assert_eq!(
-///   exec_template(json!({ "temp": "test/value" }), "{{split_get_last temp}}"),
-///   "value"
-/// );
-///  assert_eq!(
-///   exec_template(json!({ "temp": "-test-123-" }), "{{split_get_last temp \"-\"}}"),
+///   exec_template(json!({ "temp": "-test-123-" }), "{{#each (split temp \"-\")}}{{#if @last}}{{@this}}{{/if}}{{/each}}"),
 ///   "123"
 /// );
+///
 /// ```
-pub struct SplitGetLastHelper;
+pub struct SplitHelper;
 
-impl HelperDef for SplitGetLastHelper {
+impl HelperDef for SplitHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
     h: &handlebars::Helper<'reg, 'rc>,
@@ -110,13 +78,24 @@ impl HelperDef for SplitGetLastHelper {
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
   ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
-    h.ensure_arguments_count_min(1, SPLIT_GET_LAST_HELPER)?;
-    h.ensure_arguments_count_max(2, SPLIT_GET_LAST_HELPER)?;
+    h.ensure_arguments_count_min(1, SPLIT_HELPER)?;
+    h.ensure_arguments_count_max(2, SPLIT_HELPER)?;
 
-    let to_split = h.get_param_as_str_or_fail(0, SPLIT_GET_LAST_HELPER)?;
-    let splitter = h.get_param_as_str(1).map(|s| s.to_string());
+    let to_split = h.get_param_as_str_or_fail(0, SPLIT_HELPER)?;
+    let splitter = h
+      .get_param_as_str(1)
+      .map(|s| s.to_string())
+      .map(|s| s.chars().next())
+      .flatten()
+      .unwrap_or('/');
 
-    Ok(handlebars::ScopedJson::Derived(Value::String(to_split.split_get_last(splitter))))
+    let values = to_split
+      .split(splitter)
+      .filter(|s| !s.is_empty_or_whitespaces())
+      .map(|s| s.into())
+      .collect();
+
+    Ok(handlebars::ScopedJson::Derived(Value::Array(values)))
   }
 }
 
