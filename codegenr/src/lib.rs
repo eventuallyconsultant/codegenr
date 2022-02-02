@@ -105,7 +105,7 @@ fn run_codegenr(
     .clone();
 
   helpers::handlebars_statefull_setup(&mut handlebars, options.global_parameters);
-  handlebars_misc_helpers::register(&mut handlebars);
+  helpers::handlebars_misc_setup(&mut handlebars);
 
   let rendered = handlebars.render(&main_template_name, &(*json))?;
 

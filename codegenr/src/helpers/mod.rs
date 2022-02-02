@@ -36,8 +36,7 @@ pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(DEBUG_CTX, Box::new(DebugCtxHelper));
   handlebars.register_helper(IF_EMPTY_HELPER, Box::new(IfEmptyHelper));
   handlebars.register_helper(IF_NOT_EMPTY_HELPER, Box::new(IfNotEmptyHelper));
-  handlebars.register_helper(IF_EQUALS_HELPER, Box::new(IfEqualsHelper));
-  handlebars.register_helper(IF_NOT_EQUALS_HELPER, Box::new(IfNotEqualsHelper));
+  handlebars.register_helper(IN_HELPER, Box::new(InHelper));
   handlebars.register_helper(HEX, Box::new(Hex));
   handlebars.register_helper(TRIM_CHAR_HELPER, Box::new(TrimCharHelper));
   handlebars.register_helper(TRIM_CHAR_START_HELPER, Box::new(TrimCharStartHelper));
@@ -75,10 +74,15 @@ pub fn handlebars_statefull_setup(handlebars: &mut Handlebars, global_params: Ha
   handlebars.register_helper(GLOBAL_PARAMETERS_HELPER, Box::new(GlobalParameterHelper::new(global_params)));
 }
 
+pub fn handlebars_misc_setup(handlebars: &mut Handlebars) {
+  handlebars_misc_helpers::register(handlebars);
+}
+
 pub fn exec_template(json: serde_json::Value, template: &str) -> String {
   let mut h = Handlebars::new();
   handlebars_stateless_setup(&mut h);
   handlebars_statefull_setup(&mut h, Default::default());
+  handlebars_misc_setup(&mut h);
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
 }
@@ -87,6 +91,7 @@ pub fn exec_template_with_global_params(json: serde_json::Value, template: &str,
   let mut h = Handlebars::new();
   handlebars_stateless_setup(&mut h);
   handlebars_statefull_setup(&mut h, global_params);
+  handlebars_misc_setup(&mut h);
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
 }
