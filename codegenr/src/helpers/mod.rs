@@ -12,16 +12,13 @@ mod distinct;
 mod empty;
 mod equals;
 mod getset;
-mod json;
 mod math;
 mod openapi3;
 mod params;
 mod regex;
 mod strings;
 
-pub use {
-  self::regex::*, cases::*, debug::*, distinct::*, empty::*, equals::*, getset::*, json::*, math::*, openapi3::*, params::*, strings::*,
-};
+pub use {self::regex::*, cases::*, debug::*, distinct::*, empty::*, equals::*, getset::*, math::*, openapi3::*, params::*, strings::*};
 
 #[derive(Error, Debug)]
 pub enum HelpersError {
@@ -42,7 +39,6 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(IF_NOT_EMPTY_HELPER, Box::new(IfNotEmptyHelper));
   handlebars.register_helper(IF_EQUALS_HELPER, Box::new(IfEqualsHelper));
   handlebars.register_helper(IF_NOT_EQUALS_HELPER, Box::new(IfNotEqualsHelper));
-  handlebars.register_helper(JSON_HELPER, Box::new(JsonHelper));
   handlebars.register_helper(HEX, Box::new(Hex));
   handlebars.register_helper(TRIM_CHAR_HELPER, Box::new(TrimCharHelper));
   handlebars.register_helper(TRIM_CHAR_START_HELPER, Box::new(TrimCharStartHelper));
