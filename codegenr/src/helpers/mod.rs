@@ -26,7 +26,7 @@ pub enum HelpersError {
   Regex(#[from] ::regex::Error),
 }
 
-pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<String, Value>) {
+pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
   #[cfg(debug_assertions)]
   {
     handlebars.set_dev_mode(true);
@@ -34,7 +34,6 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_escape_fn(handlebars::no_escape);
   handlebars.register_helper(DEBUG, Box::new(DebugHelper));
   handlebars.register_helper(DEBUG_CTX, Box::new(DebugCtxHelper));
-  handlebars.register_helper(DISTINCTIVE, Box::new(DistinctiveHelper::default()));
   handlebars.register_helper(IF_EMPTY_HELPER, Box::new(IfEmptyHelper));
   handlebars.register_helper(IF_NOT_EMPTY_HELPER, Box::new(IfNotEmptyHelper));
   handlebars.register_helper(IF_EQUALS_HELPER, Box::new(IfEqualsHelper));
@@ -59,6 +58,13 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(REGEX_TRANSFORM_HELPER, Box::new(RegexTransformHelper));
   //handlebars.register_helper(EACH_WITH_SORT_HELPER, Box::new(EachWithSortHelper));
 
+  handlebars.register_helper(IS_OAPI3_PARAM_REQUIRED, Box::new(IsOApi3ParamRequiredHelper));
+  handlebars.register_helper(IS_OAPI3_PROP_REQUIRED, Box::new(IsOApi3PropRequiredHelper));
+}
+
+pub fn handlebars_statefull_setup(handlebars: &mut Handlebars, global_params: HashMap<String, Value>) {
+  handlebars.register_helper(DISTINCTIVE, Box::new(DistinctiveHelper::default()));
+
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));
   handlebars.register_helper(SET_HELPER, Box::new(SetHelper::new(&map)));
@@ -66,22 +72,21 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, global_params: HashMap<Stri
   handlebars.register_helper(IF_SET_HELPER, Box::new(IfSetHelper::new(&map)));
   handlebars.register_helper(CLEAR_HELPER, Box::new(ClearHelper::new(&map)));
 
-  handlebars.register_helper(IS_OAPI3_PARAM_REQUIRED, Box::new(IsOApi3ParamRequiredHelper));
-  handlebars.register_helper(IS_OAPI3_PROP_REQUIRED, Box::new(IsOApi3PropRequiredHelper));
-
   handlebars.register_helper(GLOBAL_PARAMETERS_HELPER, Box::new(GlobalParameterHelper::new(global_params)));
 }
 
 pub fn exec_template(json: serde_json::Value, template: &str) -> String {
   let mut h = Handlebars::new();
-  handlebars_setup(&mut h, Default::default());
+  handlebars_stateless_setup(&mut h);
+  handlebars_statefull_setup(&mut h, Default::default());
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
 }
 
 pub fn exec_template_with_global_params(json: serde_json::Value, template: &str, global_params: HashMap<String, Value>) -> String {
   let mut h = Handlebars::new();
-  handlebars_setup(&mut h, global_params);
+  handlebars_stateless_setup(&mut h);
+  handlebars_statefull_setup(&mut h, global_params);
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
 }

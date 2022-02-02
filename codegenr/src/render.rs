@@ -134,14 +134,15 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, Ren
 #[cfg(test)]
 mod test {
   use super::*;
-  use crate::helpers::handlebars_setup;
+  use crate::helpers::*;
 
   #[test]
   fn handlebars_loading_test() -> Result<(), anyhow::Error> {
     let list = get_templates_from_directory("_samples/render/test_denis")?;
     let collection = TemplateCollection::from_list(list)?;
     let mut h = Handlebars::new();
-    handlebars_setup(&mut h, Default::default());
+    handlebars_stateless_setup(&mut h);
+    handlebars_statefull_setup(&mut h, Default::default());
     let result = collection.setup_handlebars(&mut h)?;
     dbg!(result);
     Ok(())
