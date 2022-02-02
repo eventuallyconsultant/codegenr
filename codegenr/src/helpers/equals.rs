@@ -12,6 +12,10 @@ pub const IN_HELPER: &str = "in";
 ///   "NOK"
 /// );
 /// assert_eq!(
+///   exec_template(json!({}), r#"{{#if (in 42 [1,42,3])}}OK{{else}}NOK{{/if}}"#),
+///   "OK"
+/// );
+/// assert_eq!(
 ///   exec_template(json!({"array": ["NO","NO","test"]}), r#"{{#if (in "test" array)}}OK{{else}}NOK{{/if}}"#),
 ///   "OK"
 /// );
