@@ -8,6 +8,7 @@ pub mod errors;
 pub(crate) mod filesystem;
 pub mod helpers;
 pub mod loader;
+pub mod loaders;
 #[cfg(feature = "bin")]
 pub mod opt;
 pub mod processor;

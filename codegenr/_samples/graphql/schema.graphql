@@ -1,0 +1,65 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  users: [UserView!]!
+  user(id: String!): UserView @uppercase
+  adresses: [AdressView!]!
+}
+
+type Mutation {
+  setUserDetails(id: String!, details: UserDetails!): String!
+}
+
+input UserDetails {
+  """
+  zegzeg
+  """
+  status: UserStatus!
+  description: String!
+  socialNetworks: SocialNetworks!
+}
+
+enum UserStatus {
+  """
+  zegzeg
+  """
+  ENABLED
+  ACTIVE
+  DISABLED
+}
+
+type UserView {
+  userId: String!
+  name: String!
+  details: UserDetailsView
+  adresses: [AdressView!]!
+}
+
+type AdressView {
+  adressId: String!
+  userIdd: String!
+  user: userView
+}
+
+input SocialNetworks @ref(path: "test") {
+  instagramUrl: String
+  spotifyUrl: String
+  youtubeUrl: String
+}
+
+type SocialNetworksView {
+  instagramUrl: String
+  spotifyUrl: String
+  youtubeUrl: String
+}
+
+# Definition
+directive @ref(path: String!) on SCALAR | OBJECT | ENUM | INPUT_OBJECT | FIELD
+
+# type Query {
+#   # Usage
+#   hello: String @uppercase
+# }
