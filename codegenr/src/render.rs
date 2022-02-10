@@ -132,7 +132,7 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, Ren
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
   use crate::helpers::handlebars_setup;
 

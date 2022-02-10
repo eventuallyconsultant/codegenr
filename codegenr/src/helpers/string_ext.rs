@@ -324,7 +324,7 @@ fn is_out_of_case(c: char) -> bool {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
   use test_case::test_case;
 

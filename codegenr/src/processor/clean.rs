@@ -35,7 +35,7 @@ impl Instruction for CleanInstruction {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
   use crate::filesystem::{create_dir, create_file};
   use tempdir::TempDir;
