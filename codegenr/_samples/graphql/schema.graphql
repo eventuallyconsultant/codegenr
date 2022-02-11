@@ -1,3 +1,5 @@
+# import * from "./schema_generated.graphql"
+
 schema {
   query: Query
   mutation: Mutation
@@ -5,7 +7,7 @@ schema {
 
 type Query {
   users: [UserView!]!
-  user(id: String!): UserView @uppercase
+  user(id: String!): UserView
   adresses: [AdressView!]!
 }
 
@@ -35,13 +37,22 @@ type UserView {
   userId: String!
   name: String!
   details: UserDetailsView
-  adresses: [AdressView!]!
+  adresses: [Test!]!
 }
 
 type AdressView {
   adressId: String!
   userIdd: String!
-  user: userView
+  user: UserView
+}
+
+type UserDetailsView {
+  """
+  zegzeg
+  """
+  status: UserStatus!
+  description: String!
+  socialNetworks: SocialNetworksView!
 }
 
 input SocialNetworks @ref(path: "test") {

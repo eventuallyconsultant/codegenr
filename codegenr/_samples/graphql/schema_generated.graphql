@@ -1,0 +1,8 @@
+enum Test {
+  TEST1
+  TEST2
+}
+
+type Plop {
+  test: Test!
+}
