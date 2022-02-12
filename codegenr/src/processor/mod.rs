@@ -113,7 +113,7 @@ pub fn process(content: &str, output: String) -> Result<(), ProcessorError> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
 
   #[test]

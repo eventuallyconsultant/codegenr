@@ -50,7 +50,7 @@ impl InstructionLineHandler for FileLineHandler {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
   use crate::filesystem::make_path_from_root;
   use std::io::Read;

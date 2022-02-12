@@ -218,7 +218,7 @@ fn yaml_to_json_number(n: serde_yaml::Number) -> Result<serde_json::Number, Load
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
   use test_case::test_case;
 

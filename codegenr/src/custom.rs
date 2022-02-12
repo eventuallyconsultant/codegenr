@@ -49,7 +49,7 @@ pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: impl AsRe
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
   use serde_json::json;
 
