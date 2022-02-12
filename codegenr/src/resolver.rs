@@ -1,5 +1,5 @@
 use crate::{
-  loader::{DocumentPath, LoaderError},
+  loaders::{DocumentPath, LoaderError},
   OriginalDocumentsHash, ResolvedDocumentsHash,
 };
 use serde_json::Value;
@@ -220,7 +220,7 @@ impl RefInfo {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::loader::*;
+  use crate::loaders::*;
   use serde_json::json;
   use test_case::test_case;
 

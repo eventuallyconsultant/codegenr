@@ -1,7 +1,7 @@
 use graphql_parser::schema::*;
 use serde_json::{Map, Value};
 
-use crate::loader::LoaderError;
+use super::LoaderError;
 
 pub type Directives = Vec<GraphqlDirective>;
 

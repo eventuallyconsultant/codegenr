@@ -7,7 +7,6 @@ pub mod custom;
 pub mod errors;
 pub(crate) mod filesystem;
 pub mod helpers;
-pub mod loader;
 pub mod loaders;
 #[cfg(feature = "bin")]
 pub mod opt;
@@ -21,8 +20,8 @@ use thiserror::Error;
 
 type OptionsMap = HashMap<String, Options>;
 
-type OriginalDocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
-type ResolvedDocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
+type OriginalDocumentsHash = HashMap<loaders::DocumentPath, Rc<Value>>;
+type ResolvedDocumentsHash = HashMap<loaders::DocumentPath, Rc<Value>>;
 type HandlebarsHash<'a> = HashMap<HandlebarsReusableConf, (String, Handlebars<'a>)>;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -76,7 +75,7 @@ fn run_codegenr(
   resolved_cache: &mut ResolvedDocumentsHash,
   reusables: &mut HandlebarsHash,
 ) -> Result<(), errors::CodegenrError> {
-  let document = loader::DocumentPath::parse(&options.source)?;
+  let document = loaders::DocumentPath::parse(&options.source)?;
   let json = resolver::resolve_refs(document, original_cache, resolved_cache)?;
 
   if options.intermediate.is_some() {
