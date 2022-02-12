@@ -97,13 +97,16 @@ fn run_codegenr(
       let templates = render::TemplateCollection::from_list(all_templates).unwrap(); //?;
 
       let mut handlebars = Handlebars::new();
+      helpers::handlebars_stateless_setup(&mut handlebars);
+
       templates.setup_handlebars(&mut handlebars).unwrap(); // todo?;
       custom::handlebars_setup(&mut handlebars, &conf.custom_helpers).unwrap(); //?;
       (templates.main_template_name().to_owned(), handlebars)
     })
     .clone();
 
-  helpers::handlebars_setup(&mut handlebars, options.global_parameters);
+  helpers::handlebars_statefull_setup(&mut handlebars, options.global_parameters);
+  helpers::handlebars_misc_setup(&mut handlebars);
 
   let rendered = handlebars.render(&main_template_name, &(*json))?;
 

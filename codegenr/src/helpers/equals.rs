@@ -1,107 +1,43 @@
 use super::handlebars_ext::HandlebarsExt;
-use handlebars::{HelperDef, Renderable};
+use handlebars::HelperDef;
 
-pub const IF_EQUALS_HELPER: &str = "if_equals";
-pub const IF_NOT_EQUALS_HELPER: &str = "if_not_equals";
+pub const IN_HELPER: &str = "in";
 
-/// Execute template if the first argument is equal to any other argument, otherwise execute the inverse
-/// (all arguments are converted to string and case insensitive compared)
+/// Returns true if the first argument is equal to any value in the second argument array
 /// ```
 /// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
-/// //assert_eq!(
-///   //exec_template(json!({}), r#"{{#if_equals "test" "teSt"}}OK{{else}}{{/if_equals}}"#),
-///   //"OK"
-/// //);
 /// assert_eq!(
-///   exec_template(json!({ "a": "42", "b": "42" }), r#"{{#if_equals a ./b }}OK{{else}}{{/if_equals}}"#),
-///   "OK"
-/// );
-/// assert_eq!(
-///   exec_template(json!({}), r#"{{#if_equals "test" "NO"}}OK{{else}}NOK{{/if_equals}}"#),
+///   exec_template(json!({}), r#"{{#if (in "test" ["NO"])}}OK{{else}}NOK{{/if}}"#),
 ///   "NOK"
 /// );
 /// assert_eq!(
-///   exec_template(json!({}), r#"{{#if_equals "test" "NO" "NO" "test"}}OK{{else}}NOK{{/if_equals}}"#),
+///   exec_template(json!({}), r#"{{#if (in 42 [1,42,3])}}OK{{else}}NOK{{/if}}"#),
 ///   "OK"
 /// );
 /// assert_eq!(
-///   exec_template(json!({}), r#"{{#if_equals "test" "NO" "NOPE"}}OK{{else}}NOK{{/if_equals}}"#),
+///   exec_template(json!({"array": ["NO","NO","test"]}), r#"{{#if (in "test" array)}}OK{{else}}NOK{{/if}}"#),
+///   "OK"
+/// );
+/// assert_eq!(
+///   exec_template(json!({}), r#"{{#if (in "test" (str_to_json "[\"NO\",\"NOPE\"]"))}}OK{{else}}NOK{{/if}}"#),
 ///   "NOK"
 /// );
 /// ```
-pub struct IfEqualsHelper;
+pub struct InHelper;
 
-impl HelperDef for IfEqualsHelper {
-  fn call<'reg: 'rc, 'rc>(
+impl HelperDef for InHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
     &self,
     h: &handlebars::Helper<'reg, 'rc>,
-    handle: &'reg handlebars::Handlebars<'reg>,
-    ctx: &'rc handlebars::Context,
-    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
-    out: &mut dyn handlebars::Output,
-  ) -> handlebars::HelperResult {
-    h.ensure_arguments_count_min(2, IF_EQUALS_HELPER)?;
-    let value = h.get_param_as_json_or_fail(0, IF_EQUALS_HELPER)?;
-
-    // todo: insensitive strings compare (when both strings)
-    let is_value_found = h.params().iter().skip(1).any(|p| p.value() == value);
-    let temp = if is_value_found { h.template() } else { h.inverse() };
-
-    match temp {
-      Some(t) => t.render(handle, ctx, render_ctx, out),
-      None => Ok(()),
-    }
-  }
-}
-
-/// Execute template if the first argument is not equal to all other arguments, otherwise execute the inverse
-/// (all arguments are converted to string and case insensitive compared)
-/// ```
-/// # use codegenr_lib::helpers::*;
-/// # use serde_json::json;
-/// //assert_eq!(
-///   //exec_template(json!({}), r#"{{#if_not_equals "test" "teSt"}}{{else}}NOK{{/if_not_equals}}"#),
-///   //"NOK"
-/// //);
-/// assert_eq!(
-///   exec_template(json!({ "a": "42", "b": "42" }), r#"{{#if_not_equals a ./b }}{{else}}NOK{{/if_not_equals}}"#),
-///   "NOK"
-/// );
-/// assert_eq!(
-///   exec_template(json!({}), r#"{{#if_not_equals "test" "NO"}}OK{{else}}NOK{{/if_not_equals}}"#),
-///   "OK"
-/// );
-/// assert_eq!(
-///   exec_template(json!({}), r#"{{#if_not_equals "test" "NO" "NO" "test"}}OK{{else}}NOK{{/if_not_equals}}"#),
-///   "NOK"
-/// );
-/// assert_eq!(
-///   exec_template(json!({}), r#"{{#if_not_equals "test" "NO" "NOPE"}}OK{{else}}NOK{{/if_not_equals}}"#),
-///   "OK"
-/// );
-/// ```
-pub struct IfNotEqualsHelper;
-
-impl HelperDef for IfNotEqualsHelper {
-  fn call<'reg: 'rc, 'rc>(
-    &self,
-    h: &handlebars::Helper<'reg, 'rc>,
-    handle: &'reg handlebars::Handlebars<'reg>,
-    ctx: &'rc handlebars::Context,
-    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
-    out: &mut dyn handlebars::Output,
-  ) -> handlebars::HelperResult {
-    h.ensure_arguments_count_min(2, IF_NOT_EQUALS_HELPER)?;
-    let value = h.get_param_as_json_or_fail(0, IF_NOT_EQUALS_HELPER)?;
-
-    // todo: insensitive strings compare (when both strings)
-    let is_value_found = h.params().iter().skip(1).any(|p| p.value() == value);
-    let temp = if !is_value_found { h.template() } else { h.inverse() };
-
-    match temp {
-      Some(t) => t.render(handle, ctx, render_ctx, out),
-      None => Ok(()),
-    }
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+    h.ensure_arguments_count(2, IN_HELPER)?;
+    let value = h.get_param_as_json_or_fail(0, IN_HELPER)?;
+    let array = h.get_param_as_array_or_fail(1, IN_HELPER)?;
+    let contains = array.iter().any(|v| v == value);
+    Ok(handlebars::ScopedJson::Derived(contains.into()))
   }
 }

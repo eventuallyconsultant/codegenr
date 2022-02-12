@@ -21,7 +21,15 @@ cargo install --git https://github.com/eventuallyconsultant/codegenr --branch de
 
 [codegenr documentation on docs.rs](https://docs.rs/codegenr/latest)
 
-The defaults Handlebars helpers are documented [here](https://docs.rs/codegenr/latest/codegenr/helpers/index.html).
+## Helpers
+
+The defaults handlebars helpers (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `and`, `or`, `not` ...) are provided by the rust handlebars implementation : https://docs.rs/handlebars/latest/handlebars/#built-in-helpers
+
+Other handlebars helpers are provided by the `handlebars_misc_helpers` crate : https://github.com/davidB/handlebars_misc_helpers
+
+Some more helpers are added by `this project` and are documented [here](https://docs.rs/codegenr/latest/codegenr/helpers/index.html).
+
+Finally you can add your own custom helpers at runtime using the [rhai embedded scripting language](https://rhai.rs/)
 
 ## Contribute
 
@@ -30,7 +38,7 @@ You can also open the repository in GitPod with this button
 
 In the command line you can :
 
-- `cargo test --workspace` to launch all the unit tests
+- `cargo test` to launch all the unit tests
 - `cargo doc --open` to compile and open the local documentation
 
 ## Some command lines
