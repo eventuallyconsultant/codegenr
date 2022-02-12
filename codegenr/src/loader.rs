@@ -29,6 +29,8 @@ pub enum LoaderError {
   //
   #[error("Couldn't transpile yaml to json : `{0}`.")]
   YamlToJsonError(&'static str),
+  #[error("Couldn't transpile graphql to json : `{0}`.")]
+  GraphqlToJsonError(&'static str),
   #[error("Could not read file content as json:\n-json_error: `{json_error}`\n-yaml_error:`{yaml_error}`.")]
   DeserialisationError {
     json_error: serde_json::Error,

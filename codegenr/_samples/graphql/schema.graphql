@@ -16,18 +16,14 @@ type Mutation {
 }
 
 input UserDetails {
-  """
-  zegzeg
-  """
+  " zegzeg "
   status: UserStatus!
   description: String!
   socialNetworks: SocialNetworks!
 }
 
 enum UserStatus {
-  """
-  zegzeg
-  """
+  " zegzeg "
   ENABLED
   ACTIVE
   DISABLED
