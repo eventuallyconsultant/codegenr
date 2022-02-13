@@ -78,6 +78,8 @@ impl DocumentPath {
       FormatHint::Json
     } else if s.ends_with(".yaml") || s.ends_with(".yml") {
       FormatHint::Yaml
+    } else if s.ends_with(".graphql") || s.ends_with(".gql") {
+      FormatHint::Graphql
     } else {
       FormatHint::NoIdea
     }

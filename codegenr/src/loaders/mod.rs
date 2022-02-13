@@ -40,10 +40,13 @@ pub enum LoaderError {
   YamlToJsonError(&'static str),
   #[error("Couldn't transpile graphql to json : `{0}`.")]
   GraphqlToJsonError(&'static str),
-  #[error("Could not read file content as json:\n-json_error: `{json_error}`\n-yaml_error:`{yaml_error}`.")]
+  #[error(
+    "Could not read file content as json:\n-json_error: `{json_error}`\n-yaml_error:`{yaml_error}`\n-graphql_error:`{graphql_error}`."
+  )]
   DeserialisationError {
     json_error: serde_json::Error,
     yaml_error: serde_yaml::Error,
+    graphql_error: graphql_parser::schema::ParseError,
   },
   #[error("Yaml error: `{0}`.")]
   YamlError(#[from] serde_yaml::Error),
@@ -51,6 +54,8 @@ pub enum LoaderError {
   JsonError(#[from] serde_json::Error),
   #[error("Graphql error: `{0}`.")]
   GraphqlError(#[from] graphql_parser::schema::ParseError),
+  #[error("Did not try all the file loaders.")]
+  DidNotTryAllFormats,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
@@ -60,36 +65,54 @@ pub(crate) enum FormatHint {
   /// The content should be yaml
   Yaml,
   /// The content should be a graphql schema
-  // Graphql,
+  Graphql,
   /// We have no f.....g idea
   NoIdea,
 }
 
 fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, LoaderError> {
+  use FormatHint::*;
   match hint {
-    FormatHint::Json | FormatHint::NoIdea => {
-      let json_error = match json::JsonLoader::json_from_str(content) {
+    FormatHint::Json | FormatHint::NoIdea => try_loaders(content, &[Json, Yaml, Graphql]),
+    FormatHint::Yaml => try_loaders(content, &[Yaml, Json, Graphql]),
+    FormatHint::Graphql => try_loaders(content, &[Graphql, Json, Yaml]),
+  }
+}
+
+fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderError> {
+  let mut json_error: Option<serde_json::Error> = None;
+  let mut yaml_error: Option<serde_yaml::Error> = None;
+  let mut graphql_error: Option<graphql_parser::schema::ParseError> = None;
+
+  for hint in formats {
+    if *hint == FormatHint::Json {
+      json_error = Some(match json::JsonLoader::json_from_str(content) {
         Ok(json) => return Ok(json),
         Err(e) => e,
-      };
-      let yaml_error = match yaml::YamlLoader::json_from_str(content) {
-        Ok(yaml) => return Ok(yaml),
-        Err(e) => e,
-      };
-      Err(LoaderError::DeserialisationError { json_error, yaml_error })
+      });
     }
-    FormatHint::Yaml => {
-      let yaml_error = match yaml::YamlLoader::json_from_str(content) {
-        Ok(yaml) => return Ok(yaml),
-        Err(e) => e,
-      };
-      let json_error = match json::JsonLoader::json_from_str(content) {
+    if *hint == FormatHint::Yaml {
+      yaml_error = Some(match yaml::YamlLoader::json_from_str(content) {
         Ok(json) => return Ok(json),
         Err(e) => e,
-      };
-      Err(LoaderError::DeserialisationError { json_error, yaml_error })
+      });
+    }
+    if *hint == FormatHint::Graphql {
+      graphql_error = Some(match graphql::GraphqlLoader::json_from_str(content) {
+        Ok(graphql) => return Ok(graphql),
+        Err(e) => match e {
+          LoaderError::GraphqlError(e) => e,
+          _ => return Err(e), // this one should not happen
+        },
+      })
     }
   }
+
+  Err(LoaderError::DeserialisationError {
+    json_error: json_error.ok_or(LoaderError::DidNotTryAllFormats)?,
+    yaml_error: yaml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
+    graphql_error: graphql_error.ok_or(LoaderError::DidNotTryAllFormats)?,
+  })
 }
 
 #[cfg(test)]
@@ -144,6 +167,13 @@ mod tests {
   #[test]
   fn read_yaml_file_test() -> Result<(), LoaderError> {
     let _result = DocumentPath::parse("./_samples/resolver/Merge1.yaml")?.load_raw()?;
+    Ok(())
+  }
+
+  #[test]
+  fn read_graph_file_test() -> Result<(), LoaderError> {
+    let result = DocumentPath::parse("./_samples/graphql/schema.graphql")?.load_raw()?;
+    println!("{}", serde_json::to_string_pretty(&result)?);
     Ok(())
   }
 
