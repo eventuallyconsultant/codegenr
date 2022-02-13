@@ -1,10 +1,19 @@
+use super::{DocumentLoader, LoaderError};
 use graphql_parser::schema::*;
 use serde::Serialize;
 use serde_json::{Map, Value};
 
-use super::LoaderError;
-
 pub type Directives = Vec<GraphqlDirective>;
+
+pub struct GraphqlLoader {}
+impl DocumentLoader for GraphqlLoader {
+  type Error = LoaderError;
+  fn json_from_str(content: &str) -> Result<Value, Self::Error> {
+    let ast = parse_schema::<String>(content)?;
+    let obj = graphql_to_object(ast)?;
+    Ok(serde_json::to_value(&obj)?)
+  }
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Graphql {

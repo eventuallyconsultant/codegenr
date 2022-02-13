@@ -49,6 +49,8 @@ pub enum LoaderError {
   YamlError(#[from] serde_yaml::Error),
   #[error("Json error: `{0}`.")]
   JsonError(#[from] serde_json::Error),
+  #[error("Graphql error: `{0}`.")]
+  GraphqlError(#[from] graphql_parser::schema::ParseError),
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
