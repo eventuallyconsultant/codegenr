@@ -2,15 +2,16 @@ use serde_json::Value;
 use thiserror::Error;
 use url::Url;
 
-use self::yaml::yaml_to_json;
-
 pub mod document_path;
 pub use document_path::*;
 pub mod graphql;
 pub mod json;
 pub mod yaml;
 
-pub trait DocumentLoader {}
+pub trait DocumentLoader {
+  type Error;
+  fn json_from_str(content: &str) -> Result<Value, Self::Error>;
+}
 
 #[derive(Error, Debug)]
 pub enum LoaderError {
@@ -56,6 +57,8 @@ pub(crate) enum FormatHint {
   Json,
   /// The content should be yaml
   Yaml,
+  /// The content should be a graphql schema
+  // Graphql,
   /// We have no f.....g idea
   NoIdea,
 }
@@ -63,22 +66,22 @@ pub(crate) enum FormatHint {
 fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, LoaderError> {
   match hint {
     FormatHint::Json | FormatHint::NoIdea => {
-      let json_error = match serde_json::from_str(content) {
+      let json_error = match json::JsonLoader::json_from_str(content) {
         Ok(json) => return Ok(json),
         Err(e) => e,
       };
-      let yaml_error = match serde_yaml::from_str(content) {
-        Ok(yaml) => return yaml_to_json(yaml),
+      let yaml_error = match yaml::YamlLoader::json_from_str(content) {
+        Ok(yaml) => return Ok(yaml),
         Err(e) => e,
       };
       Err(LoaderError::DeserialisationError { json_error, yaml_error })
     }
     FormatHint::Yaml => {
-      let yaml_error = match serde_yaml::from_str(content) {
-        Ok(yaml) => return yaml_to_json(yaml),
+      let yaml_error = match yaml::YamlLoader::json_from_str(content) {
+        Ok(yaml) => return Ok(yaml),
         Err(e) => e,
       };
-      let json_error = match serde_json::from_str(content) {
+      let json_error = match json::JsonLoader::json_from_str(content) {
         Ok(json) => return Ok(json),
         Err(e) => e,
       };

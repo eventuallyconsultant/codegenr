@@ -1,7 +1,15 @@
-use super::LoaderError;
+use super::{DocumentLoader, LoaderError};
 use serde_json::{Map, Value};
 
-pub fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, LoaderError> {
+pub struct YamlLoader {}
+impl DocumentLoader for YamlLoader {
+  type Error = serde_yaml::Error;
+  fn json_from_str(content: &str) -> Result<Value, Self::Error> {
+    Ok(serde_yaml::from_str(content)?)
+  }
+}
+
+fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, LoaderError> {
   use serde_yaml::Value::*;
   Ok(match yaml {
     Null => Value::Null,
