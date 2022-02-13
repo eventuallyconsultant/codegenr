@@ -182,37 +182,40 @@ impl<'a> TryFrom<TypeDefinition<'a, String>> for GraphqlDefinition {
   }
 }
 
-impl GraphqlDefinition {}
+impl GraphqlDefinition {
+  fn default(
+    definition_type: GraphqlDefinitionType,
+    name: String,
+    description: Option<String>,
+    directives: Vec<Directive<'_, String>>,
+  ) -> Result<Self, LoaderError> {
+    Ok(Self {
+      definition_type,
+      name,
+      description,
+      directives: graphql_directives_to_object(directives)?,
+      implements_interfaces: vec![],
+      fields: vec![],
+      inputs: vec![],
+      union_of: vec![],
+      values: vec![],
+    })
+  }
+}
 
 impl<'a> TryFrom<ScalarType<'a, String>> for GraphqlDefinition {
   type Error = LoaderError;
   fn try_from(def: ScalarType<'a, String>) -> Result<Self, Self::Error> {
-    Ok(Self {
-      definition_type: GraphqlDefinitionType::Scalar,
-      name: def.name,
-      description: def.description,
-      directives: graphql_directives_to_object(def.directives)?,
-      fields: vec![],
-      implements_interfaces: vec![],
-      union_of: vec![],
-      values: vec![],
-      inputs: vec![],
-    })
+    Self::default(GraphqlDefinitionType::Scalar, def.name, def.description, def.directives)
   }
 }
 impl<'a> TryFrom<ObjectType<'a, String>> for GraphqlDefinition {
   type Error = LoaderError;
   fn try_from(def: ObjectType<'a, String>) -> Result<Self, Self::Error> {
     Ok(Self {
-      definition_type: GraphqlDefinitionType::Object,
-      name: def.name,
-      description: def.description,
-      directives: graphql_directives_to_object(def.directives)?,
       fields: def.fields.into_iter().map(|f| f.try_into()).collect::<Result<Vec<_>, _>>()?,
       implements_interfaces: def.implements_interfaces,
-      union_of: vec![],
-      values: vec![],
-      inputs: vec![],
+      ..Self::default(GraphqlDefinitionType::Object, def.name, def.description, def.directives)?
     })
   }
 }
@@ -220,15 +223,9 @@ impl<'a> TryFrom<InterfaceType<'a, String>> for GraphqlDefinition {
   type Error = LoaderError;
   fn try_from(def: InterfaceType<'a, String>) -> Result<Self, Self::Error> {
     Ok(Self {
-      definition_type: GraphqlDefinitionType::Interface,
-      name: def.name,
-      description: def.description,
-      directives: graphql_directives_to_object(def.directives)?,
       fields: def.fields.into_iter().map(|f| f.try_into()).collect::<Result<Vec<_>, _>>()?,
       implements_interfaces: def.implements_interfaces,
-      union_of: vec![],
-      values: vec![],
-      inputs: vec![],
+      ..Self::default(GraphqlDefinitionType::Interface, def.name, def.description, def.directives)?
     })
   }
 }
@@ -236,15 +233,8 @@ impl<'a> TryFrom<UnionType<'a, String>> for GraphqlDefinition {
   type Error = LoaderError;
   fn try_from(def: UnionType<'a, String>) -> Result<Self, Self::Error> {
     Ok(Self {
-      definition_type: GraphqlDefinitionType::Union,
-      name: def.name,
-      description: def.description,
-      directives: graphql_directives_to_object(def.directives)?,
-      implements_interfaces: vec![],
-      fields: vec![],
       union_of: def.types,
-      values: vec![],
-      inputs: vec![],
+      ..Self::default(GraphqlDefinitionType::Union, def.name, def.description, def.directives)?
     })
   }
 }
@@ -252,15 +242,8 @@ impl<'a> TryFrom<EnumType<'a, String>> for GraphqlDefinition {
   type Error = LoaderError;
   fn try_from(def: EnumType<'a, String>) -> Result<Self, Self::Error> {
     Ok(Self {
-      definition_type: GraphqlDefinitionType::Enum,
-      name: def.name,
-      description: def.description,
-      directives: graphql_directives_to_object(def.directives)?,
-      fields: vec![],
-      implements_interfaces: vec![],
-      union_of: vec![],
       values: def.values.into_iter().map(|v| v.try_into()).collect::<Result<Vec<_>, _>>()?,
-      inputs: vec![],
+      ..Self::default(GraphqlDefinitionType::Enum, def.name, def.description, def.directives)?
     })
   }
 }
@@ -268,15 +251,8 @@ impl<'a> TryFrom<InputObjectType<'a, String>> for GraphqlDefinition {
   type Error = LoaderError;
   fn try_from(def: InputObjectType<'a, String>) -> Result<Self, Self::Error> {
     Ok(Self {
-      definition_type: GraphqlDefinitionType::InputObject,
-      name: def.name,
-      description: def.description,
-      directives: graphql_directives_to_object(def.directives)?,
       inputs: def.fields.into_iter().map(|f| f.try_into()).collect::<Result<Vec<_>, _>>()?,
-      implements_interfaces: vec![],
-      fields: vec![],
-      union_of: vec![],
-      values: vec![],
+      ..Self::default(GraphqlDefinitionType::InputObject, def.name, def.description, def.directives)?
     })
   }
 }
