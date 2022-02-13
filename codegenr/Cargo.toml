@@ -53,7 +53,6 @@ serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_yaml = "0.8"
 serde = "1.0"
 graphql-parser = "0.4"
-openapiv3 = "1.0"
 
 # Templating
 handlebars = { version = "4.1", features =  ["script_helper"] }
