@@ -11,7 +11,7 @@ use glob::PatternError;
 use thiserror::Error;
 
 static INSTRUCTION_LINE_REGEX: once_cell::sync::Lazy<regex::Regex> =
-  once_cell::sync::Lazy::new(|| regex::Regex::new("^###.*$").expect("The INSTRUCTION_LINE_REGEX regex did not compile."));
+  once_cell::sync::Lazy::new(|| regex::Regex::new("^###[^#]*$").expect("The INSTRUCTION_LINE_REGEX regex did not compile."));
 
 #[derive(Error, Debug)]
 pub enum ProcessorError {
@@ -126,6 +126,7 @@ test
 ### /FILE
 ### CONSOLE
 Hello
+#### CONSOLE
 ###/ console
 ### FILE plop2.rs
 test2
