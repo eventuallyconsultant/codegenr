@@ -330,10 +330,11 @@ mod test {
     file.read_to_string(&mut content)?;
 
     let ast = parse_schema::<String>(&content)?;
-    dbg!(&ast);
+    // dbg!(&ast);
 
     let obj = graphql_to_object(ast)?;
-    dbg!(obj);
+    // dbg!(obj);
+    println!("{}", serde_json::to_string_pretty(&obj).unwrap());
 
     Ok(())
   }
