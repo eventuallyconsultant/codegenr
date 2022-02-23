@@ -1,6 +1,6 @@
 use path_dedot::ParseDot;
 use serde_json::Value;
-use std::{fs::File, io::Read, path::Path};
+use std::path::Path;
 use url::Url;
 
 use super::{json_from_string, FormatHint, LoaderError};
@@ -96,11 +96,7 @@ impl DocumentPath {
         json_from_string(&body, hint)
       }
       DocumentPath::FileName(file_name) => {
-        let mut file = File::open(file_name).map_err(|e| LoaderError::Read(file_name.clone(), e))?;
-        let mut content = String::new();
-        file
-          .read_to_string(&mut content)
-          .map_err(|e| LoaderError::Read(file_name.clone(), e))?;
+        let content = std::fs::read_to_string(file_name).map_err(|e| LoaderError::Read(file_name.clone(), e))?;
         json_from_string(&content, hint)
       }
       DocumentPath::None => unreachable!("This is a non sense to try loading a 'None' document path."),

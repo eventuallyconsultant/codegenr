@@ -319,16 +319,12 @@ fn graphql_to_json(value: graphql_parser::schema::Value<String>) -> Result<Value
 #[cfg(test)]
 mod test {
   use super::*;
-  use std::{fs::File, io::Read};
 
   #[test]
   fn read_some_graphql() -> Result<(), anyhow::Error> {
     use graphql_parser::schema::parse_schema;
 
-    let mut file = File::open("./_samples/graphql/schema.graphql")?;
-    let mut content = String::new();
-    file.read_to_string(&mut content)?;
-
+    let content = std::fs::read_to_string("./_samples/graphql/schema.graphql")?;
     let ast = parse_schema::<String>(&content)?;
     // dbg!(&ast);
 

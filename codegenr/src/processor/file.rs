@@ -53,7 +53,6 @@ impl InstructionLineHandler for FileLineHandler {
 mod tests {
   use super::*;
   use crate::filesystem::make_path_from_root;
-  use std::io::Read;
   use tempdir::TempDir;
 
   #[test]
@@ -66,8 +65,7 @@ mod tests {
     handler.handle_line("hello ...")?;
     assert!(should_exists_path.exists());
     drop(handler);
-    let mut content = String::new();
-    File::open(should_exists_path)?.read_to_string(&mut content)?;
+    let content = std::fs::read_to_string(should_exists_path)?;
     assert_eq!(content, "hello ...\n");
     Ok(())
   }
