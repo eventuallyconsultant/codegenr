@@ -137,7 +137,7 @@ impl<'a> TryFrom<Type<'a, String>> for GraphqlType {
         let t: GraphqlType = (*b).try_into()?;
         Self {
           name: None,
-          required: true,
+          required: false,
           list_of: Some(Box::new(t)),
         }
       }
