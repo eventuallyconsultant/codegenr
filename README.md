@@ -21,6 +21,46 @@ cargo install --git https://github.com/eventuallyconsultant/codegenr --branch de
 
 [codegenr documentation on docs.rs](https://docs.rs/codegenr/latest)
 
+### Codegen Steps
+
+```mermaid
+flowchart LR
+    L[Load] --> R{Is it?}
+    R --> |$ref| L
+    R[Resolve] --> |All resolved| RE
+    RE[Render] --> PP
+    PP[Process]
+
+```
+
+#### codegenr.toml
+
+- `[section_name]` :
+- `source` :
+- `templates` :
+- `output` :
+- `custom_helpers` :
+- `intermediate` :
+- `global_parameters` :
+
+```toml
+[api_section]
+source = "./_specs/openapi.yaml"
+templates = [ "./_templates/misc/rest-tests" ]
+output = "./_rest-calls"
+custom_helpers = [ "./_templates/_custom_helpers" ]
+intermediate = "codegenr"
+global_parameters =  { apiName = "Api", apiRoot = "/v2/api" }
+```
+
+#### Load
+
+#### Resolve
+
+#### Render
+
+#### Process
+
 ## Helpers
 
 The defaults handlebars helpers (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `and`, `or`, `not` ...) are provided by the rust handlebars implementation : https://docs.rs/handlebars/latest/handlebars/#built-in-helpers
