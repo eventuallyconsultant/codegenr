@@ -23,6 +23,8 @@ cargo install --git https://github.com/eventuallyconsultant/codegenr --branch de
 
 ### Codegen Steps
 
+ex: (folders/files tree) TODO
+
 ```mermaid
 flowchart LR
     L[Load] --> R{Is it?}
@@ -58,6 +60,9 @@ global_parameters =  { apiName = "Api", apiRoot = "/v2/api" }
 #### Resolve
 
 #### Render
+
+- talk about `.hbs` files
+- talk about `.rhai` files
 
 #### Process
 
