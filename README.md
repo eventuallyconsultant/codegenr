@@ -22,8 +22,20 @@ cargo install --git https://github.com/eventuallyconsultant/codegenr --branch de
 [codegenr documentation on docs.rs](https://docs.rs/codegenr/latest)
 
 ### Codegen Steps
-
-ex: (folders/files tree) TODO
+Here is a simple folders/files Tree we're gonna use in example
+```
+|- _specs
+        |- openapi.yaml
+        |- ...
+|- _templates
+            |- rest-tests
+                        |- yourtemplate.hbs
+                        |- ...
+|- _rest-calls
+            |- generated
+                      |- file1
+                      |- ...
+```
 
 ```mermaid
 flowchart LR
@@ -32,19 +44,19 @@ flowchart LR
     R[Resolve] --> |All resolved| RE
     RE[Render] --> PP
     PP[Process]
-
 ```
 
 #### codegenr.toml
+To generate your files, you need to define  these parameters :
+- `[section_name]` : A unique name reprensting each section
+- `source` : The file.yaml with the data you want to use for the genration
+- `templates` : the file.hbs (handlebar template) you're using to generate the file with your data
+- `output` : The Folder where the "generated" folder with the files will be generated.
+- `custom_helpers` : 
+- `intermediate` : Codegenr
+- `global_parameters` : (Optionnal) Some parameters you want to use in the helpers.
 
-- `[section_name]` :
-- `source` :
-- `templates` :
-- `output` :
-- `custom_helpers` :
-- `intermediate` :
-- `global_parameters` :
-
+Here is an example of a section in the codegenr.toml. 
 ```toml
 [api_section]
 source = "./_specs/openapi.yaml"
@@ -55,9 +67,52 @@ intermediate = "codegenr"
 global_parameters =  { apiName = "Api", apiRoot = "/v2/api" }
 ```
 
+Here is the yaml example file:
+```yaml
+openapi: 3.0.3
+info:
+  title: Example openapi
+  description: "Openapi specifications"
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000/api/v2
+paths:
+  "/":
+    get:
+      summary: Display the index page
+      operationId: index
+      responses:
+        "200":
+          description: Ok
+          x-template: index.html
+          content:
+            text/html:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse"
+...
+components:
+  schemas:
+    EmptyResponse:
+      description: Nothing special to show on this page, only the template
+      type: object
+```
+
 #### Load
+- The source file(s) will be `load` completely and find all possible references
 
 #### Resolve
+- If the loader find a `$ref: "..."`, the resolver will try to find the file with the path and resolve the file recursively for how much ref there is in all necessary files within the end.
+```mermaid
+flowchart LR
+  L[Load] --> F
+  F[FileA] --> |All Resolved/No $ref| Rend
+  F --> |$ref: FileB| L2
+  Res[Resolve] --> F2
+  F2[FileB] --> |No other $ref| Rend
+  L2[Load] --> Res
+  Rend[Render] --> PP
+  PP[Process]
+```
 
 #### Render
 
