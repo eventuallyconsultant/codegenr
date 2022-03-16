@@ -83,7 +83,7 @@ paths:
         - user
       summary: Get current users informations
       operationId: get_current_user
-      esponses:
+      responses:
         "200":
           description: Successful operation
           content:
