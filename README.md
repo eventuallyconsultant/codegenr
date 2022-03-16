@@ -29,7 +29,7 @@ Here is a simple folders/files Tree we're gonna use in example
         |- ...
 |- _templates
             |- rest-tests
-                        |- yourtemplate.hbs
+                        |- mytemplate.hbs
                         |- ...
 |- _rest-calls
             |- generated
@@ -64,10 +64,10 @@ templates = [ "./_templates/misc/rest-tests" ]
 output = "./_rest-calls"
 custom_helpers = [ "./_templates/_custom_helpers" ]
 intermediate = "codegenr"
-global_parameters =  { apiName = "Api", apiRoot = "/v2/api" }
+global_parameters =  { apiName = "MyFirstApi", apiRoot = "/v1/api" }
 ```
 
-Here is the yaml example file:
+#### Here is the `openapi.yaml` example file:
 ```yaml
 openapi: 3.0.3
 info:
@@ -75,33 +75,48 @@ info:
   description: "Openapi specifications"
   version: 1.0.0
 servers:
-  - url: http://localhost:8000/api/v2
+  - url: http://localhost:8000
 paths:
-  "/":
+  /me:
     get:
-      summary: Display the index page
-      operationId: index
-      responses:
+      tags:
+        - user
+      summary: Get current users informations
+      operationId: get_current_user
+      esponses:
         "200":
-          description: Ok
-          x-template: index.html
+          description: Successful operation
           content:
-            text/html:
+            application/json:
               schema:
-                $ref: "#/components/schemas/EmptyResponse"
+                $ref: "#/components/schemas/GetMeResponse"
 ...
 components:
   schemas:
-    EmptyResponse:
-      description: Nothing special to show on this page, only the template
+    GetMeResponse:
       type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          description: a username/handle
+          example: just_a_username
+
 ```
 
 #### Load
-- The source file(s) will be `load` completely and find all possible references
+- The source file(s) will be `load` completely the actual file and find all possible references (`$ref: "..."`)in order to load recursively these files and their refs (if maybe they have some) and have all files needed load.
+- If you look closely to the `openapi.yaml` file above, you can see that `$ref: "#/components/schemas/EmptyResponse"` refer to a specific path composed in 3 parts:
+- - The `#` means in this document
+- - The `/components/schemas/` is the path in the file
+- - The `EmptyResponse` is the object we're looking for, here is just a simple example with a description and a type.
 
 #### Resolve
 - If the loader find a `$ref: "..."`, the resolver will try to find the file with the path and resolve the file recursively for how much ref there is in all necessary files within the end.
+- In this example, if the loader find a `$ref` in the fileA which is redirecting in the FileB, the loader will try to load the fileB and resolve the reference that the `$ref` is pointing.
+- After resolving the ref, the loader will try to find if there is other $ref in the first file or even the file(s) loaded with the ref(s) and so recursively load and resolve them in order to load all the necessary files.
+- Finally, when all the refs are resolved and all necessary files loaded, the render and process will do their job.
 ```mermaid
 flowchart LR
   L[Load] --> F
@@ -116,9 +131,85 @@ flowchart LR
 
 #### Render
 
-- talk about `.hbs` files
-- talk about `.rhai` files
+Here is our handlebar example file named `mytemplate.hbs` which is in the `./_templates/misc/rest-tests` folder.
+```handlebars
+{{set "fileName" (snake_case (global_parameter "apiName")) }}
 
+### FILE {{ get "fileName" }}.generated.rest
+
+@host = localhost
+@port = 8000
+@api_root = {{global_parameter "apiRoot"}}
+
+{{#each paths}}{{#with_set "path" @key}}
+{{#each this}}{{#with_set "httpMethod" @key}}
+# {{operationId}}
+# --- --- --- --- --- --- --- --- --- --- --- ---
+{{get "httpMethod"}} http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}} HTTP/1.1
+
+{{/with_set}}{{/each}}
+{{/with_set}}{{/each}}
+
+### /FILE
+```
+
+- The render will use the template folder u defined (`./_templates/misc/rest-tests`in the example above) to find all handlebars files (mytemplate.hbs, ...) and render them using the parameters defined in the `global_parameters` part if there is some.
+- In we follow the example above, here is what the render will do :
+- - It will define the variable `fileName` using the `snake_case` helper and the `global parameter` named `apiName` which is "MyFirstApi" as we defined it in our example.
+```toml
+global_parameters =  { apiName = "MyFirstApi", apiRoot = "/v1/api" }
+```
+- - Then it will use the `fileName` variable to define his file name, here it will be `my_first_api.generated.rest`.
+- - Just after this, we define some few parameters of our API which we're gonna use later such as the host, the port and the api_root which is using the `apiRoot` global parameter we defined 
+```toml
+global_parameters =  { apiName = "MyFirstApi", apiRoot = "/v1/api" }
+```
+- - We're now iterating with the helper `each` for each item contained in the `paths` section of the `openapi.yaml` file and set each path as a variable @key (with the `with_set` helper) contained in each `path` we will iterate in the `paths`. (here it will be our first path `/me`)
+```yaml
+...
+paths:
+  /me:
+...
+```
+- - Next we're gonna iterate again to the next item contained in the item `this` representing the path we just iterated before and set this as as the `httpMethod` of the `@key`. (Here this is representing the `get` method)
+```yaml
+...
+paths:
+  /me:
+    get:
+...
+```
+- - To continue, we're gonna write the operation ID contained in this path if it exist. (here it is the `get_me`)
+
+```yaml
+...
+paths:
+  /me:
+    get:
+      summary: Get my informations
+      operationId: get_me
+...
+```
+- - And finally we're gonna write our request using all informations we have such as our `httpMethod`, our `host`, our `port`, the `api_root` and the `path` then close our helpers and define the end of the file.
+```handlebars
+{{get "httpMethod"}} http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}} HTTP/1.1
+```
+- Here is what our file will look at the end.
+```rest
+
+@host = localhost
+@port = 8080
+@api_root = /v2/rentals
+
+
+
+# get_me
+# --- --- --- --- --- --- --- --- --- --- --- ---
+
+get http://{{host}}:{{port}}{{api_root}}/me HTTP/1.1
+```
+---
+- talk about `.rhai` files
 #### Process
 
 ## Helpers
