@@ -118,11 +118,11 @@ The `load` step will read the `source` file and turn it to json
 - if it's a `yaml` file, it's not that hard
 - if it's a `graphql` sdl file, it's lead to some structure changes
 
-If you look closely to the `openapi.yaml` file above, you can see that `$ref: "#/components/schemas/EmptyResponse"` refer to a specific path composed in 3 parts:
+If you look closely to the `openapi.yaml` file above, you can see that `$ref: "#/components/schemas/GetMeResponse"` refer to a specific path composed in 3 parts:
 
-- The `#` means in this document
+- The `#` part is reffering to the document (Example: `file.yaml#...` refer to the document `file.yaml` )
 - The `/components/schemas/` is the path in the file
-- The `EmptyResponse` is the object we're looking for, here is just a simple example with a description and a type.
+- The `GetMeResponse` is the object we're looking for, here is just a simple example with a property `username` which contains a description and a type.
 
 for more information : https://swagger.io/docs/specification/using-ref/
 
@@ -136,17 +136,75 @@ In this example, the loader finds a `$ref` in the `source.yaml` which is redirec
 
 ```yaml
 # source.yaml
-todo
+openapi: 3.0.3
+info:
+  title: Example
+  description: "Just an example"
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /user:
+    get:
+      tags:
+        - user
+      summary: Get current users informations
+      operationId: get_current_user
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "other.yaml#/components/schemas/UserResponsr"
 ```
 
 ```yaml
 # other.yaml
-todo
+components:
+  schemas:
+    UserResponse:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          description: a username/handle
+          example: just_a_username
 ```
 
 ```json
 // all resolved
-todo
+openapi: 3.0.3
+info:
+  title: Example
+  description: "Just an example"
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /user:
+    get:
+      tags:
+        - user
+      summary: Get current users informations
+      operationId: get_current_user
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                UserResponse:
+                  type: object
+                  required:
+                    - username
+                  properties:
+                    username:
+                      type: string
+                      description: a username/handle
+                      example: just_a_username
 ```
 
 ```mermaid
@@ -175,16 +233,16 @@ Here is our handlebar example file named `mytemplate.hbs` which is in the `./_te
 {{global_parameter "apiRoot"}}
 
 {{#each paths}}{{#with_set "path" @key}}
-    {{#each this}}{{#with_set "httpMethod" @key}}
-        #
-        {{operationId}}
-        # --- --- --- --- --- --- --- --- --- --- --- ---
-        {{get "httpMethod"}}
-        http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}}
-        HTTP/1.1
+{{#each this}}{{#with_set "httpMethod" @key}}
+#
+{{operationId}}
+# --- --- --- --- --- --- --- --- --- --- --- ---
+{{get "httpMethod"}}
+http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}}
+HTTP/1.1
 
-      {{/with_set}}{{/each}}
-  {{/with_set}}{{/each}}
+{{/with_set}}{{/each}}
+{{/with_set}}{{/each}}
 
 ### /FILE
 ```
