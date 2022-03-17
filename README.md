@@ -210,7 +210,7 @@ components:
                         "example": "just_a_username"
                       }
                     },
-                    "x-fromRef": null,
+                    "x-fromRef": "other.yaml#/components/schemas/UserResponse",
                     "x-refName": "UserResponse"
                   }
                 }
