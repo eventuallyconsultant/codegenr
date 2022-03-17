@@ -60,7 +60,7 @@ To generate your files, you need to define these parameters :
 - `intermediate` : (Optionnal) if set, `codegenr` will output intermediate files for debug purpose
 - `global_parameters` : (Optionnal) Some values you want to use with the `global_parameter` helper.
 
-##### Here is an example of a section in the codegenr.toml.
+##### Here is an example of a section in the `codegenr.toml`.
 
 ```toml
 [api_section]
@@ -72,9 +72,22 @@ intermediate = "codegenr"
 global_parameters =  { apiName = "MyFirstApi", apiRoot = "/v1/api" }
 ```
 
-##### Here is the `openapi.yaml` example file:
+#### Load
+
+The `load` step will read the `source` file and turn it to json
+
+- if it's a `json` file, it's quite easy
+- if it's a `yaml` file, it's not that hard
+- if it's a `graphql` sdl file, it's lead to some structure changes
+
+If you look closely to example below, you can see that `$ref: "#/components/schemas/GetMeResponse"` refer to a specific path composed in 3 parts:
+
+- The `#` part is refering to the `same` document (Also: `file.yaml#...` would be referring to the document `file.yaml`)
+- `/components/schemas/` is the path `in` the file
+- `GetMeResponse` is the object we're looking for, here is just a simple example with a property `username` which contains a description and a type.
 
 ```yaml
+# `some_openapi_file.yaml` example
 openapi: 3.0.3
 info:
   title: Example openapi
@@ -96,7 +109,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GetMeResponse"
----
+# ...
+# ...
 components:
   schemas:
     GetMeResponse:
@@ -109,20 +123,6 @@ components:
           description: a username/handle
           example: just_a_username
 ```
-
-#### Load
-
-The `load` step will read the `source` file and turn it to json
-
-- if it's a `json` file, it's quite easy
-- if it's a `yaml` file, it's not that hard
-- if it's a `graphql` sdl file, it's lead to some structure changes
-
-If you look closely to the `openapi.yaml` file above, you can see that `$ref: "#/components/schemas/GetMeResponse"` refer to a specific path composed in 3 parts:
-
-- The `#` part is reffering to the document (Example: `file.yaml#...` refer to the document `file.yaml` )
-- The `/components/schemas/` is the path in the file
-- The `GetMeResponse` is the object we're looking for, here is just a simple example with a property `username` which contains a description and a type.
 
 for more information : https://swagger.io/docs/specification/using-ref/
 
@@ -156,7 +156,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "other.yaml#/components/schemas/UserResponsr"
+                $ref: "other.yaml#/components/schemas/UserResponse"
 ```
 
 ```yaml
@@ -175,36 +175,53 @@ components:
 ```
 
 ```json
-// all resolved
-openapi: 3.0.3
-info:
-  title: Example
-  description: "Just an example"
-  version: 1.0.0
-servers:
-  - url: http://localhost:8000
-paths:
-  /user:
-    get:
-      tags:
-        - user
-      summary: Get current users informations
-      operationId: get_current_user
-      responses:
-        "200":
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                UserResponse:
-                  type: object
-                  required:
-                    - username
-                  properties:
-                    username:
-                      type: string
-                      description: a username/handle
-                      example: just_a_username
+// all resolved & changed to json
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Example",
+    "description": "Just an example",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000"
+    }
+  ],
+  "paths": {
+    "/user": {
+      "get": {
+        "tags": ["user"],
+        "summary": "Get current users informations",
+        "operationId": "get_current_user",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "UserResponse": {
+                    "type": "object",
+                    "required": ["username"],
+                    "properties": {
+                      "username": {
+                        "type": "string",
+                        "description": "a username/handle",
+                        "example": "just_a_username"
+                      }
+                    },
+                    "x-fromRef": null,
+                    "x-refName": "UserResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
 ```mermaid
@@ -233,16 +250,16 @@ Here is our handlebar example file named `mytemplate.hbs` which is in the `./_te
 {{global_parameter "apiRoot"}}
 
 {{#each paths}}{{#with_set "path" @key}}
-{{#each this}}{{#with_set "httpMethod" @key}}
-#
-{{operationId}}
-# --- --- --- --- --- --- --- --- --- --- --- ---
-{{get "httpMethod"}}
-http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}}
-HTTP/1.1
+    {{#each this}}{{#with_set "httpMethod" @key}}
+        #
+        {{operationId}}
+        # --- --- --- --- --- --- --- --- --- --- --- ---
+        {{get "httpMethod"}}
+        http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}}
+        HTTP/1.1
 
-{{/with_set}}{{/each}}
-{{/with_set}}{{/each}}
+      {{/with_set}}{{/each}}
+  {{/with_set}}{{/each}}
 
 ### /FILE
 ```
