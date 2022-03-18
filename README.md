@@ -250,16 +250,13 @@ Here is our handlebar example file named `mytemplate.hbs` which is in the `./_te
 {{global_parameter "apiRoot"}}
 
 {{#each paths}}{{#with_set "path" @key}}
-    {{#each this}}{{#with_set "httpMethod" @key}}
-        #
-        {{operationId}}
-        # --- --- --- --- --- --- --- --- --- --- --- ---
-        {{get "httpMethod"}}
-        http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}}
-        HTTP/1.1
-
-      {{/with_set}}{{/each}}
-  {{/with_set}}{{/each}}
+{{#each this}}{{#with_set "httpMethod" @key}}
+# {{operationId}}
+# --- --- --- --- --- --- --- --- --- --- --- ---
+{{get "httpMethod"}} http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}} HTTP/1.1
+# --- --- --- ---
+{{/with_set}}{{/each}}
+{{/with_set}}{{/each}}
 
 ### /FILE
 ```
@@ -341,13 +338,60 @@ get http://{{host}}:{{port}}{{api_root}}/me HTTP/1.1
 
 ---
 
-- talk about `.rhai` files
+While using handlebars file, you can use as well Rhai which is a embedded scripting language and evaluation engine for Rust.
+In the case of codegenr, you can use files.rhai to perform script instruction, check, convertion and much more depending on your needs.
+
+Here is a simple example and what it is used for:
+
+This yaml fragment is the definition of a response in your `file.yaml`, you can see that we defined for the `userCount` property the type and the format.
+```yaml
+DisplayUserCount:
+      description: Display the number of user
+      type: object
+      required:
+        - username
+      properties:
+        userCount:
+          type: integer
+          format: uint64
+```
+
+In this case, we use the rhai file to perform a conversion between the `yaml` and the `dart` type.
+As you can see, the `type` is identified as the `first` parameter of the property and the `format` as the second.
+In the example here, the conversion will be done using the type (integer) and the format (uint64) that will be convert to `int` in dart.
+
+```rhai
+let type = params[0];
+let format = params[1];
+
+// https://swagger.io/docs/specification/data-models/data-types/
+
+let type_name = switch [type, format] {
+  ["string", ""] => "String",
+  ["integer", "uint32"] => "int",
+  ["integer", "uint64"] => "int",
+  ["number", "float"] => "double",
+  ["number", "double"] => "double",
+  _ => {
+    throw `UNKNOWN TYPE ${type} - ${format}`;
+    ()
+  }
+};
+```
 
 #### Process
 
 The `process` step is where the `render` output is took from memory to files ...
 
-TODO: talk about the `### FILE` instruction
+This files will be write while following the instructions defined in handlebars template between `### FILE` and `### /FILE`.
+For example, you use it to define your filename as well at the begenning of the process and start writing on this file as we did in the example.
+```handlebars
+{{set "fileName" (snake_case (global_parameter "apiName"))}}
+
+### FILE {{get "fileName"}}.generated.rest
+...
+### /FILE
+```
 
 ## Helpers
 
