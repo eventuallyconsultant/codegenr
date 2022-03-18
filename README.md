@@ -243,16 +243,53 @@ Finally, when all the refs are resolved and all necessary files loaded, the rend
 Here is our handlebar example file named `mytemplate.hbs` which is in the `./_templates/misc/rest-tests` folder.
 
 ```handlebars
+{{!--
+In the following example, here is what the render will do :
+It will define the variable `fileName` using the `snake_case` helper
+and the `global parameter` named `apiName` which is "MyFirstApi" as 
+we defined it in our example.
+--}}
 {{set "fileName" (snake_case (global_parameter "apiName"))}}
 
-### FILE
-{{get "fileName"}}.generated.rest @host = localhost @port = 8000 @api_root =
-{{global_parameter "apiRoot"}}
+{{!--
+Then it will use the `fileName` variable to define his file name,
+here it will be `my_first_api.generated.rest`.
+--}}
+### FILE {{get "fileName"}}.generated.rest
 
+{{!--
+Just after this, we define some few parameters of our API which we're
+gonna use later such as the host, the port and the api_root which is
+using the `apiRoot` global parameter we defined
+--}}
+@host = localhost 
+@port = 8000 
+@api_root = {{global_parameter "apiRoot"}}
+
+{{!--
+We're now iterating with the helper "each" for each item contained
+in the "paths" section of the "openapi.yaml" file and set each path 
+as a variable @key (with the "with_set" helper) contained in each "path"
+we will iterate in the "paths". (here it will be our first path "/me")
+--}}
 {{#each paths}}{{#with_set "path" @key}}
+{{!--
+Next we're gonna iterate again to the next item contained in the item
+"this" representing the path we just iterated before and set this as
+the `httpMethod` of the "@key". (Here this is representing the "get" method) 
+--}}
 {{#each this}}{{#with_set "httpMethod" @key}}
+{{!--
+To continue, we're gonna write the operation ID contained in this path
+if it exist. (here it is the "get_me") 
+--}}
 # {{operationId}}
 # --- --- --- --- --- --- --- --- --- --- --- ---
+{{!--
+And finally we're gonna write our request using all informations we have
+such as our "httpMethod", our "host", our "port", the "api_root" 
+and the "path" then close our helpers and define the end of the file.
+--}}
 {{get "httpMethod"}} http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}} HTTP/1.1
 # --- --- --- ---
 {{/with_set}}{{/each}}
@@ -264,61 +301,6 @@ Here is our handlebar example file named `mytemplate.hbs` which is in the `./_te
 The `render` step will use the template folder you defined (`./_templates/misc/rest-tests`in the example above) to find all handlebars files (mytemplate.hbs, ...) and render them using the `load & resolve` result as source & the parameters defined in the `global_parameters` if there is some.
 
 for more information about the handlebar syntax : https://handlebarsjs.com/guide/
-
-<!-- TODO: The code comments should be in the handlebars code ? no ?  -->
-
-<!--
-
-In the following example, here is what the render will do :
-- - It will define the variable `fileName` using the `snake_case` helper and the `global parameter` named `apiName` which is "MyFirstApi" as we defined it in our example.
-
-```toml
-global_parameters =  { apiName = "MyFirstApi", apiRoot = "/v1/api" }
-```
-
-- - Then it will use the `fileName` variable to define his file name, here it will be `my_first_api.generated.rest`.
-- - Just after this, we define some few parameters of our API which we're gonna use later such as the host, the port and the api_root which is using the `apiRoot` global parameter we defined
-
-```toml
-global_parameters =  { apiName = "MyFirstApi", apiRoot = "/v1/api" }
-```
-
-- - We're now iterating with the helper `each` for each item contained in the `paths` section of the `openapi.yaml` file and set each path as a variable @key (with the `with_set` helper) contained in each `path` we will iterate in the `paths`. (here it will be our first path `/me`)
-
-```yaml
----
-paths:
-  /me:
-```
-
-- - Next we're gonna iterate again to the next item contained in the item `this` representing the path we just iterated before and set this as as the `httpMethod` of the `@key`. (Here this is representing the `get` method)
-
-```yaml
----
-paths:
-  /me:
-    get:
-```
-
-- - To continue, we're gonna write the operation ID contained in this path if it exist. (here it is the `get_me`)
-
-```yaml
----
-paths:
-  /me:
-    get:
-      summary: Get my informations
-      operationId: get_me
-```
-
-- - And finally we're gonna write our request using all informations we have such as our `httpMethod`, our `host`, our `port`, the `api_root` and the `path` then close our helpers and define the end of the file.
-
-```handlebars
-{{get "httpMethod"}}
-http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}}
-HTTP/1.1
-```
--->
 
 - Here is what our render output will look at the end.
 
@@ -339,7 +321,7 @@ get http://{{host}}:{{port}}{{api_root}}/me HTTP/1.1
 ---
 
 While using handlebars file, you can use as well Rhai which is a embedded scripting language and evaluation engine for Rust.
-In the case of codegenr, you can use files.rhai to perform script instruction, check, convertion and much more depending on your needs.
+In the case of codegenr, you can use files.rhai to perform script instruction, check, convertion, etc... as custom helpers, usable from the .hbs templates
 
 Here is a simple example and what it is used for:
 
@@ -359,11 +341,15 @@ DisplayUserCount:
 In this case, we use the rhai file to perform a conversion between the `yaml` and the `dart` type.
 As you can see, the `type` is identified as the `first` parameter of the property and the `format` as the second.
 In the example here, the conversion will be done using the type (integer) and the format (uint64) that will be convert to `int` in dart.
+The `optionnal` parameter is an optionnal parameter that is possibly define if we have more a 3rd parameter for our property in the `file.yaml`
 
 ```rhai
+// dart_type_convert.rhai
 let type = params[0];
 let format = params[1];
+let optional = if params.len() > 2 { params[2] } else { false };
 
+// For more information about the data types, check the swagger doc
 // https://swagger.io/docs/specification/data-models/data-types/
 
 let type_name = switch [type, format] {
@@ -377,6 +363,23 @@ let type_name = switch [type, format] {
     ()
   }
 };
+
+if optional {
+  `${type_name}?`
+}else{
+  type_name
+}
+
+```
+
+You need to use them in your `.hbs` template as helpers.
+In this example, we're calling `dart_type_convert` which is the name of our example file `.rhai` above and then define the `optionnal` value to `true` if it's a type `string` or `false` if it's any other type.
+
+```handlebars
+{{#if_equals type string}}
+{{dart_type_convert type format true}}
+{{else}}
+{{dart_type_convert type format false}}
 ```
 
 #### Process
