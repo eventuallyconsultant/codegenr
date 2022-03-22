@@ -37,5 +37,10 @@
   "[handlebars]": {
     "editor.formatOnSave": false
   },
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": false,
+    "editor.formatOnSave": false
+  },
   "rust-analyzer.cargo.allFeatures" : true
 }
