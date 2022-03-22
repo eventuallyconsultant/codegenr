@@ -240,108 +240,180 @@ Finally, when all the refs are resolved and all necessary files loaded, the rend
 
 #### Render
 
-Here is our handlebar example file named `mytemplate.hbs` which is in the `./_templates/misc/rest-tests` folder.
+Here is our handlebar example file named `mytemplate.hbs` which is in the `./_templates/misc/rest-tests` folder. 
+The goal of this template will be to ouptut a `.rest` file named after the `apiName`, that contains ready to use
+one click examples from the swagger documentation. (usage with [Rest Client VsCode extension](https://marketplace.visualstudio.com/items?itemName=humao.rest-client))
+
+This step will use the template folder you defined (`./_templates/misc/rest-tests` in the example above) to find all handlebars files (`mytemplate.hbs`, ...) 
+and render the ONE `.bhs` main file (the one with no `_underscore`) using the `load & resolve` result as source, and the parameters defined in the `global_parameters` if there are some.
+
+for more information about the handlebar syntax : https://handlebarsjs.com/guide/
 
 ```handlebars
-{{!--
+{{!
 In the following example, here is what the render will do :
 It will define the variable `fileName` using the `snake_case` helper
 and the `global parameter` named `apiName` which is "MyFirstApi" as 
 we defined it in our example.
---}}
+
+So the value set in `fileName` will be "my_first_api"
+}}
 {{set "fileName" (snake_case (global_parameter "apiName"))}}
 
-{{!--
-Then it will use the `fileName` variable to define his file name,
-here it will be `my_first_api.generated.rest`.
---}}
+{{!
+Then it will reuse the `fileName` variable to output an instruction writing to a file.
+Here it will be `my_first_api.generated.rest`.
+(The process/processor instructions step will be explained later)
+}}
 ### FILE {{get "fileName"}}.generated.rest
 
-{{!--
-Just after this, we define some few parameters of our API which we're
-gonna use later such as the host, the port and the api_root which is
-using the `apiRoot` global parameter we defined
---}}
-@host = localhost 
-@port = 8000 
-@api_root = {{global_parameter "apiRoot"}}
+{{!
+Thos 3 variables, will be used later by the `.rest` rest client extensions.
+`apiRoot` is passed from the `codegenr` call arguments
+}}
+@host = localhost
+@port = 8000
+@api_root ={{global_parameter "apiRoot"}}
 
-{{!--
-We're now iterating with the helper "each" for each item contained
-in the "paths" section of the "openapi.yaml" file and set each path 
-as a variable @key (with the "with_set" helper) contained in each "path"
-we will iterate in the "paths". (here it will be our first path "/me")
---}}
-{{#each paths}}{{#with_set "path" @key}}
-{{!--
-Next we're gonna iterate again to the next item contained in the item
-"this" representing the path we just iterated before and set this as
-the `httpMethod` of the "@key". (Here this is representing the "get" method) 
---}}
-{{#each this}}{{#with_set "httpMethod" @key}}
-{{!--
-To continue, we're gonna write the operation ID contained in this path
-if it exist. (here it is the "get_me") 
---}}
-# {{operationId}}
-# --- --- --- --- --- --- --- --- --- --- --- ---
-{{!--
-And finally we're gonna write our request using all informations we have
-such as our "httpMethod", our "host", our "port", the "api_root" 
-and the "path" then close our helpers and define the end of the file.
---}}
-{{get "httpMethod"}} http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}} HTTP/1.1
-# --- --- --- ---
-{{/with_set}}{{/each}}
-{{/with_set}}{{/each}}
+{{!
+We're now iterating with the helper `each` for each item contained
+in the "paths" section of the "openapi.yaml" file.
+`#each` is a standard handlebars helper. 
+Go and RTFM to know more about [handlebars syntax](https://handlebarsjs.com/guide/). 
+}}
+{{#each paths}}
+  {{!
+  We set a variable named `path` with the value from `@key`.
+  The variable scope will stay until the `with_set` block helper is ended 
+  The first iteration will have the value "/user" here.
+  }}
+  {{#with_set "path" @key}}
+    {{!
+    Next we'll loop over the current value of the handlebars context: `this`.
+    "this" is the openapi path so it's children are http methods.
+    So we set the `httpMethod`. 
+    }}
+    {{#each this}}
+    {{#with_set "httpMethod" @key}}
+        {{!
+        Now we output some nice `.rest` comments, to make it nice to read.
+        ex: it's `get_current_user` here
+        }}
+        # {{operationId}}
+        # --- --- --- --- --- --- --- --- --- --- --- ---
+        {{!
+        Is there a request body json example
+        }}
+        {{#if requestBody}}
+        {{#each requestBody.content}}{{#with_set "contentType" @key}}
+        {{#each examples}}
+        {{#no_empty_lines}}
+        {{!
+        We're gonna write our request using all informations we have
+        such as our `httpMethod` and `path`.
+        Your can see the `\` before `{{host` for example. 
+        This is in order to escape the helper, it's a `.rest` variable usage, not a `handlebars` helper call
+        }}
+        {{get "httpMethod"}} http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}} HTTP/1.1
+        content-type: {{get "contentType"}}
+        {{/no_empty_lines}}
 
+        {{#each this}}
+        {{json_to_str this format="json_pretty"}}
+        {{/each}}
+
+        #### --- --- --- ---
+        {{/each}}
+        {{/with_set}}{{/each}}
+        {{else}}
+        {{!
+        Same with no example
+        }}
+        {{get "httpMethod"}} http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}} HTTP/1.1
+
+        #### --- --- --- ---
+        {{/if}}
+        {{get "httpMethod"}}
+        http://\{{host}}:\{{port}}\{{api_root}}{{get "path"}}
+        HTTP/1.1 
+
+        {{#each this}}
+        {{json_to_str this format="json_pretty"}}
+        {{/each}}
+        #### --- --- --- ---
+
+        {{!
+        finally we close all the openned helpers
+        }}
+      {{/with_set}}
+    {{/each}}
+  {{/with_set}}
+{{/each}}
+  
+{{!
+And the file written
+}}
 ### /FILE
 ```
 
-The `render` step will use the template folder you defined (`./_templates/misc/rest-tests`in the example above) to find all handlebars files (mytemplate.hbs, ...) and render them using the `load & resolve` result as source & the parameters defined in the `global_parameters` if there is some.
-
-for more information about the handlebar syntax : https://handlebarsjs.com/guide/
-
-- Here is what our render output will look at the end.
+Here is what our render output will look at the end.
 
 ```rest
-
 @host = localhost
 @port = 8080
-@api_root = /v2/rentals
-
-
+@api_root = /v1/api
 
 # get_me
 # --- --- --- --- --- --- --- --- --- --- --- ---
 
-get http://{{host}}:{{port}}{{api_root}}/me HTTP/1.1
+get http://{{host}}:{{port}}{{api_root}}/user HTTP/1.1
+#### --- --- --- ---
 ```
 
----
+#### Helpers
 
-While using handlebars file, you can use as well Rhai which is a embedded scripting language and evaluation engine for Rust.
-In the case of codegenr, you can use files.rhai to perform script instruction, check, convertion, etc... as custom helpers, usable from the .hbs templates
+Handlebars is a pretty limited language, but it's extended with `helpers` :
+- it has some standard helpers (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `and`, `or`, `not` ...), provided by the rust handlebars implementation : https://docs.rs/handlebars/latest/handlebars/#built-in-helpers
+- `codegenr` bundles the `handlebars_misc_helpers` to have more helpers : https://github.com/davidB/handlebars_misc_helpers
+- `codegenr` also provides some more home backed helpers : https://docs.rs/codegenr/latest/codegenr/helpers/index.html
+- **Finally** `you` can add your own helpers using the [rhai embedded scripting language](https://rhai.rs/)
+  - any `__myhelper__.rhai` file in the custom_helpers folder will be available as a `myhelper` handlebars inline helper, usable from the .hbs templates.
 
 Here is a simple example and what it is used for:
 
 This yaml fragment is the definition of a response in your `file.yaml`, you can see that we defined for the `userCount` property the type and the format.
+This property is also marked as `required` in the required array.
+
 ```yaml
 DisplayUserCount:
-      description: Display the number of user
-      type: object
-      required:
-        - username
-      properties:
-        userCount:
-          type: integer
-          format: uint64
+  description: Display the number of user
+  type: object
+  required:
+    - userCount
+  properties:
+    userCount:
+      type: integer
+      format: uint64
 ```
 
-In this case, we use the rhai file to perform a conversion between the `yaml` and the `dart` type.
-As you can see, the `type` is identified as the `first` parameter of the property and the `format` as the second.
-In the example here, the conversion will be done using the type (integer) and the format (uint64) that will be convert to `int` in dart.
-The `optionnal` parameter is an optionnal parameter that is possibly define if we have more a 3rd parameter for our property in the `file.yaml`
+Now imagine you want to generate some `dart client` for this api, you now have to convert this property type to a type in `Dart`.
+In this case, we can use the rhai file to perform this complex mapping : `dart_type_convert.rhai`
+It will define a helper with 3 parameters :
+- `type`: we'll provide the type value (`"integer"` here)
+- `format`: we'll provide the format value (`"uint64"` here)
+- `optional`: we'll need to use the `is_oapi3_property_required` codegenr helper and negate it with `not` to pass `true` is the parameter is not found in the `required` array.
+
+```handlebars
+{{ dart_type_convert type format (not(is_oapi3_property_required @key ../required)) }}
+```
+
+will output
+
+```dart
+int
+```
+
+Thanks to this custom `rhai` helper :
 
 ```rhai
 // dart_type_convert.rhai
@@ -372,39 +444,38 @@ if optional {
 
 ```
 
-You need to use them in your `.hbs` template as helpers.
-In this example, we're calling `dart_type_convert` which is the name of our example file `.rhai` above and then define the `optionnal` value to `true` if it's a type `string` or `false` if it's any other type.
 
-```handlebars
-{{#if_equals type string}}
-{{dart_type_convert type format true}}
-{{else}}
-{{dart_type_convert type format false}}
-```
+
 
 #### Process
 
-The `process` step is where the `render` output is took from memory to files ...
+The `process` step is where the `render` output is took from memory to files or console ...
 
-This files will be write while following the instructions defined in handlebars template between `### FILE` and `### /FILE`.
-For example, you use it to define your filename as well at the begenning of the process and start writing on this file as we did in the example.
-```handlebars
-{{set "fileName" (snake_case (global_parameter "apiName"))}}
+Files will written by following the instructions defined in handlebars template between `### FILE` and `### /FILE`.
 
-### FILE {{get "fileName"}}.generated.rest
-...
-### /FILE
+Some very simple example here :
+
+```yaml
+# source.yaml
+fileName: test
 ```
-
-## Helpers
-
-The defaults handlebars helpers (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `and`, `or`, `not` ...) are provided by the rust handlebars implementation : https://docs.rs/handlebars/latest/handlebars/#built-in-helpers
-
-Other handlebars helpers are provided by the `handlebars_misc_helpers` crate : https://github.com/davidB/handlebars_misc_helpers
-
-Some more helpers are added by `this project` and are documented [here](https://docs.rs/codegenr/latest/codegenr/helpers/index.html).
-
-Finally you can add your own custom helpers at runtime using the [rhai embedded scripting language](https://rhai.rs/)
+```handlebars
+{{! template.hbs }}
+### FILE {{fileName}}.txt 
+Hello
+### /FILE
+### CONSOLE 
+World !
+### /CONSOLE
+```
+`shell output`
+```sh
+World !
+```
+`text.txt`
+```txt
+Hello
+```
 
 ## Contribute
 
