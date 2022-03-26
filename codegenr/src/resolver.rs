@@ -545,7 +545,7 @@ mod tests {
     
     let expected_document_path =
     if cfg!(windows) && !expected_is_nested {
-      DocumentPath::parse(expected_document_path.replace("/","\\").as_str()).expect("?")
+      DocumentPath::parse(expected_document_path.replace('/',"\\").as_str()).expect("?")
     } else {
       DocumentPath::parse(expected_document_path).expect("?")
     };

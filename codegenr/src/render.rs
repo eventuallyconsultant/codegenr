@@ -151,9 +151,8 @@ mod tests {
   fn get_templates_from_directory_test() -> Result<(), anyhow::Error> {
     let mut templates = get_templates_from_directory("./_samples/render/templates")?;
     templates.sort_by_key(|t| t.file_path.clone());
-    let expected: Vec<Template>;
-    if cfg!(windows) {
-      expected = vec![
+    let expected = if cfg!(windows) {
+      vec![
         Template::new(
           TemplateType::Partial,
           "_other_partial.hbs",
@@ -163,9 +162,9 @@ mod tests {
         Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates\\sub\\_plop.hbs"),
         Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates\\sub\\plop.hbs"),
         Template::new(TemplateType::Main, "test.hbs", "./_samples/render/templates\\test.hbs"),
-      ];
+      ]
     } else {
-      expected = vec![
+      vec![
         Template::new(
           TemplateType::Partial,
           "_other_partial.hbs",
@@ -175,8 +174,8 @@ mod tests {
         Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates/sub/_plop.hbs"),
         Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
         Template::new(TemplateType::Main, "test.hbs", "./_samples/render/templates/test.hbs"),
-      ];
-    }
+      ]
+    };
 
     // dbg!(&templates, &expected);
     assert_eq!(templates, expected);
