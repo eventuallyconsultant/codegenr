@@ -27,7 +27,7 @@ pub enum ProcessorError {
   ClosingTagFound(String, usize, String),
   #[error("Missing openning tag for `{0}` instruction. Line {1}: `{2}`.")]
   MissingOpeningTag(String, usize, String),
-  #[error("`{0}` instruction needs one '<{}>' parameter.")]
+  #[error("`{0}` instruction needs one '<{1}>' parameter.")]
   InstructionParameterMissing(&'static str, &'static str),
   #[error("Error converting PathBuf to str.")]
   PathBufToStrConvert,

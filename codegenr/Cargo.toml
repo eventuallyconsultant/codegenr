@@ -1,6 +1,6 @@
 [package]
 name = "codegenr"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 authors = ["Jérôme Rx & contributors <jerome@eventuallyconsultant.com>"]
 description = "Fast json/yaml/openapi code generator based on handlebars templating."
