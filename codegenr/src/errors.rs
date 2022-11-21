@@ -1,6 +1,6 @@
 use crate::{
-  custom::CustomError, helpers::HelpersError, loader::LoaderError, processor::ProcessorError, render::RenderError, resolver::ResolverError,
-  SaverError,
+  custom::CustomError, helpers::HelpersError, loaders::LoaderError, processor::ProcessorError, render::RenderError,
+  resolver::ResolverError, SaverError,
 };
 use thiserror::Error;
 

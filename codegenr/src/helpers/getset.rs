@@ -152,17 +152,17 @@ impl HelperDef for WithSetHelper {
 /// );
 ///```
 /// see [`GetHelper`] for more examples
-pub struct IfGetHelper {
+pub struct IfSetHelper {
   values: Arc<RwLock<HashMap<String, Value>>>,
 }
 
-impl IfGetHelper {
+impl IfSetHelper {
   pub fn new(values: &Arc<RwLock<HashMap<String, Value>>>) -> Self {
     Self { values: values.clone() }
   }
 }
 
-impl HelperDef for IfGetHelper {
+impl HelperDef for IfSetHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
     h: &handlebars::Helper<'reg, 'rc>,

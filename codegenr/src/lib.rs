@@ -7,7 +7,7 @@ pub mod custom;
 pub mod errors;
 pub(crate) mod filesystem;
 pub mod helpers;
-pub mod loader;
+pub mod loaders;
 #[cfg(feature = "bin")]
 pub mod opt;
 pub mod processor;
@@ -20,8 +20,8 @@ use thiserror::Error;
 
 type OptionsMap = HashMap<String, Options>;
 
-type OriginalDocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
-type ResolvedDocumentsHash = HashMap<loader::DocumentPath, Rc<Value>>;
+type OriginalDocumentsHash = HashMap<loaders::DocumentPath, Rc<Value>>;
+type ResolvedDocumentsHash = HashMap<loaders::DocumentPath, Rc<Value>>;
 type HandlebarsHash<'a> = HashMap<HandlebarsReusableConf, (String, Handlebars<'a>)>;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -75,7 +75,7 @@ fn run_codegenr(
   resolved_cache: &mut ResolvedDocumentsHash,
   reusables: &mut HandlebarsHash,
 ) -> Result<(), errors::CodegenrError> {
-  let document = loader::DocumentPath::parse(&options.source)?;
+  let document = loaders::DocumentPath::parse(&options.source)?;
   let json = resolver::resolve_refs(document, original_cache, resolved_cache)?;
 
   if options.intermediate.is_some() {
@@ -96,13 +96,16 @@ fn run_codegenr(
       let templates = render::TemplateCollection::from_list(all_templates).unwrap(); //?;
 
       let mut handlebars = Handlebars::new();
+      helpers::handlebars_stateless_setup(&mut handlebars);
+
       templates.setup_handlebars(&mut handlebars).unwrap(); // todo?;
       custom::handlebars_setup(&mut handlebars, &conf.custom_helpers).unwrap(); //?;
       (templates.main_template_name().to_owned(), handlebars)
     })
     .clone();
 
-  helpers::handlebars_setup(&mut handlebars, options.global_parameters);
+  helpers::handlebars_statefull_setup(&mut handlebars, options.global_parameters);
+  helpers::handlebars_misc_setup(&mut handlebars);
 
   let rendered = handlebars.render(&main_template_name, &(*json))?;
 

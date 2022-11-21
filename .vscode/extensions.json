@@ -15,7 +15,8 @@
     "ms-vsliveshare.vsliveshare",
     "shd101wyy.markdown-preview-enhanced",
     "usernamehw.errorlens",
-    "rhaiscript.vscode-rhai"
+    "rhaiscript.vscode-rhai",
+    "graphql.vscode-graphql"
   ],
   // List of extensions recommended by VS Code that should not be recommended for users of this workspace.
   "unwantedRecommendations": [
