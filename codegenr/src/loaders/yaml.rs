@@ -6,10 +6,14 @@ impl DocumentLoader for YamlLoader {
   type Error = serde_yaml::Error;
   fn json_from_str(content: &str) -> Result<Value, Self::Error> {
     serde_yaml::from_str(content)
+    // let obj: serde_yaml::Value = serde_yaml::from_str(content)?;
+    // Ok(yaml_to_json(obj).unwrap())
+    // Ok(Value::Object(obj))
   }
 }
 
 // fn yaml_to_json(yaml: serde_yaml::Value) -> Result<Value, LoaderError> {
+//   use serde_json::Map;
 //   use serde_yaml::Value::*;
 //   Ok(match yaml {
 //     Null => Value::Null,
@@ -28,6 +32,7 @@ impl DocumentLoader for YamlLoader {
 //       }
 //       Value::Object(json)
 //     }
+//     Tagged(_) => return Err(LoaderError::YamlToJsonError("Tags are not supported yet.")),
 //   })
 // }
 
