@@ -49,14 +49,32 @@ pub struct Options {
   pub global_parameters: HashMap<String, serde_json::Value>,
 }
 
+#[derive(Debug, Default)]
+pub struct GraphVisitor {
+  // petgraph hidden here
+}
+
+impl GraphVisitor {
+  pub fn declare_node(&mut self, node_name: &str) {
+    todo!()
+  }
+
+  pub fn declare_edge(&mut self, from_node_name: &str, to_node_name: &str) {
+    todo!()
+  }
+}
+
 #[::tracing::instrument(level = "trace")]
 pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), errors::CodegenrError> {
+  // create the memory graph => and pass it through all `run_codegenr` calls
+  let mut graph = Default::default();
+
   let mut original_cache = Default::default();
   let mut resolved_cache = Default::default();
   let mut reusables = Default::default();
   for (name, options) in options_map {
     info!("Running code generation section `{}`", name);
-    if let Err(e) = run_codegenr(options, &mut original_cache, &mut resolved_cache, &mut reusables) {
+    if let Err(e) = run_codegenr(options, &mut graph, &mut original_cache, &mut resolved_cache, &mut reusables) {
       error!("Error while executing the `{}` section: `{}`.", name, e);
     }
   }
@@ -65,21 +83,27 @@ pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), errors::CodegenrE
 
 #[::tracing::instrument(level = "trace")]
 pub fn run_one_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
+  let mut graph = Default::default();
   let mut original_cache = Default::default();
   let mut resolved_cache = Default::default();
   let mut reusables = Default::default();
-  run_codegenr(options, &mut original_cache, &mut resolved_cache, &mut reusables)
+  run_codegenr(options, &mut graph, &mut original_cache, &mut resolved_cache, &mut reusables)
 }
 
 #[::tracing::instrument(level = "trace")]
 fn run_codegenr(
   options: Options,
+  graph: &mut GraphVisitor,
   original_cache: &mut OriginalDocumentsHash,
   resolved_cache: &mut ResolvedDocumentsHash,
   reusables: &mut HandlebarsHash,
 ) -> Result<(), errors::CodegenrError> {
   let document = loaders::DocumentPath::parse(&options.source)?;
   let json = resolver::resolve_refs(document, original_cache, resolved_cache)?;
+
+  // graph : ref_used_file.yaml -> source_file.yaml
+
+  // graph.declare_node(todo!("source_file_name, perhaps all resolved filenames?"));
 
   if options.intermediate.is_some() {
     save_intermediate(&options.intermediate, "resolved.json", &format!("{:#}", json))?;
@@ -110,11 +134,17 @@ fn run_codegenr(
   helpers::handlebars_statefull_setup(&mut handlebars, options.global_parameters);
   helpers::handlebars_misc_setup(&mut handlebars);
 
+  // graph :  source_file.yaml -> template.hhbs
+
   let rendered = handlebars.render(&main_template_name, &(*json))?;
 
   save_intermediate(&options.intermediate, "rendered.txt", &rendered)?;
 
+  // graph :  template.hhbs -> my_first_api.generated.rest
+  // graph :  template.hhbs -> count.generated.txt
+
   processor::process(&rendered, options.output)?;
+
   Ok(())
 }
 
