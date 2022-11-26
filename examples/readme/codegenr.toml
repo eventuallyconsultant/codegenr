@@ -1,0 +1,7 @@
+[api_section]
+source = "specs/some_openapi_file.yaml"
+templates = [ "templates/rest-tests" ]
+output = "./generated/rest-calls"
+custom_helpers = [ "helpers" ]
+intermediate = "debug"
+global_parameters =  { apiName = "MyFirstApi", apiRoot = "/v1/api" }

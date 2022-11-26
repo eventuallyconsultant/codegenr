@@ -252,13 +252,13 @@ for more information about the handlebar syntax : https://handlebarsjs.com/guide
 ```handlebars
 {{!
 In the following example, here is what the render will do :
-It will define the variable `fileName` using the `snake_case` helper
+It will define the variable `fileName` using the `to_snake_case` helper
 and the `global parameter` named `apiName` which is "MyFirstApi" as 
 we defined it in our example.
 
 So the value set in `fileName` will be "my_first_api"
 }}
-{{set "fileName" (snake_case (global_parameter "apiName"))}}
+{{set "fileName" (to_snake_case (global_parameter "apiName"))}}
 
 {{!
 Then it will reuse the `fileName` variable to output an instruction writing to a file.

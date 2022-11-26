@@ -1,0 +1,21 @@
+openapi: 3.0.3
+info:
+  title: Example openapi
+  description: "Openapi specifications"
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /me:
+    get:
+      tags:
+        - user
+      summary: Get current users informations
+      operationId: get_current_user
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "other.yaml#/components/schemas/GetMeResponse"
