@@ -52,13 +52,13 @@ flowchart LR
 
 To generate your files, you need to define these parameters :
 
-- `[section_name]` : A unique name reprensting each section
+- `[section_name]` : A unique name representing each section
 - `source` : The file.yaml with the data you want to use for the generation
 - `templates` : the folders containing handlebar templates (`.hbs`) you're using. Only one file in those folders must not be prefixed by `_` and then is considered as the `main` template. The other ones are prefixed like `_partial.hbs` are considered `partial` templates.
 - `output` : The `root folder` where the files will be generated. All files output path write will be computed from this root.
 - `custom_helpers` : A place you can put `.rhai` file, each file is loaded as a custom helper, usable from the `.hbs` templates
-- `intermediate` : (Optionnal) if set, `codegenr` will output intermediate files for debug purpose
-- `global_parameters` : (Optionnal) Some values you want to use with the `global_parameter` helper.
+- `intermediate` : (Optional) if set, `codegenr` will output intermediate files for debug purpose
+- `global_parameters` : (Optional) Some values you want to use with the `global_parameter` helper.
 
 ##### Here is an example of a section in the `codegenr.toml`.
 
