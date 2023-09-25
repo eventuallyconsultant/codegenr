@@ -78,6 +78,8 @@ impl DocumentPath {
       FormatHint::Json
     } else if s.ends_with(".yaml") || s.ends_with(".yml") {
       FormatHint::Yaml
+    } else if s.ends_with(".toml") {
+      FormatHint::Toml
     } else if s.ends_with(".graphql") || s.ends_with(".gql") {
       FormatHint::Graphql
     } else {
@@ -85,6 +87,7 @@ impl DocumentPath {
     }
   }
 
+  #[allow(clippy::result_large_err)]
   pub fn load_raw(&self) -> Result<Value, LoaderError> {
     let hint = self.guess_format();
     match self {

@@ -6,6 +6,7 @@ pub mod document_path;
 pub use document_path::*;
 pub mod graphql;
 pub mod json;
+pub mod toml;
 pub mod yaml;
 
 pub trait DocumentLoader {
@@ -46,6 +47,7 @@ pub enum LoaderError {
   DeserialisationError {
     json_error: serde_json::Error,
     yaml_error: serde_yaml::Error,
+    toml_error: ::toml::de::Error,
     graphql_error: graphql_parser::schema::ParseError,
   },
   #[error("Yaml error: `{0}`.")]
@@ -64,53 +66,69 @@ pub(crate) enum FormatHint {
   Json,
   /// The content should be yaml
   Yaml,
+  /// The content should be toml
+  Toml,
   /// The content should be a graphql schema
   Graphql,
   /// We have no f.....g idea
   NoIdea,
 }
 
+#[allow(clippy::result_large_err)]
 fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, LoaderError> {
   use FormatHint::*;
   match hint {
-    FormatHint::Json | FormatHint::NoIdea => try_loaders(content, &[Json, Yaml, Graphql]),
-    FormatHint::Yaml => try_loaders(content, &[Yaml, Json, Graphql]),
-    FormatHint::Graphql => try_loaders(content, &[Graphql, Json, Yaml]),
+    FormatHint::Json | FormatHint::NoIdea => try_loaders(content, &[Json, Yaml, Toml, Graphql]),
+    FormatHint::Yaml => try_loaders(content, &[Yaml, Json, Toml, Graphql]),
+    FormatHint::Toml => try_loaders(content, &[Toml, Json, Yaml, Graphql]),
+    FormatHint::Graphql => try_loaders(content, &[Graphql, Json, Yaml, Toml]),
   }
 }
 
+#[allow(clippy::result_large_err)]
 fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderError> {
   let mut json_error: Option<serde_json::Error> = None;
   let mut yaml_error: Option<serde_yaml::Error> = None;
+  let mut toml_error: Option<::toml::de::Error> = None;
   let mut graphql_error: Option<graphql_parser::schema::ParseError> = None;
 
   for hint in formats {
-    if *hint == FormatHint::Json {
-      json_error = Some(match json::JsonLoader::json_from_str(content) {
-        Ok(json) => return Ok(json),
-        Err(e) => e,
-      });
-    }
-    if *hint == FormatHint::Yaml {
-      yaml_error = Some(match yaml::YamlLoader::json_from_str(content) {
-        Ok(json) => return Ok(json),
-        Err(e) => e,
-      });
-    }
-    if *hint == FormatHint::Graphql {
-      graphql_error = Some(match graphql::GraphqlLoader::json_from_str(content) {
-        Ok(graphql) => return Ok(graphql),
-        Err(e) => match e {
-          LoaderError::GraphqlError(e) => e,
-          _ => return Err(e), // this one should not happen
-        },
-      })
+    match *hint {
+      FormatHint::Json => {
+        json_error = Some(match json::JsonLoader::json_from_str(content) {
+          Ok(json) => return Ok(json),
+          Err(e) => e,
+        });
+      }
+      FormatHint::Yaml => {
+        yaml_error = Some(match yaml::YamlLoader::json_from_str(content) {
+          Ok(json) => return Ok(json),
+          Err(e) => e,
+        });
+      }
+      FormatHint::Toml => {
+        toml_error = Some(match toml::TomlLoader::json_from_str(content) {
+          Ok(json) => return Ok(json),
+          Err(e) => e,
+        });
+      }
+      FormatHint::Graphql => {
+        graphql_error = Some(match graphql::GraphqlLoader::json_from_str(content) {
+          Ok(json) => return Ok(json),
+          Err(e) => match e {
+            LoaderError::GraphqlError(e) => e,
+            _ => return Err(e), // this one should not happen
+          },
+        })
+      }
+      FormatHint::NoIdea => todo!(),
     }
   }
 
   Err(LoaderError::DeserialisationError {
     json_error: json_error.ok_or(LoaderError::DidNotTryAllFormats)?,
     yaml_error: yaml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
+    toml_error: toml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
     graphql_error: graphql_error.ok_or(LoaderError::DidNotTryAllFormats)?,
   })
 }
@@ -158,18 +176,21 @@ mod tests {
     }
   }
 
+  #[allow(clippy::result_large_err)]
   #[test]
   fn read_json_file_test() -> Result<(), LoaderError> {
     let _result = DocumentPath::parse("./_samples/resolver/Merge1_rest.json")?.load_raw()?;
     Ok(())
   }
 
+  #[allow(clippy::result_large_err)]
   #[test]
   fn read_yaml_file_test() -> Result<(), LoaderError> {
     let _result = DocumentPath::parse("./_samples/resolver/Merge1.yaml")?.load_raw()?;
     Ok(())
   }
 
+  #[allow(clippy::result_large_err)]
   #[test]
   fn read_graph_file_test() -> Result<(), LoaderError> {
     let result = DocumentPath::parse("./_samples/graphql/schema.graphql")?.load_raw()?;
@@ -177,6 +198,7 @@ mod tests {
     Ok(())
   }
 
+  #[allow(clippy::result_large_err)]
   #[test]
   #[ignore]
   fn read_beezup_openapi() -> Result<(), LoaderError> {
