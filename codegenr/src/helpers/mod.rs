@@ -43,6 +43,8 @@ pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(LOWERCASE_FIRST_LETTER_HELPER, Box::new(LowercaseFirstLetterHelper));
   handlebars.register_helper(SPLIT_HELPER, Box::new(SplitHelper));
   handlebars.register_helper(START_WITH_HELPER, Box::new(StartWithHelper));
+  handlebars.register_helper(END_WITH_HELPER, Box::new(EndWithHelper));
+  handlebars.register_helper(CONTAINS_HELPER, Box::new(ContainsHelper));
   handlebars.register_helper(WITH_MATCHING_HELPER, Box::new(WithMatchingHelper));
   handlebars.register_helper(TRIM_BLOCK_HELPER, Box::new(TrimBlockHelper));
   handlebars.register_helper(TRIM_BLOCK_START_HELPER, Box::new(TrimBlockStartHelper));
@@ -58,7 +60,7 @@ pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
 }
 
 pub fn handlebars_statefull_setup(handlebars: &mut Handlebars, global_params: HashMap<String, Value>) {
-  handlebars.register_helper(DISTINCTIVE, Box::new(DistinctiveHelper::default()));
+  handlebars.register_helper(DISTINCTIVE, Box::<DistinctiveHelper>::default());
 
   let map = Default::default();
   handlebars.register_helper(GET_HELPER, Box::new(GetHelper::new(&map)));

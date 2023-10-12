@@ -8,6 +8,8 @@ pub const TRIM_CHAR_HELPER: &str = "trim_char";
 pub const TRIM_CHAR_START_HELPER: &str = "trim_char_start";
 pub const TRIM_CHAR_END_HELPER: &str = "trim_char_end";
 pub const START_WITH_HELPER: &str = "start_with";
+pub const END_WITH_HELPER: &str = "end_with";
+pub const CONTAINS_HELPER: &str = "contains";
 pub const WITH_MATCHING_HELPER: &str = "with_matching";
 pub const EACH_WITH_SORT_HELPER: &str = "each_with_sort";
 pub const TRIM_BLOCK_HELPER: &str = "trim_block";
@@ -85,8 +87,7 @@ impl HelperDef for SplitHelper {
     let splitter = h
       .get_param_as_str(1)
       .map(|s| s.to_string())
-      .map(|s| s.chars().next())
-      .flatten()
+      .and_then(|s| s.chars().next())
       .unwrap_or('/');
 
     let values = to_split
@@ -164,7 +165,7 @@ impl HelperDef for TrimCharEndHelper {
   }
 }
 
-/// Determines whether the beginning of the second argumentmatches the second one
+/// Determines whether the beginning of the first argument matches the first one
 ///```
 /// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;
@@ -193,6 +194,82 @@ impl HelperDef for StartWithHelper {
     let with = h.get_param_as_str_or_fail(1, START_WITH_HELPER)?;
 
     let temp = if with.starts_with(start) { h.template() } else { h.inverse() };
+    if let Some(t) = temp {
+      t.render(handle, ctx, render_ctx, out)?
+    };
+    Ok(())
+  }
+}
+
+/// Determines whether the ending of the second argument matches the first one
+///```
+/// # use codegenr_lib::helpers::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({"one": "test-one", "two": "one-test"}), r#"{{#end_with "test" one}}OK{{else}}NOK{{/end_with}}"#),
+///   "NOK"
+/// );
+/// assert_eq!(
+///   exec_template(json!({"one": "test-one", "two": "one-test"}), r#"{{#end_with "test" two}}OK{{else}}NOK{{/end_with}}"#),
+///   "OK"
+/// );
+///```
+pub struct EndWithHelper;
+
+impl HelperDef for EndWithHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    h.ensure_arguments_count(2, END_WITH_HELPER)?;
+    let end = h.get_param_as_str_or_fail(0, END_WITH_HELPER)?;
+    let with = h.get_param_as_str_or_fail(1, END_WITH_HELPER)?;
+
+    let temp = if with.ends_with(end) { h.template() } else { h.inverse() };
+    if let Some(t) = temp {
+      t.render(handle, ctx, render_ctx, out)?
+    };
+    Ok(())
+  }
+}
+
+/// Determines whether the second parameter contains the first one
+///```
+/// # use codegenr_lib::helpers::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({"one": "test-one", "two": "one-test"}), r#"{{#contains "test" one}}OK{{else}}{{/contains}}"#),
+///   "OK"
+/// );
+/// assert_eq!(
+///   exec_template(json!({"one": "test-one", "two": "one-test"}), r#"{{#contains "test" two}}OK{{else}}NOK{{/contains}}"#),
+///   "OK"
+/// );
+/// assert_eq!(
+///   exec_template(json!({"one": "test-one", "two": "one-test"}), r#"{{#contains "plop" one}}OK{{else}}NOK{{/contains}}"#),
+///   "NOK"
+/// );
+///```
+pub struct ContainsHelper;
+
+impl HelperDef for ContainsHelper {
+  fn call<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'reg, 'rc>,
+    handle: &'reg handlebars::Handlebars<'reg>,
+    ctx: &'rc handlebars::Context,
+    render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
+    out: &mut dyn handlebars::Output,
+  ) -> handlebars::HelperResult {
+    h.ensure_arguments_count(2, END_WITH_HELPER)?;
+    let start = h.get_param_as_str_or_fail(0, END_WITH_HELPER)?;
+    let with = h.get_param_as_str_or_fail(1, END_WITH_HELPER)?;
+
+    let temp = if with.contains(start) { h.template() } else { h.inverse() };
     if let Some(t) = temp {
       t.render(handle, ctx, render_ctx, out)?
     };
