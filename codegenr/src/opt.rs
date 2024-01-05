@@ -1,6 +1,6 @@
-use crate::Options;
+use crate::{Options, OptionsMap};
 use serde_json::Value;
-use std::{collections::HashMap, fs::read_to_string};
+use std::fs::read_to_string;
 use structopt::StructOpt;
 
 pub const CODEGENR_CONFIG_FILE: &str = "codegenr.toml";
@@ -85,7 +85,7 @@ fn parse_key_val(s: &str) -> Result<(String, Value), anyhow::Error> {
   ))
 }
 
-impl TryFrom<Command> for HashMap<String, Options> {
+impl TryFrom<Command> for OptionsMap {
   type Error = anyhow::Error;
 
   fn try_from(cmd: Command) -> Result<Self, Self::Error> {
@@ -98,7 +98,7 @@ impl TryFrom<Command> for HashMap<String, Options> {
             e
           )
         })?;
-        let opts: HashMap<String, Options> =
+        let opts: OptionsMap =
           toml::from_str(&config).map_err(|e| anyhow::anyhow!("Unable to deserialize `{}` config file: `{}`.", file, e))?;
         Ok(opts)
       }
@@ -118,7 +118,7 @@ impl TryFrom<Command> for HashMap<String, Options> {
           custom_helpers,
           global_parameters: global_parameters.into_iter().collect(),
         };
-        let map = HashMap::<String, Options>::from_iter(std::iter::once(("command_line".into(), options)));
+        let map = OptionsMap::from_iter(std::iter::once(("command_line".into(), options)));
         Ok(map)
       }
     }

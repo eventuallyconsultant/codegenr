@@ -1,6 +1,9 @@
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::HashMap, rc::Rc};
+use std::{
+  collections::{BTreeMap, HashMap},
+  rc::Rc,
+};
 use tracing::{error, info};
 
 pub mod custom;
@@ -18,7 +21,7 @@ use filesystem::save_file_content;
 use handlebars::Handlebars;
 use thiserror::Error;
 
-type OptionsMap = HashMap<String, Options>;
+pub type OptionsMap = BTreeMap<String, Options>;
 
 type OriginalDocumentsHash = HashMap<loaders::DocumentPath, Rc<Value>>;
 type ResolvedDocumentsHash = HashMap<loaders::DocumentPath, Rc<Value>>;

@@ -17,6 +17,8 @@ static INSTRUCTION_LINE_REGEX: once_cell::sync::Lazy<regex::Regex> =
 pub enum ProcessorError {
   #[error("Io Error: `{0}`.")]
   Io(#[from] std::io::Error),
+  #[error("Fmt Error: `{0}`.")]
+  Fmt(#[from] std::fmt::Error),
   #[error("Pattern Error: {0}.")]
   Pattern(#[from] PatternError),
   #[error("Instruction name not found on line {0}: `{1}`.")]

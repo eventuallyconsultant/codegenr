@@ -1,6 +1,6 @@
 use super::*;
-use crate::filesystem::create_file;
-use std::{cell::RefCell, fs::File, io::Write};
+use crate::filesystem::{create_file_from_path, make_path_from_root};
+use std::{cell::RefCell, fmt::Write, path::PathBuf};
 
 pub const FILE: &str = "FILE";
 
@@ -30,22 +30,43 @@ impl Instruction for FileInstruction {
 }
 
 pub struct FileLineHandler {
-  file: RefCell<File>,
+  file_path: PathBuf,
+  buffer: RefCell<String>,
 }
 
 impl FileLineHandler {
   fn new(output_folder: &str, write_file_path: &str) -> Result<Self, ProcessorError> {
-    let (file, _) = create_file(output_folder, write_file_path)?;
-    Ok(Self { file: RefCell::new(file) })
+    let file_path = make_path_from_root(output_folder, write_file_path);
+    Ok(Self {
+      file_path,
+      buffer: RefCell::new(Default::default()),
+    })
   }
 }
 
 impl InstructionLineHandler for FileLineHandler {
   fn handle_line(&self, line: &str) -> Result<(), ProcessorError> {
-    let mut f = self.file.borrow_mut();
-    f.write_all(line.as_bytes())?;
-    f.write_all("\n".as_bytes())?;
-    Ok(())
+    let f = &mut *self.buffer.borrow_mut();
+    Ok(writeln!(f, "{line}")?)
+  }
+}
+
+impl Drop for FileLineHandler {
+  fn drop(&mut self) {
+    let buffer = self.buffer.borrow();
+    if let Ok(content) = std::fs::read_to_string(&self.file_path) {
+      if content == buffer.as_str() {
+        tracing::warn!("File content is the same, not writing it again : {}", self.file_path.display());
+        return;
+      }
+    }
+
+    if let Ok(mut file) = create_file_from_path(&self.file_path).map_err(|e| {
+      tracing::error!("Error creating file: {}", e);
+      e
+    }) {
+      let _ignored = std::io::Write::write_all(&mut file, buffer.as_bytes());
+    }
   }
 }
 

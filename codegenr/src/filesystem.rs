@@ -9,13 +9,18 @@ pub fn make_path_from_root(root_dir: impl AsRef<Path>, relative_path: &str) -> P
   root_dir.as_ref().join(relative_path)
 }
 
+#[allow(dead_code)]
 pub fn create_file(root_dir: impl AsRef<Path>, relative_path: &str) -> Result<(File, PathBuf), std::io::Error> {
   let file_path = make_path_from_root(root_dir, relative_path);
+  Ok((create_file_from_path(&file_path)?, file_path))
+}
+
+pub fn create_file_from_path(file_path: &PathBuf) -> Result<File, std::io::Error> {
   if let Some(dir) = file_path.parent() {
     create_dir_all(dir)?;
   }
-  let f = File::create(&file_path)?;
-  Ok((f, file_path))
+  let f = File::create(file_path)?;
+  Ok(f)
 }
 
 #[allow(dead_code)]

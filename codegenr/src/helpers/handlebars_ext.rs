@@ -78,7 +78,7 @@ impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
   }
 
   fn get_param_as_array(&self, index: usize) -> Option<&Vec<Value>> {
-    self.get_param_as_json(index).map(|value| value.as_array()).flatten()
+    self.get_param_as_json(index).and_then(|value| value.as_array())
   }
 
   fn get_param_as_array_or_fail(&self, index: usize, helper_name: &str) -> Result<&Vec<Value>, RenderError> {
