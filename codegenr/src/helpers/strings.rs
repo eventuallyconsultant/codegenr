@@ -265,9 +265,9 @@ impl HelperDef for ContainsHelper {
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
     out: &mut dyn handlebars::Output,
   ) -> handlebars::HelperResult {
-    h.ensure_arguments_count(2, END_WITH_HELPER)?;
-    let start = h.get_param_as_str_or_fail(0, END_WITH_HELPER)?;
-    let with = h.get_param_as_str_or_fail(1, END_WITH_HELPER)?;
+    h.ensure_arguments_count(2, CONTAINS_HELPER)?;
+    let start = h.get_param_as_str_or_fail(0, CONTAINS_HELPER)?;
+    let with = h.get_param_as_str_or_fail(1, CONTAINS_HELPER)?;
 
     let temp = if with.contains(start) { h.template() } else { h.inverse() };
     if let Some(t) = temp {
