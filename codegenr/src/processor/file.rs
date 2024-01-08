@@ -73,7 +73,7 @@ impl Drop for FileLineHandler {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::filesystem::make_path_from_root;
+  use crate::filesystem::create_file;
   use tempdir::TempDir;
 
   #[test]
@@ -81,7 +81,7 @@ mod tests {
     let tmp = TempDir::new("FILE_tests")?;
     let instruction = FileInstruction::new(tmp.path().to_string_lossy().into());
     let handler = instruction.start(vec!["sub/plop.txt".into()])?;
-    let should_exists_path = make_path_from_root(tmp.path(), "sub/plop.txt");
+    let (_file, should_exists_path) = create_file(tmp.path(), "sub/plop.txt")?;
     assert!(should_exists_path.exists());
     handler.handle_line("hello ...")?;
     assert!(should_exists_path.exists());

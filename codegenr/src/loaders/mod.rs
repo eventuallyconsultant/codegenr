@@ -7,6 +7,7 @@ pub use document_path::*;
 pub mod graphql;
 pub mod json;
 pub mod toml;
+pub mod xml;
 pub mod yaml;
 
 pub trait DocumentLoader {
@@ -48,12 +49,15 @@ pub enum LoaderError {
     json_error: serde_json::Error,
     yaml_error: serde_yaml::Error,
     toml_error: ::toml::de::Error,
+    xml_error: minidom::Error,
     graphql_error: graphql_parser::schema::ParseError,
   },
   #[error("Yaml error: `{0}`.")]
   YamlError(#[from] serde_yaml::Error),
   #[error("Json error: `{0}`.")]
   JsonError(#[from] serde_json::Error),
+  #[error("Xml error: `{0}`.")]
+  XmlError(#[from] minidom::Error),
   #[error("Graphql error: `{0}`.")]
   GraphqlError(#[from] graphql_parser::schema::ParseError),
   #[error("Did not try all the file loaders.")]
@@ -68,6 +72,8 @@ pub(crate) enum FormatHint {
   Yaml,
   /// The content should be toml
   Toml,
+  /// The content should be xml
+  Xml,
   /// The content should be a graphql schema
   Graphql,
   /// We have no f.....g idea
@@ -79,9 +85,10 @@ fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, LoaderErro
   use FormatHint::*;
   match hint {
     FormatHint::Json | FormatHint::NoIdea => try_loaders(content, &[Json, Yaml, Toml, Graphql]),
-    FormatHint::Yaml => try_loaders(content, &[Yaml, Json, Toml, Graphql]),
-    FormatHint::Toml => try_loaders(content, &[Toml, Json, Yaml, Graphql]),
-    FormatHint::Graphql => try_loaders(content, &[Graphql, Json, Yaml, Toml]),
+    FormatHint::Yaml => try_loaders(content, &[Yaml, Json, Toml, Xml, Graphql]),
+    FormatHint::Toml => try_loaders(content, &[Toml, Json, Yaml, Xml, Graphql]),
+    FormatHint::Xml => try_loaders(content, &[Xml, Json, Yaml, Toml, Graphql]),
+    FormatHint::Graphql => try_loaders(content, &[Graphql, Json, Yaml, Toml, Xml]),
   }
 }
 
@@ -90,6 +97,7 @@ fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderErr
   let mut json_error: Option<serde_json::Error> = None;
   let mut yaml_error: Option<serde_yaml::Error> = None;
   let mut toml_error: Option<::toml::de::Error> = None;
+  let mut xml_error: Option<::minidom::Error> = None;
   let mut graphql_error: Option<graphql_parser::schema::ParseError> = None;
 
   for hint in formats {
@@ -112,6 +120,12 @@ fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderErr
           Err(e) => e,
         });
       }
+      FormatHint::Xml => {
+        xml_error = Some(match xml::XmlLoader::json_from_str(content) {
+          Ok(json) => return Ok(json),
+          Err(e) => e,
+        });
+      }
       FormatHint::Graphql => {
         graphql_error = Some(match graphql::GraphqlLoader::json_from_str(content) {
           Ok(json) => return Ok(json),
@@ -129,6 +143,7 @@ fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderErr
     json_error: json_error.ok_or(LoaderError::DidNotTryAllFormats)?,
     yaml_error: yaml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
     toml_error: toml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
+    xml_error: xml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
     graphql_error: graphql_error.ok_or(LoaderError::DidNotTryAllFormats)?,
   })
 }
@@ -195,6 +210,14 @@ mod tests {
   fn read_graph_file_test() -> Result<(), LoaderError> {
     let result = DocumentPath::parse("./_samples/graphql/schema.graphql")?.load_raw()?;
     println!("{}", serde_json::to_string_pretty(&result)?);
+    Ok(())
+  }
+
+  #[allow(clippy::result_large_err)]
+  #[test]
+  fn read_xml_file_test() -> Result<(), LoaderError> {
+    let _result = DocumentPath::parse("./_samples/resolver/plant_catalog.xml")?.load_raw()?;
+    dbg!(_result);
     Ok(())
   }
 

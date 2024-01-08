@@ -82,6 +82,8 @@ impl DocumentPath {
       FormatHint::Toml
     } else if s.ends_with(".graphql") || s.ends_with(".gql") {
       FormatHint::Graphql
+    } else if s.ends_with(".xml") || s.ends_with(".xaml") || s.ends_with(".wsdl") || s.ends_with(".xsd") || s.ends_with(".xul") {
+      FormatHint::Xml
     } else {
       FormatHint::NoIdea
     }
