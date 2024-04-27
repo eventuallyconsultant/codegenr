@@ -20,7 +20,7 @@ impl Instruction for FileInstruction {
   }
   fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, ProcessorError> {
     let file_path = params
-      .get(0)
+      .first()
       .ok_or(ProcessorError::InstructionParameterMissing(FILE, "file_name"))?;
     Ok(Box::new(FileLineHandler::new(&self.output_folder, file_path)?) as Box<dyn InstructionLineHandler>)
   }

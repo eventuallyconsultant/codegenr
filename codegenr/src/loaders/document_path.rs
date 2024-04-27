@@ -74,6 +74,7 @@ impl DocumentPath {
       DocumentPath::FileName(s) => s,
       DocumentPath::None => return FormatHint::NoIdea,
     };
+    let s = s.to_lowercase();
     if s.ends_with(".json") {
       FormatHint::Json
     } else if s.ends_with(".yaml") || s.ends_with(".yml") {
@@ -84,6 +85,8 @@ impl DocumentPath {
       FormatHint::Graphql
     } else if s.ends_with(".xml") || s.ends_with(".xaml") || s.ends_with(".wsdl") || s.ends_with(".xsd") || s.ends_with(".xul") {
       FormatHint::Xml
+    } else if s.ends_with(".csv") {
+      FormatHint::Csv
     } else {
       FormatHint::NoIdea
     }

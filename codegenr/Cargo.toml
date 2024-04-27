@@ -1,6 +1,6 @@
 [package]
 name = "codegenr"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2021"
 authors = ["Jérôme Rx & contributors <jerome@eventuallyconsultant.com>"]
 description = "Fast json/yaml/openapi code generator based on handlebars templating."
@@ -35,6 +35,7 @@ structopt = { version = "0.3", optional = true }
 anyhow = { version = "1.0", optional = true }
 toml = { version = "0.8", optional = true }
 
+
 # ========================================================================================
 #                         Common dependencies
 # ========================================================================================
@@ -45,17 +46,19 @@ thiserror = "1.0"
 # File loading & path manipulations
 url = "2.4"
 path-dedot = "3.1"
-reqwest = { version = "0.11", features = ["blocking"] }
+reqwest = { version = "0.12", features = ["blocking"] }
 walkdir = "2"
 glob = "0.3"
-# Json / Yaml / OpenApi / Graphql manipulation
+
+# file formats manipulation
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_yaml = "0.8"                                              # 0.9 failing with deserializing from YAML containing more than one document is not supported on most files
 serde = "1.0"
 graphql-parser = "0.4"
 quick-xml = { version = "0.31", features = ["serialize"] }
-quickxml_to_serde = "0.5"
+quickxml_to_serde = "0.6"
 minidom = "0.12"
+csv = "1.2"
 
 # Templating
 handlebars = { version = "4.4", features = ["script_helper"] }

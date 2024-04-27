@@ -4,6 +4,7 @@ use url::Url;
 
 pub mod document_path;
 pub use document_path::*;
+pub mod csv;
 pub mod graphql;
 pub mod json;
 pub mod toml;
@@ -50,6 +51,7 @@ pub enum LoaderError {
     yaml_error: serde_yaml::Error,
     toml_error: ::toml::de::Error,
     xml_error: minidom::Error,
+    csv_error: ::csv::Error,
     graphql_error: graphql_parser::schema::ParseError,
   },
   #[error("Yaml error: `{0}`.")]
@@ -74,6 +76,8 @@ pub(crate) enum FormatHint {
   Toml,
   /// The content should be xml
   Xml,
+  /// The content should be csv
+  Csv,
   /// The content should be a graphql schema
   Graphql,
   /// We have no f.....g idea
@@ -85,9 +89,10 @@ fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, LoaderErro
   use FormatHint::*;
   match hint {
     FormatHint::Json | FormatHint::NoIdea => try_loaders(content, &[Json, Yaml, Toml, Graphql]),
-    FormatHint::Yaml => try_loaders(content, &[Yaml, Json, Toml, Xml, Graphql]),
-    FormatHint::Toml => try_loaders(content, &[Toml, Json, Yaml, Xml, Graphql]),
-    FormatHint::Xml => try_loaders(content, &[Xml, Json, Yaml, Toml, Graphql]),
+    FormatHint::Yaml => try_loaders(content, &[Yaml, Json]),
+    FormatHint::Toml => try_loaders(content, &[Toml]),
+    FormatHint::Xml => try_loaders(content, &[Xml]),
+    FormatHint::Csv => try_loaders(content, &[Csv]),
     FormatHint::Graphql => try_loaders(content, &[Graphql, Json, Yaml, Toml, Xml]),
   }
 }
@@ -98,6 +103,7 @@ fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderErr
   let mut yaml_error: Option<serde_yaml::Error> = None;
   let mut toml_error: Option<::toml::de::Error> = None;
   let mut xml_error: Option<::minidom::Error> = None;
+  let mut csv_error: Option<::csv::Error> = None;
   let mut graphql_error: Option<graphql_parser::schema::ParseError> = None;
 
   for hint in formats {
@@ -126,6 +132,12 @@ fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderErr
           Err(e) => e,
         });
       }
+      FormatHint::Csv => {
+        csv_error = Some(match csv::CsvLoader::json_from_str(content) {
+          Ok(json) => return Ok(json),
+          Err(e) => e,
+        });
+      }
       FormatHint::Graphql => {
         graphql_error = Some(match graphql::GraphqlLoader::json_from_str(content) {
           Ok(json) => return Ok(json),
@@ -144,6 +156,7 @@ fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderErr
     yaml_error: yaml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
     toml_error: toml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
     xml_error: xml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
+    csv_error: csv_error.ok_or(LoaderError::DidNotTryAllFormats)?,
     graphql_error: graphql_error.ok_or(LoaderError::DidNotTryAllFormats)?,
   })
 }
@@ -217,6 +230,14 @@ mod tests {
   #[test]
   fn read_xml_file_test() -> Result<(), LoaderError> {
     let _result = DocumentPath::parse("./_samples/resolver/plant_catalog.xml")?.load_raw()?;
+    dbg!(_result);
+    Ok(())
+  }
+
+  #[allow(clippy::result_large_err)]
+  #[test]
+  fn read_csv_file_test() -> Result<(), LoaderError> {
+    let _result = DocumentPath::parse("./_samples/username.csv")?.load_raw()?;
     dbg!(_result);
     Ok(())
   }
