@@ -497,6 +497,10 @@ In the command line you can :
 
 This tool is based on the design of a precedent one written in `C#` : [CodegenUP](https://github.com/BeezUP/dotnet-codegen).
 
+## See also
+
+- a video in french, explaining a lot on this tool : https://www.youtube.com/watch?v=G--KdojP8pc
+
 ## Roadmap :
 
 - [x] Load a yaml or json to serde::json
