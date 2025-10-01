@@ -33,7 +33,7 @@ bin = ["tracing-subscriber", "structopt", "anyhow", "toml"]
 tracing-subscriber = { version = "0.3", features = [], optional = true }
 structopt = { version = "0.3", optional = true }
 anyhow = { version = "1.0", optional = true }
-toml = { version = "0.8", optional = true }
+toml = { version = "0.9", optional = true }
 
 
 # ========================================================================================
@@ -42,7 +42,7 @@ toml = { version = "0.8", optional = true }
 # Logging
 tracing = { version = "0.1", features = ["log"] }
 # Errors
-thiserror = "1.0"
+thiserror = "2.0"
 # File loading & path manipulations
 url = "2.4"
 path-dedot = "3.1"
@@ -55,7 +55,7 @@ serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_yaml = "0.8"                                              # 0.9 failing with deserializing from YAML containing more than one document is not supported on most files
 serde = "1.0"
 graphql-parser = "0.4"
-quick-xml = { version = "0.31", features = ["serialize"] }
+quick-xml = { version = "0.38", features = ["serialize"] }
 quickxml_to_serde = "0.6"
 minidom = "0.12"
 csv = "1.2"
