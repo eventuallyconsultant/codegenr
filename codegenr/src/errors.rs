@@ -22,4 +22,6 @@ pub enum CodegenrError {
   Processing(#[from] ProcessorError),
   #[error("TemplateRender error: `{0}`.")]
   RenderTemp(#[from] handlebars::RenderError),
+  #[error("Codegen batch error: `{0}`.")]
+  Batch(String),
 }

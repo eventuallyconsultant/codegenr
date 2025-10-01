@@ -1,3 +1,4 @@
+use crate::errors::CodegenrError;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
@@ -50,15 +51,23 @@ pub struct Options {
 }
 
 #[::tracing::instrument(level = "trace")]
-pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), errors::CodegenrError> {
+pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), CodegenrError> {
   let mut original_cache = Default::default();
   let mut resolved_cache = Default::default();
   let mut reusables = Default::default();
+  let mut errors_count = 0;
   for (name, options) in options_map {
     info!("Running code generation section `{}`", name);
     if let Err(e) = run_codegenr(options, &mut original_cache, &mut resolved_cache, &mut reusables) {
       error!("Error while executing the `{}` section: `{}`.", name, e);
+      errors_count += 1;
     }
+  }
+
+  if errors_count > 0 {
+    return Err(CodegenrError::Batch(format!(
+      "{errors_count} section(s) failed during the code generation.",
+    )));
   }
   Ok(())
 }
