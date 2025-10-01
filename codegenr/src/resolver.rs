@@ -63,6 +63,7 @@ fn get_resolved_or_original(
   }
 }
 
+#[allow(clippy::result_large_err)]
 #[::tracing::instrument(level = "trace")]
 pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
   let mut resolving = json.clone();
@@ -76,6 +77,7 @@ pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
   Ok(resolving)
 }
 
+#[allow(clippy::result_large_err)]
 #[::tracing::instrument(level = "trace")]
 pub fn resolve_refs(
   document: DocumentPath,

@@ -51,6 +51,7 @@ pub struct Options {
 }
 
 #[::tracing::instrument(level = "trace")]
+#[allow(clippy::result_large_err)]
 pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), CodegenrError> {
   let mut original_cache = Default::default();
   let mut resolved_cache = Default::default();
@@ -73,6 +74,7 @@ pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), CodegenrError> {
 }
 
 #[::tracing::instrument(level = "trace")]
+#[allow(clippy::result_large_err)]
 pub fn run_one_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
   let mut original_cache = Default::default();
   let mut resolved_cache = Default::default();
@@ -80,6 +82,7 @@ pub fn run_one_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
   run_codegenr(options, &mut original_cache, &mut resolved_cache, &mut reusables)
 }
 
+#[allow(clippy::result_large_err)]
 #[::tracing::instrument(level = "trace")]
 fn run_codegenr(
   options: Options,
