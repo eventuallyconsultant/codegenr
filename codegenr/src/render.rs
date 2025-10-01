@@ -27,6 +27,7 @@ pub struct TemplateCollection {
 }
 
 impl TemplateCollection {
+  #[allow(clippy::result_large_err)]
   pub fn from_list(templates: impl IntoIterator<Item = Template>) -> Result<TemplateCollection, RenderError> {
     let mut main: Option<Template> = None;
     let mut partials = HashMap::<String, Template>::new();
@@ -56,6 +57,7 @@ impl TemplateCollection {
     Ok(Self { main, partials })
   }
 
+  #[allow(clippy::result_large_err)]
   pub fn setup_handlebars(&self, handlebars: &mut Handlebars) -> Result<(), RenderError> {
     handlebars.register_template_file(self.main.template_name(), self.main.file_path())?;
     for (_, value) in self.partials.iter() {
@@ -104,6 +106,7 @@ impl Template {
   }
 }
 
+#[allow(clippy::result_large_err)]
 pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, RenderError> {
   let mut result = vec![];
   for entry in WalkDir::new(dir_path) {
@@ -143,8 +146,7 @@ mod tests {
     let mut h = Handlebars::new();
     handlebars_stateless_setup(&mut h);
     handlebars_statefull_setup(&mut h, Default::default());
-    let result = collection.setup_handlebars(&mut h)?;
-    dbg!(result);
+    collection.setup_handlebars(&mut h)?;
     Ok(())
   }
 
@@ -181,7 +183,7 @@ mod tests {
     // dbg!(&templates, &expected);
     assert_eq!(templates, expected);
 
-    let first = templates.get(0).expect("?");
+    let first = templates.first().expect("?");
     assert_eq!(first.template_name(), "other_partial");
     Ok(())
   }

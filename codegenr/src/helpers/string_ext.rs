@@ -22,7 +22,7 @@ pub trait StringExt {
 
 impl StringExt for Option<String> {
   fn is_empty_or_whitespaces(&self) -> bool {
-    self.as_ref().map_or(true, |s| s.is_empty_or_whitespaces())
+    self.as_ref().is_none_or(|s| s.is_empty_or_whitespaces())
   }
 
   fn trim_char(&self, trimmer: Option<String>) -> String {

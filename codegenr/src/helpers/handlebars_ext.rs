@@ -102,7 +102,7 @@ impl<'reg, 'rc> HandlebarsExt for Helper<'reg, 'rc> {
   }
 
   fn get_param_as_integer(&self, index: usize) -> Option<u64> {
-    self.param(index).map(|p| p.value().as_u64()).flatten()
+    self.param(index).and_then(|p| p.value().as_u64())
   }
 }
 

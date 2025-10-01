@@ -229,7 +229,7 @@ fn get_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_nam
   let lock = values
     .read()
     .map_err(|_e| RenderError::new(format!("Could not acquire lock in `{}` helper", helper_name)))?;
-  Ok(lock.get(key).map(Clone::clone))
+  Ok(lock.get(key).cloned())
 }
 
 fn has_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_name: &str) -> Result<bool, RenderError> {

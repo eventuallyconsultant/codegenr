@@ -33,6 +33,7 @@ enum Json {
   Resolved(Rc<Value>),
 }
 
+#[allow(clippy::result_large_err)]
 fn ensure_orignal_json(doc_path: &DocumentPath, original_cache: &mut OriginalDocumentsHash) -> Result<Rc<Value>, ResolverError> {
   use std::collections::hash_map::Entry::*;
   match original_cache.entry(doc_path.clone()) {
@@ -50,6 +51,7 @@ fn get_resolved_json(doc_path: &DocumentPath, resolved_cache: &mut ResolvedDocum
   resolved_cache.get(doc_path).cloned()
 }
 
+#[allow(clippy::result_large_err)]
 fn get_resolved_or_original(
   doc_path: &DocumentPath,
   original_cache: &mut OriginalDocumentsHash,
@@ -93,6 +95,7 @@ pub fn resolve_refs(
   }
 }
 
+#[allow(clippy::result_large_err)]
 fn resolve_refs_recurse(
   current_doc: &DocumentPath,
   json: &mut Value,
@@ -158,9 +161,10 @@ fn resolve_refs_recurse(
 }
 
 fn get_ref_name(path: &str) -> String {
-  path.split(PATH_SEP).last().unwrap_or_default().to_string()
+  path.split(PATH_SEP).next_back().unwrap_or_default().to_string()
 }
 
+#[allow(clippy::result_large_err)]
 fn fetch_reference_value(json: &Value, path: &Option<String>) -> Result<Value, ResolverError> {
   match path {
     Some(p) => {
@@ -194,6 +198,7 @@ pub struct RefInfo {
 }
 
 impl RefInfo {
+  #[allow(clippy::result_large_err)]
   pub fn parse(doc_path: &DocumentPath, ref_value: &str) -> Result<Self, ResolverError> {
     let mut parts = ref_value.split(SHARP_SEP);
 
@@ -206,7 +211,7 @@ impl RefInfo {
     };
 
     let is_nested: bool = doc_path == &ref_doc_path;
-    let ref_friendly_name = path.as_ref().map(|p| p.split('/').last().unwrap_or_default().to_string());
+    let ref_friendly_name = path.as_ref().map(|p| p.split('/').next_back().unwrap_or_default().to_string());
 
     Ok(Self {
       path,

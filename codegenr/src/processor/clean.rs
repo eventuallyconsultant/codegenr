@@ -19,7 +19,9 @@ impl Instruction for CleanInstruction {
     CLEAN
   }
   fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, ProcessorError> {
-    let pattern = params.get(0).ok_or(ProcessorError::InstructionParameterMissing(CLEAN, "pattern"))?;
+    let pattern = params
+      .first()
+      .ok_or(ProcessorError::InstructionParameterMissing(CLEAN, "pattern"))?;
 
     let full_path_pattern = Path::new(&self.output_folder).join(pattern);
     let str_pattern = full_path_pattern.to_str().ok_or(ProcessorError::PathBufToStrConvert)?;

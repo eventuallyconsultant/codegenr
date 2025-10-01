@@ -16,6 +16,7 @@ pub enum DocumentPath {
 }
 
 impl DocumentPath {
+  #[allow(clippy::result_large_err)]
   pub fn parse(ref_path: &str) -> Result<Self, LoaderError> {
     Ok(if ref_path.trim() == "" {
       Self::None
@@ -27,6 +28,7 @@ impl DocumentPath {
     })
   }
 
+  #[allow(clippy::result_large_err)]
   pub fn relate_from(self, refed_from: &Self) -> Result<Self, LoaderError> {
     use DocumentPath::*;
     Ok(match (refed_from, self) {

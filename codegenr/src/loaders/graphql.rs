@@ -49,6 +49,7 @@ impl<'a> TryFrom<Directive<'a, String>> for GraphqlDirective {
   }
 }
 
+#[allow(clippy::result_large_err)]
 fn graphql_directives_to_object(graphql: Vec<Directive<'_, String>>) -> Result<Directives, LoaderError> {
   graphql.into_iter().map(|d| d.try_into()).collect::<Result<Directives, _>>()
 }
@@ -192,6 +193,7 @@ impl<'a> TryFrom<TypeDefinition<'a, String>> for GraphqlDefinition {
 }
 
 impl GraphqlDefinition {
+  #[allow(clippy::result_large_err)]
   fn default(
     definition_type: GraphqlDefinitionType,
     name: String,
@@ -266,6 +268,7 @@ impl<'a> TryFrom<InputObjectType<'a, String>> for GraphqlDefinition {
   }
 }
 
+#[allow(clippy::result_large_err)]
 pub fn graphql_to_object(graphql: Document<String>) -> Result<Graphql, LoaderError> {
   let mut schema = GraphqlSchema::default();
   let mut definitions: Vec<GraphqlDefinition> = Vec::<_>::with_capacity(graphql.definitions.len());
@@ -291,6 +294,7 @@ pub fn graphql_to_object(graphql: Document<String>) -> Result<Graphql, LoaderErr
   Ok(Graphql { schema, definitions })
 }
 
+#[allow(clippy::result_large_err)]
 fn graphql_to_json(value: graphql_parser::schema::Value<String>) -> Result<Value, LoaderError> {
   use graphql_parser::schema as gql;
   use serde_json::Number;
