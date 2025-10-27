@@ -1,0 +1,6 @@
+[yaml_output]
+source = "data.json"
+templates = ["."]
+output = "."
+custom_helpers = []
+global_parameters = {}
