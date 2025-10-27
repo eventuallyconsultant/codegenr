@@ -37,7 +37,7 @@ pub struct DebugHelper;
 impl HelperDef for DebugHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _r: &'reg handlebars::Handlebars<'reg>,
     _ctx: &'rc handlebars::Context,
     _rc: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -88,7 +88,7 @@ pub struct DebugCtxHelper;
 impl HelperDef for DebugCtxHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    helper: &handlebars::Helper<'reg, 'rc>,
+    helper: &handlebars::Helper<'rc>,
     handlebars: &'reg handlebars::Handlebars<'reg>,
     context: &'rc handlebars::Context,
     render_context: &mut handlebars::RenderContext<'reg, 'rc>,

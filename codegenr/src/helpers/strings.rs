@@ -1,6 +1,6 @@
 use crate::helpers::handlebars_ext::HandlebarsExt;
 use crate::helpers::string_ext::StringExt;
-use handlebars::{BlockContext, HelperDef, RenderError, Renderable, ScopedJson, StringOutput};
+use handlebars::{BlockContext, HelperDef, RenderError, RenderErrorReason, Renderable, ScopedJson, StringOutput};
 use serde_json::Value;
 
 pub const SPLIT_HELPER: &str = "split";
@@ -37,11 +37,11 @@ pub struct TrimCharHelper;
 impl HelperDef for TrimCharHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
     h.ensure_arguments_count_min(1, TRIM_CHAR_HELPER)?;
     h.ensure_arguments_count_max(2, TRIM_CHAR_HELPER)?;
 
@@ -75,11 +75,11 @@ pub struct SplitHelper;
 impl HelperDef for SplitHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
     h.ensure_arguments_count_min(1, SPLIT_HELPER)?;
     h.ensure_arguments_count_max(2, SPLIT_HELPER)?;
 
@@ -118,11 +118,11 @@ pub struct TrimCharStartHelper;
 impl HelperDef for TrimCharStartHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
     h.ensure_arguments_count_min(1, TRIM_CHAR_START_HELPER)?;
     h.ensure_arguments_count_max(2, TRIM_CHAR_START_HELPER)?;
 
@@ -151,11 +151,11 @@ pub struct TrimCharEndHelper;
 impl HelperDef for TrimCharEndHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
     h.ensure_arguments_count_min(1, TRIM_CHAR_START_HELPER)?;
     h.ensure_arguments_count_max(2, TRIM_CHAR_START_HELPER)?;
 
@@ -183,7 +183,7 @@ pub struct StartWithHelper;
 impl HelperDef for StartWithHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -219,7 +219,7 @@ pub struct EndWithHelper;
 impl HelperDef for EndWithHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -259,7 +259,7 @@ pub struct ContainsHelper;
 impl HelperDef for ContainsHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -310,7 +310,7 @@ pub struct WithMatchingHelper;
 impl HelperDef for WithMatchingHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -319,10 +319,13 @@ impl HelperDef for WithMatchingHelper {
     h.ensure_arguments_count_min(3, WITH_MATCHING_HELPER)?;
     let arguments_count = h.params().len();
     if arguments_count % 2 != 1 {
-      return Err(RenderError::new(format!(
-        "Arguments number for the `{}` helper must be an odd number.",
-        WITH_MATCHING_HELPER
-      )));
+      return Err(
+        RenderErrorReason::Other(format!(
+          "Arguments number for the `{}` helper must be an odd number.",
+          WITH_MATCHING_HELPER
+        ))
+        .into(),
+      );
     }
 
     let key = h.get_param_as_json_or_fail(0, WITH_MATCHING_HELPER)?;
@@ -387,7 +390,7 @@ pub struct TrimBlockHelper;
 impl HelperDef for TrimBlockHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -441,7 +444,7 @@ pub struct TrimBlockStartHelper;
 impl HelperDef for TrimBlockStartHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -495,7 +498,7 @@ pub struct TrimBlockEndHelper;
 impl HelperDef for TrimBlockEndHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -604,7 +607,7 @@ pub struct OneLineHelper;
 impl HelperDef for OneLineHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -651,7 +654,7 @@ pub struct NoEmptyLinesHelper;
 impl HelperDef for NoEmptyLinesHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -727,11 +730,11 @@ pub struct IsEmptyHelper;
 impl HelperDef for IsEmptyHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+  ) -> Result<ScopedJson<'rc>, RenderError> {
     let param0 = h.get_param_as_json_or_fail(0, IS_EMPTY_HELPER)?;
     let is_empty = is_json_empty(param0);
     Ok(ScopedJson::Derived(is_empty.into()))

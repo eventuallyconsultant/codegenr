@@ -1,5 +1,5 @@
 use super::handlebars_ext::HandlebarsExt;
-use handlebars::{HelperDef, RenderError, Renderable};
+use handlebars::{HelperDef, RenderError, RenderErrorReason, Renderable};
 use serde_json::Value;
 use std::{
   collections::HashMap,
@@ -49,20 +49,17 @@ impl GetHelper {
 impl HelperDef for GetHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, RenderError> {
     h.ensure_arguments_count(1, GET_HELPER)?;
     let key = h.get_param_as_str_or_fail(0, GET_HELPER)?.to_string();
     let value = get_value(&self.values, &key, GET_HELPER)?;
     match value {
       Some(v) => Ok(v.into()),
-      None => Err(RenderError::new(format!(
-        "Value is not set for key `{}` in `{}` helper.",
-        key, GET_HELPER
-      ))),
+      None => Err(RenderErrorReason::Other(format!("Value is not set for key `{}` in `{}` helper.", key, GET_HELPER)).into()),
     }
   }
 }
@@ -82,7 +79,7 @@ impl SetHelper {
 impl HelperDef for SetHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _handle: &'reg handlebars::Handlebars<'reg>,
     _ctx: &'rc handlebars::Context,
     _render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -119,7 +116,7 @@ impl WithSetHelper {
 impl HelperDef for WithSetHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -165,7 +162,7 @@ impl IfSetHelper {
 impl HelperDef for IfSetHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -209,7 +206,7 @@ impl ClearHelper {
 impl HelperDef for ClearHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -228,21 +225,23 @@ impl HelperDef for ClearHelper {
 fn get_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_name: &str) -> Result<Option<Value>, RenderError> {
   let lock = values
     .read()
-    .map_err(|_e| RenderError::new(format!("Could not acquire lock in `{}` helper", helper_name)))?;
+    .map_err(|_e| RenderErrorReason::Other(format!("Could not acquire lock in `{}` helper", helper_name)))?;
+  dbg!("get_value", &key, &lock);
   Ok(lock.get(key).cloned())
 }
 
 fn has_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_name: &str) -> Result<bool, RenderError> {
   let lock = values
     .read()
-    .map_err(|_e| RenderError::new(format!("Could not acquire lock in `{}` helper", helper_name)))?;
+    .map_err(|_e| RenderErrorReason::Other(format!("Could not acquire lock in `{}` helper", helper_name)))?;
   Ok(lock.get(key).is_some())
 }
 
 fn set_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: String, value: Value, helper_name: &str) -> Result<(), RenderError> {
   let mut lock = values
     .write()
-    .map_err(|_| RenderError::new(format!("Could not acquire lock in `{}` helper", helper_name)))?;
+    .map_err(|_| RenderErrorReason::Other(format!("Could not acquire lock in `{}` helper", helper_name)))?;
+  dbg!("set_value", &key, &value, &lock);
   lock.insert(key, value);
   Ok(())
 }
@@ -250,7 +249,7 @@ fn set_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: String, value: V
 fn rem_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_name: &str) -> Result<(), RenderError> {
   let mut lock = values
     .write()
-    .map_err(|_| RenderError::new(format!("Could not acquire lock in `{}` helper", helper_name)))?;
+    .map_err(|_| RenderErrorReason::Other(format!("Could not acquire lock in `{}` helper", helper_name)))?;
   lock.remove(key);
   Ok(())
 }

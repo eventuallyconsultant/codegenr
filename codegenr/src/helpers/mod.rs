@@ -72,24 +72,26 @@ pub fn handlebars_statefull_setup(handlebars: &mut Handlebars, global_params: Ha
   handlebars.register_helper(GLOBAL_PARAMETERS_HELPER, Box::new(GlobalParameterHelper::new(global_params)));
 }
 
+/// Due to an helpers name collision between handlebars_misc_helpers and this crate
+/// IT'S REQUIRED to call this function *FIRST* in order to have this crate's helpers override the misc ones
 pub fn handlebars_misc_setup(handlebars: &mut Handlebars) {
   handlebars_misc_helpers::register(handlebars);
 }
 
 pub fn exec_template(json: serde_json::Value, template: &str) -> String {
   let mut h = Handlebars::new();
+  handlebars_misc_setup(&mut h);
   handlebars_stateless_setup(&mut h);
   handlebars_statefull_setup(&mut h, Default::default());
-  handlebars_misc_setup(&mut h);
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
 }
 
 pub fn exec_template_with_global_params(json: serde_json::Value, template: &str, global_params: HashMap<String, Value>) -> String {
   let mut h = Handlebars::new();
+  handlebars_misc_setup(&mut h);
   handlebars_stateless_setup(&mut h);
   handlebars_statefull_setup(&mut h, global_params);
-  handlebars_misc_setup(&mut h);
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
 }

@@ -111,6 +111,7 @@ fn run_codegenr(
       let templates = render::TemplateCollection::from_list(all_templates).unwrap(); //?;
 
       let mut handlebars = Handlebars::new();
+      helpers::handlebars_misc_setup(&mut handlebars);
       helpers::handlebars_stateless_setup(&mut handlebars);
 
       templates.setup_handlebars(&mut handlebars).unwrap(); // todo?;
@@ -120,7 +121,6 @@ fn run_codegenr(
     .clone();
 
   helpers::handlebars_statefull_setup(&mut handlebars, options.global_parameters);
-  helpers::handlebars_misc_setup(&mut handlebars);
 
   let rendered = handlebars.render(&main_template_name, &(*json))?;
 

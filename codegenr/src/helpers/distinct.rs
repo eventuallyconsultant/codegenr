@@ -1,5 +1,5 @@
 use super::handlebars_ext::HandlebarsExt;
-use handlebars::{HelperDef, RenderError, Renderable};
+use handlebars::{HelperDef, RenderErrorReason, Renderable};
 use std::{
   collections::{HashMap, HashSet},
   sync::RwLock,
@@ -29,7 +29,7 @@ pub struct DistinctiveHelper {
 impl HelperDef for DistinctiveHelper {
   fn call<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     handle: &'reg handlebars::Handlebars<'reg>,
     ctx: &'rc handlebars::Context,
     render_ctx: &mut handlebars::RenderContext<'reg, 'rc>,
@@ -42,7 +42,7 @@ impl HelperDef for DistinctiveHelper {
     let mut lock = self
       .values
       .write()
-      .map_err(|_| RenderError::new(format!("Could not acquire lock in `{}` helper", DISTINCTIVE)))?;
+      .map_err(|_| RenderErrorReason::Other(format!("Could not acquire lock in `{}` helper", DISTINCTIVE)))?;
     let values_for_this_key = lock.entry(key.into()).or_default();
 
     let inserted = values_for_this_key.insert(value.into());

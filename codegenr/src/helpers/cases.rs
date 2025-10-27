@@ -18,13 +18,22 @@ pub const LOWERCASE_FIRST_LETTER_HELPER: &str = "lowercase_first_letter";
 pub struct UppercaseFirstLetterHelper;
 
 impl HelperDef for UppercaseFirstLetterHelper {
+  // fn call_inner<'reg: 'rc, 'rc>(
+  //   &self,
+  //   h: &handlebars::Helper<'rc>,
+  //   _: &'reg handlebars::Handlebars<'reg>,
+  //   _: &'rc handlebars::Context,
+  //   _: &mut handlebars::RenderContext<'reg, 'rc>,
+  // ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
+  // }
+
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(1, UPPERCASE_FIRST_LETTER_HELPER)?;
     let to_case = h.get_param_as_str_or_fail(0, UPPERCASE_FIRST_LETTER_HELPER)?;
     Ok(handlebars::ScopedJson::Derived(Value::String(to_case.uppercase_first_letter())))
@@ -45,11 +54,11 @@ pub struct LowercaseFirstLetterHelper;
 impl HelperDef for LowercaseFirstLetterHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(1, LOWERCASE_FIRST_LETTER_HELPER)?;
     let to_case = h.get_param_as_str_or_fail(0, LOWERCASE_FIRST_LETTER_HELPER)?;
     Ok(handlebars::ScopedJson::Derived(Value::String(to_case.lowercase_first_letter())))

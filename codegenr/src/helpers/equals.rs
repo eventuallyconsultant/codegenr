@@ -29,11 +29,11 @@ pub struct InHelper;
 impl HelperDef for InHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(2, IN_HELPER)?;
     let value = h.get_param_as_json_or_fail(0, IN_HELPER)?;
     let array = h.get_param_as_array_or_fail(1, IN_HELPER)?;
