@@ -226,7 +226,6 @@ fn get_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: &str, helper_nam
   let lock = values
     .read()
     .map_err(|_e| RenderErrorReason::Other(format!("Could not acquire lock in `{}` helper", helper_name)))?;
-  dbg!("get_value", &key, &lock);
   Ok(lock.get(key).cloned())
 }
 
@@ -241,7 +240,6 @@ fn set_value(values: &Arc<RwLock<HashMap<String, Value>>>, key: String, value: V
   let mut lock = values
     .write()
     .map_err(|_| RenderErrorReason::Other(format!("Could not acquire lock in `{}` helper", helper_name)))?;
-  dbg!("set_value", &key, &value, &lock);
   lock.insert(key, value);
   Ok(())
 }
