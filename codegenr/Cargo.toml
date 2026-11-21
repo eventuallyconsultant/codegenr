@@ -5,7 +5,6 @@ edition = "2021"
 authors = ["Jérôme Rx & contributors <jerome@eventuallyconsultant.com>"]
 description = "Fast json/yaml/openapi code generator based on handlebars templating."
 readme = "../README.md"
-homepage = "https://github.com/eventuallyconsultant/codegenr/"
 repository = "https://github.com/eventuallyconsultant/codegenr/"
 keywords = ["codegen", "openapi", "api-first", "contract-first", "api"]
 categories = ["development-tools"]
