@@ -103,11 +103,11 @@ impl DocumentPath {
           .map_err(|e| LoaderError::DownloadError(url.as_str().to_string(), e))?
           .text()
           .map_err(|e| LoaderError::DownloadError(url.as_str().to_string(), e))?;
-        json_from_string(&body, hint)
+        json_from_string(&body, hint, url.as_str())
       }
       DocumentPath::FileName(file_name) => {
         let content = std::fs::read_to_string(file_name).map_err(|e| LoaderError::Read(file_name.clone(), e))?;
-        json_from_string(&content, hint)
+        json_from_string(&content, hint, file_name)
       }
       DocumentPath::None => unreachable!("This is a non sense to try loading a 'None' document path."),
     }

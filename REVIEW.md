@@ -5,7 +5,8 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
 
 ## Bugs visibles par l'utilisateur
 
-1. 🔴 `codegenr/src/loaders/mod.rs:155` — une source mal formée ne donne que `Did not try all the file loaders.` : `DeserialisationError` exige les erreurs des 6 formats, aucune liste de `json_from_string` ne les essaie toutes, la vraie erreur de parsing est perdue.
+1. 🟢 `codegenr/src/loaders/mod.rs:155` — une source mal formée ne donne que `Did not try all the file loaders.` : `DeserialisationError` exige les erreurs des 6 formats, aucune liste de `json_from_string` ne les essaie toutes, la vraie erreur de parsing est perdue.
+   Corrigé : l'erreur nomme le document et donne une ligne par format essayé (`- Yaml: … at line 2 column 2`), test `unreadable_content_gives_the_error_of_each_format_tried`.
 2. 🔴 `codegenr/src/processor/file.rs:68` — un `### FILE` qui ne peut s'écrire est seulement logué, et le code de sortie vaut 0 : l'écriture a lieu dans le `Drop` et l'erreur de `write_all` est jetée, la génération a l'air de réussir en CI.
 3. 🔴 `codegenr/src/lib.rs:42` — `custom_helpers` et `global_parameters` sont obligatoires dans `codegenr.toml` (`missing field custom_helpers`), alors que le README dit `global_parameters` optionnel : il manque `#[serde(default)]`.
 4. 🔴 `codegenr/Cargo.toml:26` — la lib ne compile pas sans la feature `bin` (`default-features = false`) : `toml` n'est activé que par `bin`, le loader toml en a besoin.
@@ -20,7 +21,7 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
 
 ## CI et qualité
 
-10. 🔴 `.github/workflows/dev.yaml:32` — 8 warnings clippy à corriger, puis `clippy -D warnings` et `fmt --check` en CI ; `actions/checkout` v2 → v7.
+10. 🔴 `.github/workflows/dev.yaml:32` — 2 warnings clippy à corriger (8 avant l'item 1), puis `clippy -D warnings` et `fmt --check` en CI ; `actions/checkout` v2 → v7.
 11. 🔴 `codegenr/src/processor/mod.rs:122` — `process_test` est `#[ignore]` : il écrit dans le dossier courant, un `tempfile` le rendrait exécutable.
 
 ## Documentation

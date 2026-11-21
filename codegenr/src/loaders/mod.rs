@@ -43,16 +43,11 @@ pub enum LoaderError {
   YamlToJsonError(&'static str),
   #[error("Couldn't transpile graphql to json : `{0}`.")]
   GraphqlToJsonError(&'static str),
-  #[error(
-    "Could not read file content as json:\n-json_error: `{json_error}`\n-yaml_error:`{yaml_error}`\n-graphql_error:`{graphql_error}`."
-  )]
+  #[error("Could not read `{document}`, every format tried failed:\n{errors}")]
   DeserialisationError {
-    json_error: serde_json::Error,
-    yaml_error: serde_yaml::Error,
-    toml_error: ::toml::de::Error,
-    xml_error: roxmltree::Error,
-    csv_error: ::csv::Error,
-    graphql_error: graphql_parser::schema::ParseError,
+    document: String,
+    /// One `- <format>: <error>` line per format tried.
+    errors: String,
   },
   #[error("Yaml error: `{0}`.")]
   YamlError(#[from] serde_yaml::Error),
@@ -62,8 +57,6 @@ pub enum LoaderError {
   XmlError(#[from] roxmltree::Error),
   #[error("Graphql error: `{0}`.")]
   GraphqlError(#[from] graphql_parser::schema::ParseError),
-  #[error("Did not try all the file loaders.")]
-  DidNotTryAllFormats,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
@@ -85,80 +78,41 @@ pub(crate) enum FormatHint {
 }
 
 #[allow(clippy::result_large_err)]
-fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, LoaderError> {
+fn json_from_string(content: &str, hint: FormatHint, document: &str) -> Result<Value, LoaderError> {
   use FormatHint::*;
-  match hint {
-    FormatHint::Json | FormatHint::NoIdea => try_loaders(content, &[Json, Yaml, Toml, Graphql]),
-    FormatHint::Yaml => try_loaders(content, &[Yaml, Json]),
-    FormatHint::Toml => try_loaders(content, &[Toml]),
-    FormatHint::Xml => try_loaders(content, &[Xml]),
-    FormatHint::Csv => try_loaders(content, &[Csv]),
-    FormatHint::Graphql => try_loaders(content, &[Graphql, Json, Yaml, Toml, Xml]),
-  }
+  let formats: &[FormatHint] = match hint {
+    Json | NoIdea => &[Json, Yaml, Toml, Graphql],
+    Yaml => &[Yaml, Json],
+    Toml => &[Toml],
+    Xml => &[Xml],
+    Csv => &[Csv],
+    Graphql => &[Graphql, Json, Yaml, Toml, Xml],
+  };
+  try_loaders(content, formats).map_err(|errors| LoaderError::DeserialisationError {
+    document: document.into(),
+    errors,
+  })
 }
 
-#[allow(clippy::result_large_err)]
-fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderError> {
-  let mut json_error: Option<serde_json::Error> = None;
-  let mut yaml_error: Option<serde_yaml::Error> = None;
-  let mut toml_error: Option<::toml::de::Error> = None;
-  let mut xml_error: Option<roxmltree::Error> = None;
-  let mut csv_error: Option<::csv::Error> = None;
-  let mut graphql_error: Option<graphql_parser::schema::ParseError> = None;
-
-  for hint in formats {
-    match *hint {
-      FormatHint::Json => {
-        json_error = Some(match json::JsonLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Yaml => {
-        yaml_error = Some(match yaml::YamlLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Toml => {
-        toml_error = Some(match toml::TomlLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Xml => {
-        xml_error = Some(match xml::XmlLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Csv => {
-        csv_error = Some(match csv::CsvLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Graphql => {
-        graphql_error = Some(match graphql::GraphqlLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => match e {
-            LoaderError::GraphqlError(e) => e,
-            _ => return Err(e), // this one should not happen
-          },
-        })
-      }
+/// The json of the first format that reads the content, or the error of each format tried.
+fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, String> {
+  let mut errors = Vec::with_capacity(formats.len());
+  for format in formats {
+    let loaded = match format {
+      FormatHint::Json => json::JsonLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Yaml => yaml::YamlLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Toml => toml::TomlLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Xml => xml::XmlLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Csv => csv::CsvLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Graphql => graphql::GraphqlLoader::json_from_str(content).map_err(|e| e.to_string()),
       FormatHint::NoIdea => todo!(),
+    };
+    match loaded {
+      Ok(json) => return Ok(json),
+      Err(error) => errors.push(format!("- {format:?}: {error}")),
     }
   }
-
-  Err(LoaderError::DeserialisationError {
-    json_error: json_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    yaml_error: yaml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    toml_error: toml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    xml_error: xml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    csv_error: csv_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    graphql_error: graphql_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-  })
+  Err(errors.join("\n"))
 }
 
 #[cfg(test)]
@@ -243,6 +197,17 @@ mod tests {
     let _result = DocumentPath::parse("./_samples/username.csv")?.load_raw()?;
     dbg!(_result);
     Ok(())
+  }
+
+  #[test]
+  fn unreadable_content_gives_the_error_of_each_format_tried() {
+    let error = json_from_string("a: [1, 2\nb: c\n", FormatHint::Yaml, "bad.yaml").expect_err("The yaml is malformed.");
+    assert_eq!(
+      error.to_string(),
+      "Could not read `bad.yaml`, every format tried failed:\n\
+       - Yaml: while parsing a flow sequence, expected ',' or ']' at line 2 column 2\n\
+       - Json: expected value at line 1 column 1"
+    );
   }
 
   #[allow(clippy::result_large_err)]
