@@ -23,7 +23,7 @@ required-features = ["bin"]
 
 [features]
 default = ["bin"]
-bin = ["tracing-subscriber", "clap", "anyhow", "toml"]
+bin = ["tracing-subscriber", "clap", "anyhow"]
 
 [dependencies]
 # ========================================================================================
@@ -32,7 +32,6 @@ bin = ["tracing-subscriber", "clap", "anyhow", "toml"]
 tracing-subscriber = { version = "0.3", features = [], optional = true }
 clap = { version = "4", features = ["derive"], optional = true }
 anyhow = { version = "1.0", optional = true }
-toml = { version = "0.9", optional = true }
 
 
 # ========================================================================================
@@ -56,6 +55,7 @@ serde = "1.0"
 graphql-parser = "0.4"
 roxmltree = "0.21"
 csv = "1.4"
+toml = "0.9"
 
 # Templating
 # DO NOT UPGRADE, version 6 have problems at passing vars to sub-templates (proof, foreach and try accessing @key in sub-template)

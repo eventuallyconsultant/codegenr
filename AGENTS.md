@@ -76,7 +76,7 @@ A plain non-interactive shell may pick system tools instead of the mise ones.
 ### Crate Layout
 
 A Cargo workspace with one crate, `codegenr/`: the library `codegenr_lib` (`src/lib.rs`) and the `codegenr` binary (`src/bin/main.rs`).
-The binary and the CLI parsing (`opt.rs`, clap derive) sit behind the default `bin` feature, which also pulls `anyhow`, `toml` and `tracing-subscriber`.
+The binary and the CLI parsing (`opt.rs`, clap derive) sit behind the default `bin` feature, which also pulls `anyhow` and `tracing-subscriber`.
 
 A `codegenr.toml` holds one section per generation (`source`, `templates`, `output`, `custom_helpers`, `intermediate`, `global_parameters`, the `Options` struct of `lib.rs`); the `gen` subcommand builds a single section from the command line.
 

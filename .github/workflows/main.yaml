@@ -33,6 +33,10 @@ jobs:
         run: |
           cargo test --workspace
 
+      - name: Library without the binary features
+        run: |
+          cargo check -p codegenr --lib --no-default-features
+
       - name: Build
         run: |
           cargo build --workspace --release

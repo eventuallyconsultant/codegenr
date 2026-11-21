@@ -12,7 +12,8 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
    Corrigé : le fichier s'écrit dans `InstructionLineHandler::finish`, appelé sur `### /FILE`, et son erreur remonte avec le chemin (`ProcessorError::Write`) ; un fichier jamais fermé, ou rouvert avant d'être fermé, donne `MissingClosingTag` et n'est pas écrit ; un fichier fermé avant une erreur reste écrit (choix de l'humain) ; « File content is the same » passe de `warn` à `debug`.
 3. 🟢 `codegenr/src/lib.rs:42` — `custom_helpers` et `global_parameters` sont obligatoires dans `codegenr.toml` (`missing field custom_helpers`), alors que le README dit `global_parameters` optionnel : il manque `#[serde(default)]`.
    Corrigé : les deux en `#[serde(default)]`, `custom_helpers` aussi dit « (Optional) » dans le README, test `custom_helpers_and_global_parameters_are_optional`.
-4. 🔴 `codegenr/Cargo.toml:26` — la lib ne compile pas sans la feature `bin` (`default-features = false`) : `toml` n'est activé que par `bin`, le loader toml en a besoin.
+4. 🟢 `codegenr/Cargo.toml:26` — la lib ne compile pas sans la feature `bin` (`default-features = false`) : `toml` n'est activé que par `bin`, le loader toml en a besoin.
+   Corrigé : `toml` devient une dépendance ordinaire, à côté des autres formats ; une étape `cargo check -p codegenr --lib --no-default-features` des deux workflows empêche le retour du bug.
 5. 🟢 `codegenr/src/loaders/document_path.rs:112` — `source = ""` fait paniquer `load_raw` (`unreachable!`) au lieu d'une erreur ; un `todo!()` reste aussi dans `loaders/mod.rs:150`.
    Corrigé : `load_raw` d'un chemin vide rend `LoaderError::EmptyPath` (`No document to load: its path is empty.`, code de sortie 1), test `loading_an_empty_path_is_an_error` ;
    le `todo!()` disparaît avec `FormatHint::NoIdea`, que `guess_format` remplace par `None` (`Option<FormatHint>`), ce qui évite d'avoir à traiter `NoIdea` dans `try_loaders`.
