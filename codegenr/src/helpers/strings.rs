@@ -517,8 +517,11 @@ impl HelperDef for TrimBlockEndHelper {
   }
 }
 
-/// Trim end of a block output
-/// (all arguments are converted to string and case insensitive compared)
+/// Puts the rendered block back on one line, for a signature the template spreads over several lines.
+/// Each line break and the spaces around it are removed, so the lines are glued without a space (`a\n z` gives `az`):
+/// for a text on several lines in a code comment, see `prefix_lines` instead.
+/// Optional arguments: the spaces to indent the line with (`0`), whether it ends with a line break (`true`),
+/// and what replaces each line break (`""`), e.g. `{{#one_line 2 true ", "}}…{{/one_line}}`.
 ///```
 /// # use codegenr_lib::helpers::*;
 /// # use serde_json::json;

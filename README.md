@@ -444,6 +444,37 @@ if optional {
 
 ```
 
+A text on several lines in a code comment is another case for a codegenr helper: `/// {{description}}` would leave the second line out of the comment.
+`prefix_lines` puts its prefix in front of each line of the text.
+Put the helper at the start of the line and the indentation of the comment in the prefix, so that every line gets it:
+
+```yaml
+description: |
+  Searches the users,
+
+  by name or email.
+```
+
+```handlebars
+impl Api {
+{{prefix_lines description "  /// "}}
+  fn search() {}
+}
+```
+
+will output
+
+```rust
+impl Api {
+  /// Searches the users,
+  ///
+  /// by name or email.
+  fn search() {}
+}
+```
+
+The line break that ends a yaml `|` block is dropped, and the empty line gets `///` without a trailing space.
+
 
 
 
