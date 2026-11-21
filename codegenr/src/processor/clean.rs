@@ -40,7 +40,7 @@ impl Instruction for CleanInstruction {
 mod tests {
   use super::*;
   use crate::filesystem::{create_dir, create_file};
-  use tempdir::TempDir;
+  use tempfile::TempDir;
 
   #[test]
   pub fn clean_not_existing_path_should_not_fail() -> anyhow::Result<()> {
@@ -51,7 +51,7 @@ mod tests {
 
   #[test]
   pub fn clean_a_single_file() -> anyhow::Result<()> {
-    let tmp = TempDir::new("CLEAN_tests")?;
+    let tmp = TempDir::with_prefix("CLEAN_tests")?;
     let instruction = CleanInstruction::new(tmp.path().to_string_lossy().into());
     let (_, file_path) = create_file(tmp.path(), "plop.rs")?;
     assert!(file_path.exists());
@@ -62,7 +62,7 @@ mod tests {
 
   #[test]
   pub fn clean_a_pattern() -> anyhow::Result<()> {
-    let tmp = TempDir::new("CLEAN_tests")?;
+    let tmp = TempDir::with_prefix("CLEAN_tests")?;
     let instruction = CleanInstruction::new(tmp.path().to_string_lossy().into());
     let (_, file_path1) = create_file(tmp.path(), "plop.rs")?;
     let (_, file_path2) = create_file(tmp.path(), "sub/plop.rs")?;
@@ -76,7 +76,7 @@ mod tests {
 
   #[test]
   pub fn clean_a_directory() -> anyhow::Result<()> {
-    let tmp = TempDir::new("CLEAN_tests")?;
+    let tmp = TempDir::with_prefix("CLEAN_tests")?;
     let instruction = CleanInstruction::new(tmp.path().to_string_lossy().into());
     let dir_path = create_dir(tmp.path(), "directory")?;
     assert!(dir_path.exists() && dir_path.is_dir());

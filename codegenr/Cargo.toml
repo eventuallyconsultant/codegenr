@@ -71,5 +71,5 @@ rhai = "1"
 
 [dev-dependencies]
 test-case = "3.1"
-tempdir = "0.3"
+tempfile = "3"
 anyhow = "1.0"

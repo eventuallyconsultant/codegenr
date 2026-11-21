@@ -74,11 +74,11 @@ impl Drop for FileLineHandler {
 mod tests {
   use super::*;
   use crate::filesystem::create_file;
-  use tempdir::TempDir;
+  use tempfile::TempDir;
 
   #[test]
   pub fn start_not_existing_file_should_create_file() -> anyhow::Result<()> {
-    let tmp = TempDir::new("FILE_tests")?;
+    let tmp = TempDir::with_prefix("FILE_tests")?;
     let instruction = FileInstruction::new(tmp.path().to_string_lossy().into());
     let handler = instruction.start(vec!["sub/plop.txt".into()])?;
     let (_file, should_exists_path) = create_file(tmp.path(), "sub/plop.txt")?;
