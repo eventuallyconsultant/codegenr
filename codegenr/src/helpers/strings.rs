@@ -17,6 +17,7 @@ pub const TRIM_BLOCK_START_HELPER: &str = "trim_block_start";
 pub const TRIM_BLOCK_END_HELPER: &str = "trim_block_end";
 pub const ONE_LINE_HELPER: &str = "one_line";
 pub const NO_EMPTY_LINES_HELPER: &str = "no_empty_lines";
+pub const PREFIX_LINES_HELPER: &str = "prefix_lines";
 pub const IS_EMPTY_HELPER: &str = "is_empty";
 
 /// Returns a string slice with leading and trailing whitespace removed.
@@ -690,6 +691,64 @@ impl HelperDef for NoEmptyLinesHelper {
     };
     Ok(())
   }
+}
+
+/// Returns each line of a text behind a prefix, to write a text on several lines as code comments:
+/// `{{prefix_lines summary "/// "}}` gives one `/// ` line per line of `summary`.
+/// The line breaks and spaces at the end of the text are dropped (a yaml `|` block ends with a line break),
+/// and an empty line gets the prefix without its trailing spaces (`///`).
+/// ```
+/// # use codegenr_lib::helpers::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(json!({ "value": "Search,\non two lines.\n" }), r#"{{prefix_lines value "/// "}}"#),
+///   "/// Search,\n/// on two lines."
+/// );
+/// assert_eq!(
+///   exec_template(json!({ "value": "First paragraph.\n\nSecond one." }), r##"{{prefix_lines value "# "}}"##),
+///   "# First paragraph.\n#\n# Second one."
+/// );
+/// assert_eq!(exec_template(json!({ "value": "" }), r#"{{prefix_lines value "// "}}"#), "");
+/// ```
+/// An indented comment puts its indentation in the prefix, and the helper at the start of the line, so that every line gets it:
+/// ```
+/// # use codegenr_lib::helpers::*;
+/// # use serde_json::json;
+/// assert_eq!(
+///   exec_template(
+///     json!({ "value": "Gets the api.\nOn two lines." }),
+///     "impl Api {\n{{prefix_lines value \"  /// \"}}\n  fn get() {}\n}"
+///   ),
+///   "impl Api {\n  /// Gets the api.\n  /// On two lines.\n  fn get() {}\n}"
+/// );
+/// ```
+pub struct PrefixLinesHelper;
+
+impl HelperDef for PrefixLinesHelper {
+  fn call_inner<'reg: 'rc, 'rc>(
+    &self,
+    h: &handlebars::Helper<'rc>,
+    _: &'reg handlebars::Handlebars<'reg>,
+    _: &'rc handlebars::Context,
+    _: &mut handlebars::RenderContext<'reg, 'rc>,
+  ) -> Result<ScopedJson<'rc>, RenderError> {
+    h.ensure_arguments_count(2, PREFIX_LINES_HELPER)?;
+    let text = h.get_param_as_str_or_fail(0, PREFIX_LINES_HELPER)?;
+    let prefix = h.get_param_as_str_or_fail(1, PREFIX_LINES_HELPER)?;
+    Ok(ScopedJson::Derived(Value::String(prefix_lines(text, prefix))))
+  }
+}
+
+fn prefix_lines(text: &str, prefix: &str) -> String {
+  let prefixed_lines: Vec<String> = text
+    .trim_end()
+    .lines()
+    .map(|line| match line.trim().is_empty() {
+      true => prefix.trim_end().to_string(),
+      false => format!("{prefix}{line}"),
+    })
+    .collect();
+  prefixed_lines.join("\n")
 }
 
 /// Returns true if an empty or whitespaces string is passed as parameter

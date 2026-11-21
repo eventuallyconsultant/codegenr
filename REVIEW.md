@@ -29,7 +29,9 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
    Fait avec `deunicode` (choix de l'humain), plus `Œ`/`Æ` → `Oe`/`Ae` devant une minuscule pour garder `OeuvreIntrouvable` ; un doc test par cas du tableau de `PLAN.md`.
    Le bug amont est figé par `upstream_bug_cruet_snake_case_splits_accented_words` : `char_is_uppercase` de `cruet` vaut `c == c.to_ascii_uppercase()`, vrai pour toute lettre hors ascii, et les lettres sont baissées par `to_ascii_lowercase` ;
    toujours là sur la branche principale de `cruet` (1.0.0), aucune issue ouverte chez `taidge/cruet` au 2026-11-21.
-18. 🔴 `README.md` — section des helpers : un exemple pour un texte sur plusieurs lignes dans un commentaire, `/// {{replace (trim summary) "\n" "\n/// "}}` (le `"\n"` d'un littéral de template est bien un saut de ligne), et une phrase dans la doc de `one_line` pour dire qu'il recolle les lignes sans espace, voulu pour les signatures (`PLAN.md` n°3 et n°4, écartés côté code).
+18. 🔴 `README.md` — section des helpers : un exemple pour un texte sur plusieurs lignes dans un commentaire, avec `prefix_lines` (item 19), et une phrase dans la doc de `one_line` pour dire qu'il recolle les lignes sans espace, voulu pour les signatures (`PLAN.md` n°4).
+19. 🟢 `codegenr/src/helpers/strings.rs` — un texte sur plusieurs lignes dans un commentaire de code (`PLAN.md` n°3) : `/// {{replace (trim summary) "\n" "\n/// "}}` marche, mais les lignes suivantes perdent l'indentation du commentaire et une ligne vide garde l'espace du préfixe (`/// `).
+   Fait à la demande de l'humain, alors que `PLAN.md` l'avait écarté côté code : le helper `prefix_lines`, `{{prefix_lines summary "  /// "}}` en début de ligne, met le préfixe et son indentation devant chaque ligne, retire les sauts de ligne de la fin et donne `///` sans espace à une ligne vide ; doc tests dans sa doc.
 
 ## Dépendances et sécurité
 

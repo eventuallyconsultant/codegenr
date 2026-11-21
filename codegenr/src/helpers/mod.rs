@@ -52,6 +52,7 @@ pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(TRIM_BLOCK_END_HELPER, Box::new(TrimBlockEndHelper));
   handlebars.register_helper(ONE_LINE_HELPER, Box::new(OneLineHelper));
   handlebars.register_helper(NO_EMPTY_LINES_HELPER, Box::new(NoEmptyLinesHelper));
+  handlebars.register_helper(PREFIX_LINES_HELPER, Box::new(PrefixLinesHelper));
   handlebars.register_helper(REGEX_EXTRACT_HELPER, Box::new(RegexExtractHelper));
   handlebars.register_helper(REGEX_TRANSFORM_HELPER, Box::new(RegexTransformHelper));
   //handlebars.register_helper(EACH_WITH_SORT_HELPER, Box::new(EachWithSortHelper));
