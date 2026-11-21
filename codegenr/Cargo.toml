@@ -44,7 +44,14 @@ thiserror = "2.0"
 # File loading & path manipulations
 url = "2.4"
 path-dedot = "3.1"
-reqwest = { version = "0.12", features = ["blocking"] }
+# rustls rather than native-tls, which is openssl on Linux; the native roots keep trusting the certificates of the OS store, as native-tls did
+reqwest = { version = "0.12", default-features = false, features = [
+  "blocking",
+  "charset",
+  "http2",
+  "macos-system-configuration",
+  "rustls-tls-native-roots",
+] }
 walkdir = "2"
 glob = "0.3"
 
