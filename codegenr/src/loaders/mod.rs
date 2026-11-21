@@ -36,6 +36,8 @@ pub enum LoaderError {
   UnableToAppendPath { to: String, from: String },
   #[error("The origin path should be a file and have parent.")]
   OriginPathShouldBeAFile { path: String },
+  #[error("No document to load: its path is empty.")]
+  EmptyPath,
   //
   // Deserialisation
   //
@@ -73,20 +75,19 @@ pub(crate) enum FormatHint {
   Csv,
   /// The content should be a graphql schema
   Graphql,
-  /// We have no f.....g idea
-  NoIdea,
 }
 
 #[allow(clippy::result_large_err)]
-fn json_from_string(content: &str, hint: FormatHint, document: &str) -> Result<Value, LoaderError> {
+/// `hint` is `None` when the path says nothing of the format.
+fn json_from_string(content: &str, hint: Option<FormatHint>, document: &str) -> Result<Value, LoaderError> {
   use FormatHint::*;
   let formats: &[FormatHint] = match hint {
-    Json | NoIdea => &[Json, Yaml, Toml, Graphql],
-    Yaml => &[Yaml, Json],
-    Toml => &[Toml],
-    Xml => &[Xml],
-    Csv => &[Csv],
-    Graphql => &[Graphql, Json, Yaml, Toml, Xml],
+    Some(Json) | None => &[Json, Yaml, Toml, Graphql],
+    Some(Yaml) => &[Yaml, Json],
+    Some(Toml) => &[Toml],
+    Some(Xml) => &[Xml],
+    Some(Csv) => &[Csv],
+    Some(Graphql) => &[Graphql, Json, Yaml, Toml, Xml],
   };
   try_loaders(content, formats).map_err(|errors| LoaderError::DeserialisationError {
     document: document.into(),
@@ -105,7 +106,6 @@ fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, String> {
       FormatHint::Xml => xml::XmlLoader::json_from_str(content).map_err(|e| e.to_string()),
       FormatHint::Csv => csv::CsvLoader::json_from_str(content).map_err(|e| e.to_string()),
       FormatHint::Graphql => graphql::GraphqlLoader::json_from_str(content).map_err(|e| e.to_string()),
-      FormatHint::NoIdea => todo!(),
     };
     match loaded {
       Ok(json) => return Ok(json),
@@ -201,13 +201,21 @@ mod tests {
 
   #[test]
   fn unreadable_content_gives_the_error_of_each_format_tried() {
-    let error = json_from_string("a: [1, 2\nb: c\n", FormatHint::Yaml, "bad.yaml").expect_err("The yaml is malformed.");
+    let error = json_from_string("a: [1, 2\nb: c\n", Some(FormatHint::Yaml), "bad.yaml").expect_err("The yaml is malformed.");
     assert_eq!(
       error.to_string(),
       "Could not read `bad.yaml`, every format tried failed:\n\
        - Yaml: while parsing a flow sequence, expected ',' or ']' at line 2 column 2\n\
        - Json: expected value at line 1 column 1"
     );
+  }
+
+  /// An empty `source` in `codegenr.toml` used to panic.
+  #[test]
+  fn loading_an_empty_path_is_an_error() -> anyhow::Result<()> {
+    let error = DocumentPath::parse("")?.load_raw().expect_err("There is no document to load.");
+    assert_eq!(error.to_string(), "No document to load: its path is empty.");
+    Ok(())
   }
 
   #[allow(clippy::result_large_err)]
