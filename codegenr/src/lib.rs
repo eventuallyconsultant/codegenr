@@ -108,7 +108,11 @@ fn run_codegenr(
 
   save_intermediate(&options.intermediate, "rendered.txt", &rendered)?;
 
-  processor::process(&rendered, options.output)?;
+  let report = processor::process(&rendered, options.output.clone())?;
+  info!(
+    "{} file(s) written, {} unchanged, in `{}`.",
+    report.written_files, report.unchanged_files, options.output
+  );
   Ok(())
 }
 

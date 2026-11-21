@@ -50,15 +50,16 @@ impl InstructionLineHandler for FileLineHandler {
     Ok(writeln!(f, "{line}")?)
   }
 
-  fn finish(&self) -> Result<(), ProcessorError> {
+  fn finish(&self) -> Result<Finished, ProcessorError> {
     let buffer = self.buffer.borrow();
     if std::fs::read_to_string(&self.file_path).is_ok_and(|content| content == *buffer) {
       tracing::debug!("File content is the same, not writing it again: {}", self.file_path.display());
-      return Ok(());
+      return Ok(Finished::FileUnchanged);
     }
     create_file_from_path(&self.file_path)
       .and_then(|mut file| std::io::Write::write_all(&mut file, buffer.as_bytes()))
-      .map_err(|e| ProcessorError::Write(self.file_path.clone(), e))
+      .map_err(|e| ProcessorError::Write(self.file_path.clone(), e))?;
+    Ok(Finished::FileWritten)
   }
 }
 

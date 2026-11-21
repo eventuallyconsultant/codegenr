@@ -50,9 +50,25 @@ pub trait Instruction {
 pub trait InstructionLineHandler {
   fn handle_line(&self, line: &str) -> Result<(), ProcessorError>;
   /// Called on the closing tag, where a handler writes what it gathered: a handler never closed is never finished.
-  fn finish(&self) -> Result<(), ProcessorError> {
-    Ok(())
+  fn finish(&self) -> Result<Finished, ProcessorError> {
+    Ok(Finished::Nothing)
   }
+}
+
+/// What a handler did with what it gathered, when its instruction got closed.
+#[derive(Debug)]
+pub enum Finished {
+  Nothing,
+  FileWritten,
+  /// The file already held the same content: it is not written again, so it keeps its modification date.
+  FileUnchanged,
+}
+
+/// What `process` did to the files of the output folder.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct ProcessReport {
+  pub written_files: usize,
+  pub unchanged_files: usize,
 }
 
 pub struct TranscientLineHandler;
@@ -72,8 +88,9 @@ fn get_instructions(output: String) -> HashMap<&'static str, Box<dyn Instruction
 }
 
 #[::tracing::instrument(level = "trace")]
-pub fn process(content: &str, output: String) -> Result<(), ProcessorError> {
+pub fn process(content: &str, output: String) -> Result<ProcessReport, ProcessorError> {
   let instructions = get_instructions(output);
+  let mut report = ProcessReport::default();
   // The handlers of the instructions opened and not closed yet, with their opening line.
   let mut active_handlers = HashMap::<String, (usize, &str, Box<dyn InstructionLineHandler>)>::new();
 
@@ -108,7 +125,11 @@ pub fn process(content: &str, output: String) -> Result<(), ProcessorError> {
             let (_, _, handler) = active_handlers
               .remove(&instruction_name)
               .ok_or_else(|| ProcessorError::MissingOpeningTag(instruction_name, line_number, line.into()))?;
-            handler.finish()?;
+            match handler.finish()? {
+              Finished::Nothing => {}
+              Finished::FileWritten => report.written_files += 1,
+              Finished::FileUnchanged => report.unchanged_files += 1,
+            }
           }
           (false, _) => {
             if let Some((opened_line_number, opened_line, _)) = active_handlers.get(&instruction_name) {
@@ -134,7 +155,7 @@ pub fn process(content: &str, output: String) -> Result<(), ProcessorError> {
       opened_line_number,
       opened_line.into(),
     )),
-    None => Ok(()),
+    None => Ok(report),
   }
 }
 
@@ -143,6 +164,26 @@ mod tests {
   use super::*;
   use tempfile::TempDir;
   use test_case::test_case;
+
+  #[test]
+  fn process_reports_the_files_written_and_unchanged() -> anyhow::Result<()> {
+    let tmp = TempDir::with_prefix("PROCESS_tests")?;
+    let output: String = tmp.path().to_string_lossy().into();
+    let rendered = "### FILE a.txt\nA\n### /FILE\n### FILE b.txt\nB\n### /FILE\n### CONSOLE\nnot a file\n### /CONSOLE\n";
+    let expected = ProcessReport {
+      written_files: 2,
+      unchanged_files: 0,
+    };
+    assert_eq!(process(rendered, output.clone())?, expected);
+
+    let only_b_changed = rendered.replace("B\n", "B changed\n");
+    let expected = ProcessReport {
+      written_files: 1,
+      unchanged_files: 1,
+    };
+    assert_eq!(process(&only_b_changed, output)?, expected);
+    Ok(())
+  }
 
   #[test_case("### FILE a.txt\nhello\n### NOPE\n### /FILE\n", "Instruction `NOPE` doest not exist. Line 2: `### NOPE`." ; "error after the opening")]
   #[test_case("### FILE a.txt\nnever closed\n", "Missing closing tag for `FILE` instruction opened line 0: `### FILE a.txt`." ; "never closed")]
