@@ -50,7 +50,7 @@ pub enum LoaderError {
     json_error: serde_json::Error,
     yaml_error: serde_yaml::Error,
     toml_error: ::toml::de::Error,
-    xml_error: minidom::Error,
+    xml_error: roxmltree::Error,
     csv_error: ::csv::Error,
     graphql_error: graphql_parser::schema::ParseError,
   },
@@ -59,7 +59,7 @@ pub enum LoaderError {
   #[error("Json error: `{0}`.")]
   JsonError(#[from] serde_json::Error),
   #[error("Xml error: `{0}`.")]
-  XmlError(#[from] minidom::Error),
+  XmlError(#[from] roxmltree::Error),
   #[error("Graphql error: `{0}`.")]
   GraphqlError(#[from] graphql_parser::schema::ParseError),
   #[error("Did not try all the file loaders.")]
@@ -102,7 +102,7 @@ fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderErr
   let mut json_error: Option<serde_json::Error> = None;
   let mut yaml_error: Option<serde_yaml::Error> = None;
   let mut toml_error: Option<::toml::de::Error> = None;
-  let mut xml_error: Option<::minidom::Error> = None;
+  let mut xml_error: Option<roxmltree::Error> = None;
   let mut csv_error: Option<::csv::Error> = None;
   let mut graphql_error: Option<graphql_parser::schema::ParseError> = None;
 

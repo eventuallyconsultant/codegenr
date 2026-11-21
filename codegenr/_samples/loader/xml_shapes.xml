@@ -3,6 +3,7 @@
 <!-- Every shape the xml loader turns into json, the expected result in xml_shapes.json -->
 <catalog version="2" lang="fr" xmlns="urn:default" xmlns:x="urn:x">
   <title>Plants &amp; trees</title>
+  <apart>first</apart>
   <empty/>
   <empty_with_attr id="7"/>
   <price currency="EUR">12.50</price>
@@ -19,4 +20,6 @@
   <cdata><![CDATA[a < b]]></cdata>
   <nested><level><leaf>deep</leaf></level></nested>
   <x:prefixed x:attr="1" plain="p">v</x:prefixed>
+  <apart>second</apart>
+  <last>end</last>
 </catalog>

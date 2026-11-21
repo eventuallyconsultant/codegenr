@@ -3,6 +3,11 @@
     "@lang": "fr",
     "@version": 2,
     "title": "Plants & trees",
+    "prefixed": {
+      "@plain": "p",
+      "@x:attr": 1,
+      "#text": "v"
+    },
     "empty": {},
     "empty_with_attr": {
       "@id": 7
@@ -31,10 +36,10 @@
         "leaf": "deep"
       }
     },
-    "prefixed": {
-      "@plain": "p",
-      "@x:attr": 1,
-      "#text": "v"
-    }
+    "apart": [
+      "first",
+      "second"
+    ],
+    "last": "end"
   }
 }
