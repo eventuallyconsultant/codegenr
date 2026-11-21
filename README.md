@@ -56,7 +56,7 @@ To generate your files, you need to define these parameters :
 - `source` : The file.yaml with the data you want to use for the generation
 - `templates` : the folders containing handlebar templates (`.hbs`) you're using. Only one file in those folders must not be prefixed by `_` and then is considered as the `main` template. The other ones are prefixed like `_partial.hbs` are considered `partial` templates.
 - `output` : The `root folder` where the files will be generated. All files output path write will be computed from this root.
-- `custom_helpers` : A place you can put `.rhai` file, each file is loaded as a custom helper, usable from the `.hbs` templates
+- `custom_helpers` : (Optional) A place you can put `.rhai` file, each file is loaded as a custom helper, usable from the `.hbs` templates
 - `intermediate` : (Optional) if set, `codegenr` will output intermediate files for debug purpose
 - `global_parameters` : (Optional) Some values you want to use with the `global_parameter` helper.
 

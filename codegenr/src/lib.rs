@@ -39,7 +39,9 @@ pub struct Options {
   pub output: String,
   pub templates: Vec<String>,
   pub intermediate: Option<String>,
+  #[serde(default)]
   pub custom_helpers: Vec<String>,
+  #[serde(default)]
   pub global_parameters: HashMap<String, serde_json::Value>,
 }
 
@@ -122,4 +124,20 @@ fn save_intermediate(file: &Option<String>, extension: &str, content: &str) -> R
     save_file_content(".", &full_file_name, content)?;
   }
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn custom_helpers_and_global_parameters_are_optional() -> anyhow::Result<()> {
+    let sections: OptionsMap = toml::from_str("[api]\nsource = \"api.yaml\"\noutput = \"out\"\ntemplates = [\"_templates\"]\n")?;
+    let api = sections
+      .get("api")
+      .ok_or_else(|| anyhow::anyhow!("The `api` section is missing."))?;
+    assert!(api.custom_helpers.is_empty());
+    assert!(api.global_parameters.is_empty());
+    Ok(())
+  }
 }
