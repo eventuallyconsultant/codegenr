@@ -81,6 +81,8 @@ pub(crate) enum FormatHint {
 /// `hint` is `None` when the path says nothing of the format.
 fn json_from_string(content: &str, hint: Option<FormatHint>, document: &str) -> Result<Value, LoaderError> {
   use FormatHint::*;
+  // A UTF-8 BOM, which editors and Windows tools often write: json refuses it, yaml keeps it in the first key.
+  let content = content.strip_prefix('\u{feff}').unwrap_or(content);
   let formats: &[FormatHint] = match hint {
     Some(Json) | None => &[Json, Yaml, Toml, Graphql],
     Some(Yaml) => &[Yaml, Json],
@@ -208,6 +210,16 @@ mod tests {
        - Yaml: while parsing a flow sequence, expected ',' or ']' at line 2 column 2\n\
        - Json: expected value at line 1 column 1"
     );
+  }
+
+  /// Editors and Windows tools often start a file with a UTF-8 BOM, which used to fail the json loader.
+  #[test_case("\u{feff}{\"a\": 1}", Some(FormatHint::Json) ; "json")]
+  #[test_case("\u{feff}{\"a\": 1}", None ; "json without extension")]
+  #[test_case("\u{feff}a: 1", Some(FormatHint::Yaml) ; "yaml")]
+  #[test_case("\u{feff}a = 1", Some(FormatHint::Toml) ; "toml")]
+  fn a_source_starting_with_a_bom_is_read(content: &str, hint: Option<FormatHint>) -> anyhow::Result<()> {
+    assert_eq!(json_from_string(content, hint, "bom")?, serde_json::json!({ "a": 1 }));
+    Ok(())
   }
 
   /// An empty `source` in `codegenr.toml` used to panic.

@@ -25,8 +25,10 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
    Corrigé : les deux en `#[serde(default)]`, `custom_helpers` aussi dit « (Optional) » dans le README, test `custom_helpers_and_global_parameters_are_optional`.
 4. 🟢 `codegenr/Cargo.toml:26` — la lib ne compile pas sans la feature `bin` (`default-features = false`) : `toml` n'est activé que par `bin`, le loader toml en a besoin.
    Corrigé : `toml` devient une dépendance ordinaire, à côté des autres formats ; une étape `cargo check -p codegenr --lib --no-default-features` des deux workflows empêche le retour du bug.
-21. 🔴 `codegenr/src/loaders/json.rs` — une source qui commence par un BOM UTF-8 ne se lit pas (`- Json: expected value at line 1 column 1`), alors que les éditeurs et outils Windows en mettent souvent : les `sample_swagger.json` et `schema.json` de `_samples/render/test1` à `test3` en ont un.
+21. 🟢 `codegenr/src/loaders/mod.rs:82` — une source qui commence par un BOM UTF-8 ne se lit pas (`- Json: expected value at line 1 column 1`), alors que les éditeurs et outils Windows en mettent souvent : les `sample_swagger.json` et `schema.json` de `_samples/render/test1` à `test3` en ont un.
    Trouvé en rejouant les samples pour l'item 8 ; retirer le BOM avant d'essayer les formats, dans `json_from_string`.
+   Pire que prévu : sans erreur, le yaml garde le BOM dans la première clé (`"\u{feff}a"`), et un json court, refusé par le loader json, est relu de travers par le loader yaml.
+   Corrigé : `json_from_string` retire le BOM pour tous les formats, test `a_source_starting_with_a_bom_is_read` (4 cas, 3 échouent sans la correction, le toml acceptait déjà le BOM) ; aucune source de l'autre projet n'en a.
 5. 🟢 `codegenr/src/loaders/document_path.rs:112` — `source = ""` fait paniquer `load_raw` (`unreachable!`) au lieu d'une erreur ; un `todo!()` reste aussi dans `loaders/mod.rs:150`.
    Corrigé : `load_raw` d'un chemin vide rend `LoaderError::EmptyPath` (`No document to load: its path is empty.`, code de sortie 1), test `loading_an_empty_path_is_an_error` ;
    le `todo!()` disparaît avec `FormatHint::NoIdea`, que `guess_format` remplace par `None` (`Option<FormatHint>`), ce qui évite d'avoir à traiter `NoIdea` dans `try_loaders`.
