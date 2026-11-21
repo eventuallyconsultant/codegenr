@@ -226,11 +226,14 @@ mod tests {
     Ok(())
   }
 
+  /// Golden master: the json of each xml sample is committed next to it, order of the keys and formatting of the numbers included.
   #[allow(clippy::result_large_err)]
-  #[test]
-  fn read_xml_file_test() -> Result<(), LoaderError> {
-    let _result = DocumentPath::parse("./_samples/resolver/plant_catalog.xml")?.load_raw()?;
-    dbg!(_result);
+  #[test_case("./_samples/resolver/plant_catalog.xml", "./_samples/resolver/plant_catalog.json")]
+  #[test_case("./_samples/loader/xml_shapes.xml", "./_samples/loader/xml_shapes.json")]
+  fn read_xml_file_test(xml_file: &str, expected_json_file: &str) -> Result<(), LoaderError> {
+    let loaded = DocumentPath::parse(xml_file)?.load_raw()?;
+    let expected = std::fs::read_to_string(expected_json_file)?;
+    assert_eq!(format!("{loaded:#}"), expected.trim_end());
     Ok(())
   }
 
