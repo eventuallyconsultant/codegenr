@@ -79,7 +79,8 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
 ## CI et qualité
 
 10. 🔴 `.github/workflows/dev.yaml:32` — 1 warning clippy à corriger (8 avant les items 1 et 2), puis `clippy -D warnings` et `fmt --check` en CI ; `actions/checkout` v2 → v7.
-11. 🔴 `codegenr/src/processor/mod.rs:122` — `process_test` est `#[ignore]` : il écrit dans le dossier courant, un `tempfile` le rendrait exécutable.
+11. 🟢 `codegenr/src/processor/mod.rs:262` — `process_test` est `#[ignore]` : il écrit dans le dossier courant, un `tempfile` le rendrait exécutable.
+   Corrigé : renommé `instructions_are_read_whatever_their_case_and_spaces`, il écrit dans un `TempDir` et vérifie ses deux fichiers (`###/ console` et `### / FILE` ferment bien) ; la ligne `####` passe dans un `FILE`, pour vérifier qu'elle y reste du contenu.
 
 ## Documentation
 

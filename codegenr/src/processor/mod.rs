@@ -259,25 +259,32 @@ mod tests {
     Ok(())
   }
 
+  /// An instruction is read whatever its case and the spaces around its `/`, and a `####` line is plain content.
   #[test]
-  #[ignore]
-  fn process_test() -> Result<(), anyhow::Error> {
-    process(
-      r#"
+  fn instructions_are_read_whatever_their_case_and_spaces() -> anyhow::Result<()> {
+    let tmp = TempDir::with_prefix("PROCESS_tests")?;
+    let rendered = r#"
 ### FILE plop.rs
 test
+#### CONSOLE
 ### /FILE
 ### CONSOLE
 Hello
-#### CONSOLE
 ###/ console
 ### FILE plop2.rs
 test2
 ### / FILE
-    "#,
-      ".".into(),
-    )?;
+    "#;
 
+    let report = process(rendered, tmp.path().to_string_lossy().into())?;
+
+    let expected = ProcessReport {
+      written_files: 2,
+      unchanged_files: 0,
+    };
+    assert_eq!(report, expected);
+    assert_eq!(std::fs::read_to_string(tmp.path().join("plop.rs"))?, "test\n#### CONSOLE\n");
+    assert_eq!(std::fs::read_to_string(tmp.path().join("plop2.rs"))?, "test2\n");
     Ok(())
   }
 }
