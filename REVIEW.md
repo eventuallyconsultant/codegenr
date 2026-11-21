@@ -53,7 +53,9 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
    `openssl`, `native-tls` et `hyper-tls` sortent du `Cargo.lock` ; rustls passe par `ring`, sans `aws-lc` qui demanderait cmake en CI Windows.
    Vérifié : `read_beezup_openapi` (ignoré, réseau) passe, et le binaire lit l'openapi de `petstore3.swagger.io` en https.
 7. 🟠 `codegenr/Cargo.toml:63` — les features par défaut de `handlebars_misc_helpers` laissent les templates faire des requêtes HTTP (attohttpc) et compilent jsonnet en C++ : les réduire peut casser des templates existants.
-8. 🔴 `codegenr/Cargo.toml:62` — la régression de handlebars 6 n'est figée que par un commentaire : un test `upstream_bug_handlebars_…` dirait quand la mise à jour devient possible.
+8. 🟢 `codegenr/Cargo.toml:62` — la régression de handlebars 6 n'est figée que par un commentaire : un test `upstream_bug_handlebars_…` dirait quand la mise à jour devient possible.
+   Fait : pas un `upstream_bug_…`, qui ne peut tourner que sur la version boguée, mais un test ordinaire, `partials_called_from_an_each_see_its_variables`, qui garde toute mise à jour.
+   Mesuré : sur 5.1.2 ses 6 cas passent ; sur 6.3.2, la version de la régression, `@key`, `@index`, `@first` et `@last` sont perdus dans le partial (4 cas échouent) ; sur 6.4.4 tout passe, corrigé par 6.4.2 (#758 de `sunng87/handlebars-rust`).
 9. 🟠 `codegenr/Cargo.toml:54` — `serde_yaml` 0.8 n'est plus maintenu (yaml-rust) : la 0.9 avec `Deserializer::from_str` (itération des documents) ou un fork maintenu, à évaluer avec un test.
 
 ## CI et qualité
