@@ -10,6 +10,10 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
 2. 🟢 `codegenr/src/processor/file.rs:68` — un `### FILE` qui ne peut s'écrire est seulement logué, et le code de sortie vaut 0 : l'écriture a lieu dans le `Drop` et l'erreur de `write_all` est jetée, la génération a l'air de réussir en CI.
    Même cause : une erreur au milieu du rendu laissait les fichiers ouverts écrits à moitié, et un `### FILE` jamais fermé était écrit sans rien dire.
    Corrigé : le fichier s'écrit dans `InstructionLineHandler::finish`, appelé sur `### /FILE`, et son erreur remonte avec le chemin (`ProcessorError::Write`) ; un fichier jamais fermé, ou rouvert avant d'être fermé, donne `MissingClosingTag` et n'est pas écrit ; un fichier fermé avant une erreur reste écrit (choix de l'humain) ; « File content is the same » passe de `warn` à `debug`.
+20. 🟠 `codegenr/src/processor/clean.rs:26` — `### CLEAN` supprime hors du dossier `output` : `Path::join` garde tel quel un chemin absolu, et `..` remonte au-dessus.
+   Mesuré : avec `-o out`, `### CLEAN ../victim/*` et `### CLEAN /…/victim/*` vident tous deux le dossier `victim` voisin, sans erreur.
+   `### FILE` a la même cause (`make_path_from_root`, `filesystem.rs:9`) et écrit où on veut.
+   Décision de l'humain : refuser un chemin qui sort de `output` pour `CLEAN` seulement, ou pour `FILE` aussi (des templates écrivent peut-être exprès dans un dossier voisin).
 3. 🟢 `codegenr/src/lib.rs:42` — `custom_helpers` et `global_parameters` sont obligatoires dans `codegenr.toml` (`missing field custom_helpers`), alors que le README dit `global_parameters` optionnel : il manque `#[serde(default)]`.
    Corrigé : les deux en `#[serde(default)]`, `custom_helpers` aussi dit « (Optional) » dans le README, test `custom_helpers_and_global_parameters_are_optional`.
 4. 🟢 `codegenr/Cargo.toml:26` — la lib ne compile pas sans la feature `bin` (`default-features = false`) : `toml` n'est activé que par `bin`, le loader toml en a besoin.
@@ -53,7 +57,9 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
 
 ## Documentation
 
-12. 🔴 `README.md:380` — `__myhelper__.rhai` ne donne pas le helper `myhelper` : c'est le nom du fichier sans `.rhai` qui compte ; `### CLEAN` n'est pas documenté dans la partie Process (`README.md:450`).
+12. 🟢 `README.md:380` — `__myhelper__.rhai` ne donne pas le helper `myhelper` : c'est le nom du fichier sans `.rhai` qui compte ; `### CLEAN` n'est pas documenté dans la partie Process (`README.md:450`).
+   Corrigé : `myhelper.rhai`, cherché aussi dans les sous-dossiers ; la partie Process documente `### CLEAN <glob>` avec un exemple, rejoué avec le binaire (les anciens `*.generated.rs` sont supprimés, `keep.txt` reste).
+   C'est ce test qui a fait trouver l'item 20.
 
 ## Plus tard
 
