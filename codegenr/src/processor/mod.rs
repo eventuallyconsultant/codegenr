@@ -94,7 +94,8 @@ pub fn process(content: &str, output: String) -> Result<ProcessReport, Processor
   // The handlers of the instructions opened and not closed yet, with their opening line.
   let mut active_handlers = HashMap::<String, (usize, &str, Box<dyn InstructionLineHandler>)>::new();
 
-  for (line_number, line) in content.lines().enumerate() {
+  // Numbered from 1, like the lines of the `<intermediate>.rendered.txt` file in an editor.
+  for (line_number, line) in (1..).zip(content.lines()) {
     let captures = INSTRUCTION_LINE_REGEX.find(line);
     match captures {
       None => {
@@ -185,11 +186,11 @@ mod tests {
     Ok(())
   }
 
-  #[test_case("### FILE a.txt\nhello\n### NOPE\n### /FILE\n", "Instruction `NOPE` doest not exist. Line 2: `### NOPE`." ; "error after the opening")]
-  #[test_case("### FILE a.txt\nnever closed\n", "Missing closing tag for `FILE` instruction opened line 0: `### FILE a.txt`." ; "never closed")]
+  #[test_case("### FILE a.txt\nhello\n### NOPE\n### /FILE\n", "Instruction `NOPE` doest not exist. Line 3: `### NOPE`." ; "error after the opening")]
+  #[test_case("### FILE a.txt\nnever closed\n", "Missing closing tag for `FILE` instruction opened line 1: `### FILE a.txt`." ; "never closed")]
   #[test_case(
     "### FILE a.txt\nhello\n### FILE b.txt\n### /FILE\n",
-    "Missing closing tag for `FILE` instruction opened line 0: `### FILE a.txt`." ;
+    "Missing closing tag for `FILE` instruction opened line 1: `### FILE a.txt`." ;
     "opened twice"
   )]
   fn a_file_not_properly_closed_is_an_error_and_is_not_written(rendered: &str, expected_error: &str) -> anyhow::Result<()> {
