@@ -18,3 +18,4 @@ bun = "latest"
 node = "latest" # So many tools need it, but we prefer bun in this project
 
 "cargo:cargo-nextest" = { version = "latest", locked = true }
+"cargo:cargo-deny" = "latest"

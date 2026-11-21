@@ -57,13 +57,14 @@ A [semantic anchor](https://llm-coding.github.io/Semantic-Anchors/) is the estab
 | **nextest**          | `cargo nextest run` skips the doctests, where most helpers are tested: follow it with `cargo test --doc` |
 | **Lint**             | `cargo clippy --workspace --all-targets` (the editor runs clippy on save, all features) |
 | **Format**           | `cargo fmt`                                                                   |
+| **Dependencies**     | `cargo deny check` (advisories, licenses, duplicates, sources; rules and accepted advisories in `deny.toml`) |
 | **Docs**             | `just doc` (`cargo doc --open`)                                               |
 | **Install the CLI**  | `just install` (`cargo install --path codegenr`)                              |
 | **Run a generation** | `cargo run -q -- file` (reads `codegenr.toml` in the current dir), or `cargo run -q -- gen -s <source> -o <output> -t <templates>…` |
 
 ## Toolchain
 
-Managed via `mise.toml`: `just`, `jq`, `cargo-nextest`, `bun` and `node`; Rust stable with `rustfmt` and `clippy` via `rust-toolchain.toml`.
+Managed via `mise.toml`: `just`, `jq`, `cargo-nextest`, `cargo-deny`, `bun` and `node`; Rust stable with `rustfmt` and `clippy` via `rust-toolchain.toml`.
 Install tools with `mise install`.
 Bun is the JavaScript runtime and package manager; Node is there only for third-party tools that need it.
 
@@ -75,7 +76,7 @@ A plain non-interactive shell may pick system tools instead of the mise ones.
 ### Crate Layout
 
 A Cargo workspace with one crate, `codegenr/`: the library `codegenr_lib` (`src/lib.rs`) and the `codegenr` binary (`src/bin/main.rs`).
-The binary and the CLI parsing (`opt.rs`, structopt) sit behind the default `bin` feature, which also pulls `anyhow`, `toml` and `tracing-subscriber`.
+The binary and the CLI parsing (`opt.rs`, clap derive) sit behind the default `bin` feature, which also pulls `anyhow`, `toml` and `tracing-subscriber`.
 
 A `codegenr.toml` holds one section per generation (`source`, `templates`, `output`, `custom_helpers`, `intermediate`, `global_parameters`, the `Options` struct of `lib.rs`); the `gen` subcommand builds a single section from the command line.
 
@@ -110,6 +111,7 @@ A new helper gets registered in `handlebars_stateless_setup` or `handlebars_stat
 
 `codegenr/_samples/` holds the fixtures, read by the tests with paths relative to the crate dir (the cwd of `cargo test`).
 `_samples/render/yaml_output` is an end-to-end golden master: `cargo run -q -- file` run from that folder must leave the committed `output.yaml` unchanged.
+The xml loader has its own golden master (`read_xml_file_test`): each `.xml` sample has its expected `.json` next to it, key order included; `_samples/loader/xml_shapes.xml` holds every shape.
 
 ## Code Style
 
