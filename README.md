@@ -522,6 +522,9 @@ It runs where it stands in the rendered text, so it goes before the `### FILE` i
 
 A file that a previous run generated and this one does not, for an endpoint removed from the api for example, is then deleted.
 
+The paths of `FILE` and `CLEAN` must stay in the `output` folder: an absolute path, or one holding `..`, is an error.
+A template or a source document, downloaded from an url for instance, cannot write or delete files anywhere else.
+
 ## Contribute
 
 You can also open the repository in GitPod with this button

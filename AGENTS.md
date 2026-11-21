@@ -95,7 +95,8 @@ Those enums are large, hence the `#[allow(clippy::result_large_err)]` on the fun
    Registration order matters: `handlebars_misc_setup` first, so codegenr helpers override the `handlebars_misc_helpers` ones of the same name; then the stateless helpers, the stateful ones (the shared `get`/`set` store, `global_parameter`), then the `.rhai` custom helpers (file stem = helper name).
    No HTML escaping; dev mode in debug builds.
 4. **Process** (`processor/`): the rendered text is read line by line; a line matching `^###[^#]*$` is an instruction, so a `####` line is plain content.
-   `### FILE <path>` … `### /FILE` writes under `output`, when its handler is dropped, and skips a file whose content is unchanged; `### CONSOLE` … `### /CONSOLE` prints; `### CLEAN <glob>` has no closing tag and deletes the matching files and folders under `output`.
+   `### FILE <path>` … `### /FILE` writes under `output` on its closing tag (`InstructionLineHandler::finish`), and skips a file whose content is unchanged; `### CONSOLE` … `### /CONSOLE` prints; `### CLEAN <glob>` has no closing tag and deletes the matching files and folders under `output`.
+   Both paths go through `path_in_output`, which refuses an absolute path or a `..`: templates and source documents are not trusted.
    A new instruction implements `Instruction` and gets registered in `get_instructions`.
 
 `intermediate` dumps `<name>.resolved.json` and `<name>.rendered.txt` in the current dir: the first thing to look at when a generation goes wrong.

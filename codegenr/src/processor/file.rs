@@ -1,5 +1,5 @@
 use super::*;
-use crate::filesystem::{create_file_from_path, make_path_from_root};
+use crate::filesystem::create_file_from_path;
 use std::{cell::RefCell, fmt::Write, path::PathBuf};
 
 pub const FILE: &str = "FILE";
@@ -36,7 +36,7 @@ pub struct FileLineHandler {
 
 impl FileLineHandler {
   fn new(output_folder: &str, write_file_path: &str) -> Result<Self, ProcessorError> {
-    let file_path = make_path_from_root(output_folder, write_file_path);
+    let file_path = path_in_output(output_folder, write_file_path)?;
     Ok(Self {
       file_path,
       buffer: RefCell::new(Default::default()),

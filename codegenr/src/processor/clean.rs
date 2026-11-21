@@ -1,6 +1,5 @@
 use super::*;
 use glob::glob;
-use std::path::Path;
 
 pub const CLEAN: &str = "CLEAN";
 
@@ -23,7 +22,7 @@ impl Instruction for CleanInstruction {
       .first()
       .ok_or(ProcessorError::InstructionParameterMissing(CLEAN, "pattern"))?;
 
-    let full_path_pattern = Path::new(&self.output_folder).join(pattern);
+    let full_path_pattern = path_in_output(&self.output_folder, pattern)?;
     let str_pattern = full_path_pattern.to_str().ok_or(ProcessorError::PathBufToStrConvert)?;
     for path in glob(str_pattern)?.flatten() {
       if path.is_dir() {

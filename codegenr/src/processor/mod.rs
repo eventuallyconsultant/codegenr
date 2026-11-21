@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+  collections::HashMap,
+  path::{Component, Path, PathBuf},
+};
 
 mod clean;
 mod console;
@@ -33,6 +36,8 @@ pub enum ProcessorError {
   MissingClosingTag(String, usize, String),
   #[error("Could not write file `{0}`: `{1}`.")]
   Write(std::path::PathBuf, std::io::Error),
+  #[error("`{0}` is outside the output folder: a `FILE` or `CLEAN` path must be relative, without `..`.")]
+  PathOutsideOutput(String),
   #[error("`{0}` instruction needs one '<{1}>' parameter.")]
   InstructionParameterMissing(&'static str, &'static str),
   #[error("Error converting PathBuf to str.")]
@@ -76,6 +81,20 @@ pub struct TranscientLineHandler;
 impl InstructionLineHandler for TranscientLineHandler {
   fn handle_line(&self, _line: &str) -> Result<(), ProcessorError> {
     Ok(())
+  }
+}
+
+/// The path in the output folder, or an error if it would lead out of it:
+/// the paths come from the templates and the source documents, which are not trusted.
+// TO_HUMAN: a symbolic link already in the output folder can still lead out of it, its target is not checked.
+// Add a `canonicalize` check if an output folder may hold links.
+fn path_in_output(output_folder: &str, relative_path: &str) -> Result<PathBuf, ProcessorError> {
+  let stays_inside = Path::new(relative_path)
+    .components()
+    .all(|component| matches!(component, Component::Normal(_) | Component::CurDir));
+  match stays_inside {
+    true => Ok(Path::new(output_folder).join(relative_path)),
+    false => Err(ProcessorError::PathOutsideOutput(relative_path.into())),
   }
 }
 
@@ -198,6 +217,45 @@ mod tests {
     let error = process(rendered, tmp.path().to_string_lossy().into()).expect_err("The rendered text is not properly closed.");
     assert_eq!(error.to_string(), expected_error);
     assert!(!tmp.path().join("a.txt").exists());
+    Ok(())
+  }
+
+  #[test_case("### FILE ../escaped.txt\nhello\n### /FILE\n", "../escaped.txt" ; "file above the output")]
+  #[test_case("### FILE sub/../../escaped.txt\nhello\n### /FILE\n", "sub/../../escaped.txt" ; "file above the output through a subfolder")]
+  #[test_case("### CLEAN ../neighbour/*\n", "../neighbour/*" ; "clean above the output")]
+  fn a_path_out_of_the_output_folder_is_refused(rendered: &str, path: &str) -> anyhow::Result<()> {
+    let tmp = TempDir::with_prefix("PROCESS_tests")?;
+    let neighbour_file = tmp.path().join("neighbour").join("precious.txt");
+    crate::filesystem::create_file(tmp.path(), "neighbour/precious.txt")?;
+    let output = tmp.path().join("output").to_string_lossy().into();
+
+    let error = process(rendered, output).expect_err("The path leads out of the output folder.");
+
+    let expected_error = format!("`{path}` is outside the output folder: a `FILE` or `CLEAN` path must be relative, without `..`.");
+    assert_eq!(error.to_string(), expected_error);
+    assert!(neighbour_file.exists());
+    assert!(!tmp.path().join("escaped.txt").exists());
+    Ok(())
+  }
+
+  #[test]
+  fn an_absolute_path_is_refused() -> anyhow::Result<()> {
+    let tmp = TempDir::with_prefix("PROCESS_tests")?;
+    let absolute = tmp.path().join("escaped.txt");
+    let rendered = format!("### FILE {}\nhello\n### /FILE\n", absolute.display());
+
+    let error = process(&rendered, tmp.path().join("output").to_string_lossy().into()).expect_err("The path is absolute.");
+
+    assert!(matches!(error, ProcessorError::PathOutsideOutput(_)));
+    assert!(!absolute.exists());
+    Ok(())
+  }
+
+  #[test_case("a.txt" ; "file")]
+  #[test_case("./sub/a.txt" ; "subfolder")]
+  #[test_case("**/*.generated.rs" ; "glob")]
+  fn a_path_in_the_output_folder_is_accepted(path: &str) -> anyhow::Result<()> {
+    assert_eq!(path_in_output("output", path)?, Path::new("output").join(path));
     Ok(())
   }
 
