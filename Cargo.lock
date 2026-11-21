@@ -181,7 +181,6 @@ dependencies = [
  "minidom",
  "once_cell",
  "path-dedot",
- "quick-xml 0.38.4",
  "quickxml_to_serde",
  "regex",
  "reqwest",
@@ -978,7 +977,7 @@ version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe549115a674f5ec64c754d85e37d6f42664bd0ef4ffb62b619489ad99c6cb1a"
 dependencies = [
- "quick-xml 0.17.2",
+ "quick-xml",
 ]
 
 [[package]]
@@ -1258,16 +1257,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe1e430bdcf30c9fdc25053b9c459bb1a4672af4617b6c783d7d91dc17c6bbb0"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "quick-xml"
-version = "0.38.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b66c2058c55a409d601666cffe35f04333cf1013010882cec174a7467cd4e21c"
-dependencies = [
- "memchr",
- "serde",
 ]
 
 [[package]]
