@@ -41,6 +41,7 @@ pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(TRIM_CHAR_END_HELPER, Box::new(TrimCharEndHelper));
   handlebars.register_helper(UPPERCASE_FIRST_LETTER_HELPER, Box::new(UppercaseFirstLetterHelper));
   handlebars.register_helper(LOWERCASE_FIRST_LETTER_HELPER, Box::new(LowercaseFirstLetterHelper));
+  handlebars.register_helper(TO_ASCII_HELPER, Box::new(ToAsciiHelper));
   handlebars.register_helper(SPLIT_HELPER, Box::new(SplitHelper));
   handlebars.register_helper(START_WITH_HELPER, Box::new(StartWithHelper));
   handlebars.register_helper(END_WITH_HELPER, Box::new(EndWithHelper));

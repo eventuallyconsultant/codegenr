@@ -63,6 +63,8 @@ handlebars = { version = "5.1.2", features = ["script_helper"] }
 handlebars_misc_helpers = { version = "0.16.3", features = ["default"] }
 # Regex
 regex = "1"
+# Transliteration to ascii, the `to_ascii` helper
+deunicode = "1"
 once_cell = "1"
 # Custom scripting
 rhai = "1"

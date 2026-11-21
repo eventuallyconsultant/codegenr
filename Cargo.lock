@@ -224,6 +224,7 @@ dependencies = [
  "anyhow",
  "clap",
  "csv",
+ "deunicode",
  "glob",
  "graphql-parser",
  "handlebars",

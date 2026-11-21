@@ -22,13 +22,13 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
 - 🟢 `PLAN.md` n°1, le `WARN` « File content is the same » pour chaque fichier inchangé : passé en `debug` avec l'item 2.
 - 🟢 `PLAN.md` n°5, `codegenr gen --help` sans ses options : c'était structopt, corrigé par la migration vers clap (`ec614db`). Revérifié avec le binaire `branch-new` que mise installe chez ce projet : les options s'affichent.
 
-16. 🟠 `codegenr/src/processor/mod.rs:75` — rien ne dit ce qu'une section a fait depuis que le `WARN` est passé en `debug` : une ligne `info` par section, avec le nombre de fichiers écrits et inchangés (`PLAN.md` n°1, « au besoin »).
-17. 🟠 `codegenr/src/helpers/cases.rs` (où irait le helper, à côté de `uppercase_first_letter`) — un identifiant tiré d'un texte accentué garde ses accents (`to_pascal_case "Œuvre introuvable"` → `ŒuvreIntrouvable`), et `to_snake_case` coupe autour de chaque lettre accentuée (`erreur_requ_ête_mal_form_ée`) et ne met pas en minuscule une capitale accentuée en tête (`Échec_du_g_éocodage_fichier_csv`) (`PLAN.md` n°2).
+16. 🟢 `codegenr/src/processor/mod.rs:75` — rien ne dit ce qu'une section a fait depuis que le `WARN` est passé en `debug` : une ligne `info` par section, avec le nombre de fichiers écrits et inchangés (`PLAN.md` n°1, « au besoin »).
+   Fait : `process` rend un `ProcessReport`, et chaque section logue `2 file(s) written, 1 unchanged, in <output>.` en `info`, test `process_reports_the_files_written_and_unchanged`.
+17. 🟢 `codegenr/src/helpers/cases.rs` (où irait le helper, à côté de `uppercase_first_letter`) — un identifiant tiré d'un texte accentué garde ses accents (`to_pascal_case "Œuvre introuvable"` → `ŒuvreIntrouvable`), et `to_snake_case` coupe autour de chaque lettre accentuée (`erreur_requ_ête_mal_form_ée`) et ne met pas en minuscule une capitale accentuée en tête (`Échec_du_g_éocodage_fichier_csv`) (`PLAN.md` n°2).
    Attendu : un helper `to_ascii` à composer, `{{to_snake_case (to_ascii description)}}` → `erreur_requete_mal_formee`, sans changer les conversions existantes ; aucun helper actuel ne le fait (pas de `to_slug` enregistré).
-   Tests : un doc test par cas du tableau de `PLAN.md`, et `upstream_bug_cruet_snake_case_splits_accented_words` qui fige la coupure de `cruet` 0.14 (sous `handlebars_misc_helpers`), en vérifiant d'abord dans sa source et ses issues.
-   Décision de l'humain, la translittération :
-   - `deunicode` (BSD-3-Clause, sans dépendance) : déjà dans le `Cargo.lock`, comme build-dependency de `jmespath`, donc aucune nouvelle crate à télécharger ; il couvre tout l'Unicode (`ß` → `ss`, `€` → `EUR`) mais donne `Œ` → `OE`, pas le `Oe` attendu (`OEuvre introuvable`) ;
-   - une table écrite à la main pour le latin du français : exactement le tableau attendu (`Œ` → `Oe`), une vingtaine de lignes, mais le reste de l'Unicode passe tel quel.
+   Fait avec `deunicode` (choix de l'humain), plus `Œ`/`Æ` → `Oe`/`Ae` devant une minuscule pour garder `OeuvreIntrouvable` ; un doc test par cas du tableau de `PLAN.md`.
+   Le bug amont est figé par `upstream_bug_cruet_snake_case_splits_accented_words` : `char_is_uppercase` de `cruet` vaut `c == c.to_ascii_uppercase()`, vrai pour toute lettre hors ascii, et les lettres sont baissées par `to_ascii_lowercase` ;
+   toujours là sur la branche principale de `cruet` (1.0.0), aucune issue ouverte chez `taidge/cruet` au 2026-11-21.
 18. 🔴 `README.md` — section des helpers : un exemple pour un texte sur plusieurs lignes dans un commentaire, `/// {{replace (trim summary) "\n" "\n/// "}}` (le `"\n"` d'un littéral de template est bien un saut de ligne), et une phrase dans la doc de `one_line` pour dire qu'il recolle les lignes sans espace, voulu pour les signatures (`PLAN.md` n°3 et n°4, écartés côté code).
 
 ## Dépendances et sécurité
