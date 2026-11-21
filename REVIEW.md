@@ -21,6 +21,8 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
    Corrigé : les deux en `#[serde(default)]`, `custom_helpers` aussi dit « (Optional) » dans le README, test `custom_helpers_and_global_parameters_are_optional`.
 4. 🟢 `codegenr/Cargo.toml:26` — la lib ne compile pas sans la feature `bin` (`default-features = false`) : `toml` n'est activé que par `bin`, le loader toml en a besoin.
    Corrigé : `toml` devient une dépendance ordinaire, à côté des autres formats ; une étape `cargo check -p codegenr --lib --no-default-features` des deux workflows empêche le retour du bug.
+21. 🔴 `codegenr/src/loaders/json.rs` — une source qui commence par un BOM UTF-8 ne se lit pas (`- Json: expected value at line 1 column 1`), alors que les éditeurs et outils Windows en mettent souvent : les `sample_swagger.json` et `schema.json` de `_samples/render/test1` à `test3` en ont un.
+   Trouvé en rejouant les samples pour l'item 8 ; retirer le BOM avant d'essayer les formats, dans `json_from_string`.
 5. 🟢 `codegenr/src/loaders/document_path.rs:112` — `source = ""` fait paniquer `load_raw` (`unreachable!`) au lieu d'une erreur ; un `todo!()` reste aussi dans `loaders/mod.rs:150`.
    Corrigé : `load_raw` d'un chemin vide rend `LoaderError::EmptyPath` (`No document to load: its path is empty.`, code de sortie 1), test `loading_an_empty_path_is_an_error` ;
    le `todo!()` disparaît avec `FormatHint::NoIdea`, que `guess_format` remplace par `None` (`Option<FormatHint>`), ce qui évite d'avoir à traiter `NoIdea` dans `try_loaders`.
@@ -55,7 +57,10 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
 7. 🟠 `codegenr/Cargo.toml:63` — les features par défaut de `handlebars_misc_helpers` laissent les templates faire des requêtes HTTP (attohttpc) et compilent jsonnet en C++ : les réduire peut casser des templates existants.
 8. 🟢 `codegenr/Cargo.toml:62` — la régression de handlebars 6 n'est figée que par un commentaire : un test `upstream_bug_handlebars_…` dirait quand la mise à jour devient possible.
    Fait : pas un `upstream_bug_…`, qui ne peut tourner que sur la version boguée, mais un test ordinaire, `partials_called_from_an_each_see_its_variables`, qui garde toute mise à jour.
-   Mesuré : sur 5.1.2 ses 6 cas passent ; sur 6.3.2, la version de la régression, `@key`, `@index`, `@first` et `@last` sont perdus dans le partial (4 cas échouent) ; sur 6.4.4 tout passe, corrigé par 6.4.2 (#758 de `sunng87/handlebars-rust`).
+   Mesuré : sur 5.1.2 ses 8 cas passent ; sur 6.3.2, la version de la régression, `@key`, `@index`, `@first` et `@last` sont perdus dans le partial (4 cas échouent), corrigé par 6.4.2 (#758 de `sunng87/handlebars-rust`).
+   Mais 6.4.4 (avec `handlebars_misc_helpers` 0.17.0) ne suffit pas : ce test et toute la suite passaient, et pourtant les 74 sections de l'autre projet, rejouées sur une copie, changent 21 fichiers générés.
+   Des propriétés `required` deviennent `Option<…>`, et des champs GraphQL perdent leur `!` : `is_oapi3_property_required @key ../required` dans un partial appelé depuis `#each properties`, `../` y est perdu.
+   Deux cas `dot dot` ajoutés au test le montrent (ils échouent sur 6.4.4), aucune issue amont ouverte pour ça au 2026-11-21 ; on reste sur 5.1.2, le commentaire de `Cargo.toml` et AGENTS.md le disent.
 9. 🟠 `codegenr/Cargo.toml:54` — `serde_yaml` 0.8 n'est plus maintenu (yaml-rust) : la 0.9 avec `Deserializer::from_str` (itération des documents) ou un fork maintenu, à évaluer avec un test.
 
 ## CI et qualité

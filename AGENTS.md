@@ -40,7 +40,7 @@ A [semantic anchor](https://llm-coding.github.io/Semantic-Anchors/) is the estab
 ## Critical Rules
 
 - **NEVER bump `handlebars` past 5.1.2 nor `serde_yaml` past 0.8** without the human: they are pinned on purpose (comments in `codegenr/Cargo.toml`).
-  handlebars 6 breaks passing variables to sub-templates (`@key` read in a partial called from an `#each`); serde_yaml 0.9 refuses most files holding more than one YAML document.
+  handlebars 6 breaks passing variables to sub-templates: a partial called from an `#each` loses `../` (still in 6.4.4) and, before 6.4.2, `@key`; `partials_called_from_an_each_see_its_variables` (`render.rs`) shows it, run it on any bump; serde_yaml 0.9 refuses most files holding more than one YAML document.
 - **NEVER add a new dependency** to `codegenr/Cargo.toml` without asking the human.
 - **NEVER clear/delete a failing test** rather than fixing it. If stuck, ask the human.
 - **Tests must pass on Linux, macOS and Windows** (the CI matrix): an assertion on a path carries its `cfg!(windows)` expectation with `\` separators (see `relate_test` in `loaders/mod.rs`, `get_templates_from_directory_test` in `render.rs`).

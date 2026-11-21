@@ -141,14 +141,23 @@ mod tests {
   use serde_json::json;
   use test_case::test_case;
 
-  /// handlebars 6.3.2 loses the `@key`, `@index`, `@first` and `@last` of an `#each` in the partials it calls (4 of these cases fail),
-  /// fixed upstream by 6.4.2 (https://github.com/sunng87/handlebars-rust/pull/758): this test guards any handlebars bump.
+  /// Guards any handlebars bump, every case passes on 5.1.2.
+  /// handlebars 6.3.2 loses the `@key`, `@index`, `@first` and `@last` of an `#each` in the partials it calls,
+  /// fixed upstream by 6.4.2 (https://github.com/sunng87/handlebars-rust/pull/758).
+  /// 6.4.4 still loses the parent context, `../`, in those partials: the two `dot dot` cases fail, no upstream issue yet (2026-11-21).
   #[test_case("{{#each object}}{{> part}}{{/each}}", "{{@key}}={{this}};", "a=1;b=2;" ; "key of an object")]
   #[test_case("{{#each array}}{{> part}}{{/each}}", "{{@index}}:{{this}};", "0:x;1:y;" ; "index of an array")]
   #[test_case("{{#each array}}{{> part}}{{/each}}", "{{#if @first}}first {{/if}}{{this}}{{#if @last}} last{{/if}};", "first x;y last;" ; "first and last")]
   #[test_case("{{#each object}}{{> part name=@key}}{{/each}}", "{{name}};", "a;b;" ; "key passed as a hash parameter")]
   #[test_case("{{#each object}}{{> part}}{{/each}}", "{{> sub}}", "a;b;" ; "key read in a partial of a partial")]
   #[test_case("{{#each object}}{{#with_set \"name\" @key}}{{> part}}{{/with_set}}{{/each}}", "{{get \"name\"}};", "a;b;" ; "key stored by with_set")]
+  #[test_case("{{#each object}}{{> part}}{{/each}}", "{{@key}}:{{../flag}};", "a:yes;b:yes;" ; "parent read with dot dot")]
+  #[test_case(
+    "{{#each object}}{{> part}}{{/each}}",
+    "{{#if (is_oapi3_property_required @key ../required)}}{{@key}} is required;{{/if}}",
+    "a is required;" ;
+    "parent read with dot dot by a helper"
+  )]
   fn partials_called_from_an_each_see_its_variables(main: &str, partial: &str, expected: &str) -> anyhow::Result<()> {
     let mut h = Handlebars::new();
     handlebars_misc_setup(&mut h);
@@ -157,7 +166,10 @@ mod tests {
     h.register_template_string("main", main)?;
     h.register_template_string("part", partial)?;
     h.register_template_string("sub", "{{@key}};")?;
-    let rendered = h.render("main", &json!({ "object": { "a": 1, "b": 2 }, "array": ["x", "y"] }))?;
+    let rendered = h.render(
+      "main",
+      &json!({ "object": { "a": 1, "b": 2 }, "array": ["x", "y"], "flag": "yes", "required": ["a"] }),
+    )?;
     assert_eq!(rendered, expected);
     Ok(())
   }
