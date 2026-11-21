@@ -68,7 +68,8 @@ toml = "0.9"
 # At least 6.4.2: from 6.0 to 6.4.1, a partial called from an `#each` loses `@key`, `@index`, `@first` and `@last`.
 # Run the `partials_called_from_an_each_see_its_variables` test of render.rs on any bump.
 handlebars = { version = "6.4.4", features = ["script_helper"] }
-handlebars_misc_helpers = { version = "0.17.0", features = ["default"] }
+# Without `http_attohttpc` nor `jsonnet`: a template, not trusted, must not reach the network (`http_get`) nor run jsonnet
+handlebars_misc_helpers = { version = "0.17.0", default-features = false, features = ["string", "json", "regex", "uuid"] }
 # Regex
 regex = "1"
 # Transliteration to ascii, the `to_ascii` helper

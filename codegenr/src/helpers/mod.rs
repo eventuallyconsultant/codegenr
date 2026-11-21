@@ -97,3 +97,28 @@ pub fn exec_template_with_global_params(json: serde_json::Value, template: &str,
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use handlebars::RenderErrorReason;
+  use test_case::test_case;
+
+  /// The templates are not trusted: none reaches the network, nor runs jsonnet, a template language of its own.
+  /// The `http_attohttpc` and `jsonnet` features of `handlebars_misc_helpers` stay off (`codegenr/Cargo.toml`).
+  #[test_case("{{http_get \"http://127.0.0.1:9\"}}", "http_get" ; "http get")]
+  #[test_case("{{gitignore_io \"rust\"}}", "gitignore_io" ; "gitignore io")]
+  #[test_case("{{#jsonnet}}{\"a\": 1}{{/jsonnet}}", "jsonnet" ; "jsonnet")]
+  fn a_template_cannot_reach_the_network_nor_run_jsonnet(template: &str, helper: &str) -> anyhow::Result<()> {
+    let mut h = Handlebars::new();
+    handlebars_misc_setup(&mut h);
+    let error = h
+      .render_template(template, &Value::Null)
+      .expect_err("The helper is not registered.");
+    assert!(
+      matches!(error.reason(), RenderErrorReason::HelperNotFound(name) if name == helper),
+      "{error}"
+    );
+    Ok(())
+  }
+}

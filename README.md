@@ -376,6 +376,8 @@ get http://{{host}}:{{port}}{{api_root}}/user HTTP/1.1
 Handlebars is a pretty limited language, but it's extended with `helpers` :
 - it has some standard helpers (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `and`, `or`, `not` ...), provided by the rust handlebars implementation : https://docs.rs/handlebars/latest/handlebars/#built-in-helpers
 - `codegenr` bundles the `handlebars_misc_helpers` to have more helpers : https://github.com/davidB/handlebars_misc_helpers
+  Without `http_get`, `gitignore_io` and `jsonnet`: a template cannot reach the network, nor run another template language.
+  It can still read files and environment variables (`read_to_str`, `env_var`), and it writes code you will run: only use templates you trust.
 - `codegenr` also provides some more home backed helpers : https://docs.rs/codegenr/latest/codegenr/helpers/index.html
 - **Finally** `you` can add your own helpers using the [rhai embedded scripting language](https://rhai.rs/)
   - any `myhelper.rhai` file in the `custom_helpers` folders, or their subfolders, will be available as a `myhelper` handlebars inline helper, usable from the .hbs templates: the helper is named after the file, without `.rhai`.

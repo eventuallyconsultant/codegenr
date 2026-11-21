@@ -17,6 +17,10 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
    Corrigé pour les deux, contre un template ou un document source malveillant (choix de l'humain) : `path_in_output` refuse un chemin absolu ou un `..` (`PathOutsideOutput`), tests `a_path_out_of_the_output_folder_is_refused` (3 cas), `an_absolute_path_is_refused` et `a_path_in_the_output_folder_is_accepted`, qui échouent sans la correction.
    Un template qui écrivait dans un dossier voisin doit maintenant prendre pour `output` leur dossier parent.
    Reste un `TO_HUMAN:` : un lien symbolique déjà présent dans `output` peut encore mener dehors, sa cible n'est pas vérifiée.
+22. 🔴 `codegenr/src/loaders/document_path.rs:32` — les `$ref` d'un document source sont suivis partout : un chemin absolu lit n'importe quel fichier local (`Path::join` le garde tel quel), une URL est téléchargée, même depuis une spec distante.
+   Une spec reçue d'un tiers peut ainsi faire entrer un fichier JSON ou YAML local (un kubeconfig…) dans le document résolu, puis dans le dump `intermediate` et les fichiers générés, ou faire appeler une adresse interne en CI (les métadonnées cloud).
+   Les `..` ne peuvent pas être refusés comme à l'item 20 : l'autre projet en a 579 dans ses `$ref`, et certains remontent au-dessus de `_specs`.
+   Décision de l'humain : refuser un `$ref` absolu (aucun dans l'autre projet), garder les relatifs sous le dossier courant (celui du `codegenr.toml`), et peut-être refuser un `$ref` URL depuis un fichier local (une spec locale peut référencer exprès une spec publique).
 3. 🟢 `codegenr/src/lib.rs:42` — `custom_helpers` et `global_parameters` sont obligatoires dans `codegenr.toml` (`missing field custom_helpers`), alors que le README dit `global_parameters` optionnel : il manque `#[serde(default)]`.
    Corrigé : les deux en `#[serde(default)]`, `custom_helpers` aussi dit « (Optional) » dans le README, test `custom_helpers_and_global_parameters_are_optional`.
 4. 🟢 `codegenr/Cargo.toml:26` — la lib ne compile pas sans la feature `bin` (`default-features = false`) : `toml` n'est activé que par `bin`, le loader toml en a besoin.
@@ -54,7 +58,11 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
    Fait : `rustls-tls-native-roots`, qui garde les certificats du magasin de l'OS comme native-tls (une autorité d'entreprise reste reconnue), et les autres features par défaut de `reqwest` (`charset`, `http2`, `macos-system-configuration`).
    `openssl`, `native-tls` et `hyper-tls` sortent du `Cargo.lock` ; rustls passe par `ring`, sans `aws-lc` qui demanderait cmake en CI Windows.
    Vérifié : `read_beezup_openapi` (ignoré, réseau) passe, et le binaire lit l'openapi de `petstore3.swagger.io` en https.
-7. 🟠 `codegenr/Cargo.toml:63` — les features par défaut de `handlebars_misc_helpers` laissent les templates faire des requêtes HTTP (attohttpc) et compilent jsonnet en C++ : les réduire peut casser des templates existants.
+7. 🟢 `codegenr/Cargo.toml:72` — les features par défaut de `handlebars_misc_helpers` laissent les templates faire des requêtes HTTP (attohttpc) et compilent jsonnet en C++ : les réduire peut casser des templates existants.
+   Plus grave que prévu : `env_var` et `read_to_str` sont toujours enregistrés, un template pouvait lire un secret et l'envoyer par `http_get` pendant la génération, sans laisser de trace.
+   Corrigé (choix de l'humain) : features `string`, `json`, `regex` et `uuid` seulement ; `http_get`, `gitignore_io` et `jsonnet` disparaissent, aucun template connu ne s'en servait.
+   Test `a_template_cannot_reach_the_network_nor_run_jsonnet` (3 cas, échoue sans la correction) ; 10 crates sortent du `Cargo.lock` (`attohttpc`, `jsonnet-sys` et sa lib C++, `webpki-roots`…), et la licence `CDLA-Permissive-2.0` de `deny.toml`.
+   Gardés : `env_var` et `read_to_str`, qui ne peuvent plus que recopier un secret dans un fichier généré, visible dans le diff ; le README dit de n'utiliser que des templates de confiance.
 8. 🟢 `codegenr/Cargo.toml:62` — la régression de handlebars 6 n'est figée que par un commentaire : un test `upstream_bug_handlebars_…` dirait quand la mise à jour devient possible.
    Fait : pas un `upstream_bug_…`, qui ne peut tourner que sur la version boguée, mais un test ordinaire, `partials_called_from_an_each_see_its_variables`, qui garde toute mise à jour.
    Mesuré : sur 5.1.2 ses 8 cas passent ; sur 6.3.2, la version de la régression, `@key`, `@index`, `@first` et `@last` sont perdus dans le partial (4 cas échouent), corrigé par 6.4.2 (#758 de `sunng87/handlebars-rust`).
