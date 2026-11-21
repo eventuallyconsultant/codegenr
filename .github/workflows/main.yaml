@@ -37,8 +37,16 @@ jobs:
         run: |
           cargo build --workspace --release
 
+  # Advisories, licenses, duplicates and sources of the dependencies, rules in deny.toml
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
   publish:
-    needs: tests
+    needs: [tests, deny]
     runs-on: ubuntu-latest
     env:
       RUST_LOG: debug
