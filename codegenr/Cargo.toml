@@ -1,6 +1,6 @@
 [package]
 name = "codegenr"
-version = "0.0.7"
+version = "0.0.8"
 edition = "2021"
 authors = ["Jérôme Rx & contributors <jerome@eventuallyconsultant.com>"]
 description = "Fast json/yaml/openapi code generator based on handlebars templating."
@@ -65,10 +65,10 @@ csv = "1.4"
 toml = "0.9"
 
 # Templating
-# DO NOT UPGRADE: up to 6.4.4 at least, a partial called from an `#each` loses `../` (`@key` too before 6.4.2),
-# shown by the `partials_called_from_an_each_see_its_variables` test of render.rs
-handlebars = { version = "5.1.2", features = ["script_helper"] }
-handlebars_misc_helpers = { version = "0.16.3", features = ["default"] }
+# At least 6.4.2: from 6.0 to 6.4.1, a partial called from an `#each` loses `@key`, `@index`, `@first` and `@last`.
+# Run the `partials_called_from_an_each_see_its_variables` test of render.rs on any bump.
+handlebars = { version = "6.4.4", features = ["script_helper"] }
+handlebars_misc_helpers = { version = "0.17.0", features = ["default"] }
 # Regex
 regex = "1"
 # Transliteration to ascii, the `to_ascii` helper

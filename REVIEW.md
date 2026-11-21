@@ -60,7 +60,10 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
    Mesuré : sur 5.1.2 ses 8 cas passent ; sur 6.3.2, la version de la régression, `@key`, `@index`, `@first` et `@last` sont perdus dans le partial (4 cas échouent), corrigé par 6.4.2 (#758 de `sunng87/handlebars-rust`).
    Mais 6.4.4 (avec `handlebars_misc_helpers` 0.17.0) ne suffit pas : ce test et toute la suite passaient, et pourtant les 74 sections de l'autre projet, rejouées sur une copie, changent 21 fichiers générés.
    Des propriétés `required` deviennent `Option<…>`, et des champs GraphQL perdent leur `!` : `is_oapi3_property_required @key ../required` dans un partial appelé depuis `#each properties`, `../` y est perdu.
-   Deux cas `dot dot` ajoutés au test le montrent (ils échouent sur 6.4.4), aucune issue amont ouverte pour ça au 2026-11-21 ; on reste sur 5.1.2, le commentaire de `Cargo.toml` et AGENTS.md le disent.
+   Deux cas `dot dot` ajoutés au test le montrent (ils échouent sur 6.4.4).
+   Puis : ce `../` perdu n'est pas un bug, handlebars.js 4.7.8 fait pareil (seul son mode `compat` remonte au contexte de l'appelant), c'est la 5.1.2 qui s'en écartait.
+   Monté en 6.4.4, avec `handlebars_misc_helpers` 0.17.0 : les cas `dot dot` disent maintenant que `../` est vide dans le partial, et deux cas montrent le paramètre de partial qui le remplace (`{{> part required=../required}}`).
+   L'autre projet passe désormais les valeurs du parent en paramètres de partial (8 templates) : ses 74 sections génèrent les mêmes fichiers en 5.1.2 et en 6.4.4.
 9. 🟠 `codegenr/Cargo.toml:54` — `serde_yaml` 0.8 n'est plus maintenu (yaml-rust) : la 0.9 avec `Deserializer::from_str` (itération des documents) ou un fork maintenu, à évaluer avec un test.
 
 ## CI et qualité

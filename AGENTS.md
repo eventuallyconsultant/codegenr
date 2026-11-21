@@ -39,8 +39,9 @@ A [semantic anchor](https://llm-coding.github.io/Semantic-Anchors/) is the estab
 
 ## Critical Rules
 
-- **NEVER bump `handlebars` past 5.1.2 nor `serde_yaml` past 0.8** without the human: they are pinned on purpose (comments in `codegenr/Cargo.toml`).
-  handlebars 6 breaks passing variables to sub-templates: a partial called from an `#each` loses `../` (still in 6.4.4) and, before 6.4.2, `@key`; `partials_called_from_an_each_see_its_variables` (`render.rs`) shows it, run it on any bump; serde_yaml 0.9 refuses most files holding more than one YAML document.
+- **NEVER bump `handlebars` past 6.4.4 nor `serde_yaml` past 0.8** without the human: they are pinned on purpose (comments in `codegenr/Cargo.toml`).
+  handlebars keeps rewriting what a partial sees of its caller (6.0 to 6.4.1 lose `@key` in a partial called from an `#each`): `partials_called_from_an_each_see_its_variables` (`render.rs`) guards it, run it on any bump; serde_yaml 0.9 refuses most files holding more than one YAML document.
+  Since handlebars 6, as in handlebars.js, a partial cannot read the context of its caller through `../`: the caller gives it a hash parameter, `{{> part required=../required}}`.
 - **NEVER add a new dependency** to `codegenr/Cargo.toml` without asking the human.
 - **NEVER clear/delete a failing test** rather than fixing it. If stuck, ask the human.
 - **Tests must pass on Linux, macOS and Windows** (the CI matrix): an assertion on a path carries its `cfg!(windows)` expectation with `\` separators (see `relate_test` in `loaders/mod.rs`, `get_templates_from_directory_test` in `render.rs`).
