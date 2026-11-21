@@ -49,31 +49,23 @@ impl InstructionLineHandler for FileLineHandler {
     let f = &mut *self.buffer.borrow_mut();
     Ok(writeln!(f, "{line}")?)
   }
-}
 
-impl Drop for FileLineHandler {
-  fn drop(&mut self) {
+  fn finish(&self) -> Result<(), ProcessorError> {
     let buffer = self.buffer.borrow();
-    if let Ok(content) = std::fs::read_to_string(&self.file_path) {
-      if content == buffer.as_str() {
-        tracing::warn!("File content is the same, not writing it again : {}", self.file_path.display());
-        return;
-      }
+    if std::fs::read_to_string(&self.file_path).is_ok_and(|content| content == *buffer) {
+      tracing::debug!("File content is the same, not writing it again: {}", self.file_path.display());
+      return Ok(());
     }
-
-    if let Ok(mut file) = create_file_from_path(&self.file_path).map_err(|e| {
-      tracing::error!("Error creating file: {}", e);
-      e
-    }) {
-      let _ignored = std::io::Write::write_all(&mut file, buffer.as_bytes());
-    }
+    create_file_from_path(&self.file_path)
+      .and_then(|mut file| std::io::Write::write_all(&mut file, buffer.as_bytes()))
+      .map_err(|e| ProcessorError::Write(self.file_path.clone(), e))
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::filesystem::create_file;
+  use crate::filesystem::{create_dir, create_file};
   use tempfile::TempDir;
 
   #[test]
@@ -85,9 +77,22 @@ mod tests {
     assert!(should_exists_path.exists());
     handler.handle_line("hello ...")?;
     assert!(should_exists_path.exists());
-    drop(handler);
+    handler.finish()?;
     let content = std::fs::read_to_string(should_exists_path)?;
     assert_eq!(content, "hello ...\n");
+    Ok(())
+  }
+
+  #[test]
+  pub fn finish_fails_on_a_file_it_cannot_write() -> anyhow::Result<()> {
+    let tmp = TempDir::with_prefix("FILE_tests")?;
+    // A folder where the file should be: `File::create` fails on every OS, a read-only folder does not on Windows.
+    create_dir(tmp.path(), "taken.txt")?;
+    let instruction = FileInstruction::new(tmp.path().to_string_lossy().into());
+    let handler = instruction.start(vec!["taken.txt".into()])?;
+    handler.handle_line("hello ...")?;
+    let error = handler.finish().expect_err("A folder is in the way.");
+    assert!(matches!(error, ProcessorError::Write(path, _) if path == tmp.path().join("taken.txt")));
     Ok(())
   }
 }

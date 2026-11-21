@@ -7,10 +7,29 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
 
 1. 🟢 `codegenr/src/loaders/mod.rs:155` — une source mal formée ne donne que `Did not try all the file loaders.` : `DeserialisationError` exige les erreurs des 6 formats, aucune liste de `json_from_string` ne les essaie toutes, la vraie erreur de parsing est perdue.
    Corrigé : l'erreur nomme le document et donne une ligne par format essayé (`- Yaml: … at line 2 column 2`), test `unreadable_content_gives_the_error_of_each_format_tried`.
-2. 🔴 `codegenr/src/processor/file.rs:68` — un `### FILE` qui ne peut s'écrire est seulement logué, et le code de sortie vaut 0 : l'écriture a lieu dans le `Drop` et l'erreur de `write_all` est jetée, la génération a l'air de réussir en CI.
+2. 🟢 `codegenr/src/processor/file.rs:68` — un `### FILE` qui ne peut s'écrire est seulement logué, et le code de sortie vaut 0 : l'écriture a lieu dans le `Drop` et l'erreur de `write_all` est jetée, la génération a l'air de réussir en CI.
+   Même cause : une erreur au milieu du rendu laissait les fichiers ouverts écrits à moitié, et un `### FILE` jamais fermé était écrit sans rien dire.
+   Corrigé : le fichier s'écrit dans `InstructionLineHandler::finish`, appelé sur `### /FILE`, et son erreur remonte avec le chemin (`ProcessorError::Write`) ; un fichier jamais fermé, ou rouvert avant d'être fermé, donne `MissingClosingTag` et n'est pas écrit ; un fichier fermé avant une erreur reste écrit (choix de l'humain) ; « File content is the same » passe de `warn` à `debug`.
 3. 🔴 `codegenr/src/lib.rs:42` — `custom_helpers` et `global_parameters` sont obligatoires dans `codegenr.toml` (`missing field custom_helpers`), alors que le README dit `global_parameters` optionnel : il manque `#[serde(default)]`.
 4. 🔴 `codegenr/Cargo.toml:26` — la lib ne compile pas sans la feature `bin` (`default-features = false`) : `toml` n'est activé que par `bin`, le loader toml en a besoin.
 5. 🔴 `codegenr/src/loaders/document_path.rs:112` — `source = ""` fait paniquer `load_raw` (`unreachable!`) au lieu d'une erreur ; un `todo!()` reste aussi dans `loaders/mod.rs:150`.
+15. 🔴 `codegenr/src/processor/mod.rs:80` — les numéros de ligne des erreurs du processeur partent de 0 (`enumerate`) : `### NOPE` en 3ᵉ ligne est annoncé `Line 2`, et un `### FILE` en tête `opened line 0`.
+
+## Besoins remontés par un projet qui utilise codegenr (`PLAN.md`)
+
+Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes fichiers que `dev`.
+
+- 🟢 `PLAN.md` n°1, le `WARN` « File content is the same » pour chaque fichier inchangé : passé en `debug` avec l'item 2.
+- 🟢 `PLAN.md` n°5, `codegenr gen --help` sans ses options : c'était structopt, corrigé par la migration vers clap (`ec614db`). Revérifié avec le binaire `branch-new` que mise installe chez ce projet : les options s'affichent.
+
+16. 🟠 `codegenr/src/processor/mod.rs:75` — rien ne dit ce qu'une section a fait depuis que le `WARN` est passé en `debug` : une ligne `info` par section, avec le nombre de fichiers écrits et inchangés (`PLAN.md` n°1, « au besoin »).
+17. 🟠 `codegenr/src/helpers/cases.rs` (où irait le helper, à côté de `uppercase_first_letter`) — un identifiant tiré d'un texte accentué garde ses accents (`to_pascal_case "Œuvre introuvable"` → `ŒuvreIntrouvable`), et `to_snake_case` coupe autour de chaque lettre accentuée (`erreur_requ_ête_mal_form_ée`) et ne met pas en minuscule une capitale accentuée en tête (`Échec_du_g_éocodage_fichier_csv`) (`PLAN.md` n°2).
+   Attendu : un helper `to_ascii` à composer, `{{to_snake_case (to_ascii description)}}` → `erreur_requete_mal_formee`, sans changer les conversions existantes ; aucun helper actuel ne le fait (pas de `to_slug` enregistré).
+   Tests : un doc test par cas du tableau de `PLAN.md`, et `upstream_bug_cruet_snake_case_splits_accented_words` qui fige la coupure de `cruet` 0.14 (sous `handlebars_misc_helpers`), en vérifiant d'abord dans sa source et ses issues.
+   Décision de l'humain, la translittération :
+   - `deunicode` (BSD-3-Clause, sans dépendance) : déjà dans le `Cargo.lock`, comme build-dependency de `jmespath`, donc aucune nouvelle crate à télécharger ; il couvre tout l'Unicode (`ß` → `ss`, `€` → `EUR`) mais donne `Œ` → `OE`, pas le `Oe` attendu (`OEuvre introuvable`) ;
+   - une table écrite à la main pour le latin du français : exactement le tableau attendu (`Œ` → `Oe`), une vingtaine de lignes, mais le reste de l'Unicode passe tel quel.
+18. 🔴 `README.md` — section des helpers : un exemple pour un texte sur plusieurs lignes dans un commentaire, `/// {{replace (trim summary) "\n" "\n/// "}}` (le `"\n"` d'un littéral de template est bien un saut de ligne), et une phrase dans la doc de `one_line` pour dire qu'il recolle les lignes sans espace, voulu pour les signatures (`PLAN.md` n°3 et n°4, écartés côté code).
 
 ## Dépendances et sécurité
 
@@ -21,7 +40,7 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
 
 ## CI et qualité
 
-10. 🔴 `.github/workflows/dev.yaml:32` — 2 warnings clippy à corriger (8 avant l'item 1), puis `clippy -D warnings` et `fmt --check` en CI ; `actions/checkout` v2 → v7.
+10. 🔴 `.github/workflows/dev.yaml:32` — 1 warning clippy à corriger (8 avant les items 1 et 2), puis `clippy -D warnings` et `fmt --check` en CI ; `actions/checkout` v2 → v7.
 11. 🔴 `codegenr/src/processor/mod.rs:122` — `process_test` est `#[ignore]` : il écrit dans le dossier courant, un `tempfile` le rendrait exécutable.
 
 ## Documentation
