@@ -377,7 +377,7 @@ Handlebars is a pretty limited language, but it's extended with `helpers` :
 - `codegenr` bundles the `handlebars_misc_helpers` to have more helpers : https://github.com/davidB/handlebars_misc_helpers
 - `codegenr` also provides some more home backed helpers : https://docs.rs/codegenr/latest/codegenr/helpers/index.html
 - **Finally** `you` can add your own helpers using the [rhai embedded scripting language](https://rhai.rs/)
-  - any `__myhelper__.rhai` file in the custom_helpers folder will be available as a `myhelper` handlebars inline helper, usable from the .hbs templates.
+  - any `myhelper.rhai` file in the `custom_helpers` folders, or their subfolders, will be available as a `myhelper` handlebars inline helper, usable from the .hbs templates: the helper is named after the file, without `.rhai`.
 
 Here is a simple example and what it is used for:
 
@@ -507,6 +507,20 @@ World !
 ```txt
 Hello
 ```
+
+`### CLEAN <glob>` deletes the files and folders of the `output` folder that match the glob, and has no closing tag.
+It runs where it stands in the rendered text, so it goes before the `### FILE` instructions whose files it must not delete:
+
+```handlebars
+### CLEAN **/*.generated.rs
+{{#each paths}}
+### FILE {{@key}}.generated.rs
+...
+### /FILE
+{{/each}}
+```
+
+A file that a previous run generated and this one does not, for an endpoint removed from the api for example, is then deleted.
 
 ## Contribute
 
