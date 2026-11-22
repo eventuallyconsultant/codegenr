@@ -530,9 +530,6 @@ A template or a source document, downloaded from an url for instance, cannot wri
 
 ## Contribute
 
-You can also open the repository in GitPod with this button
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/eventuallyconsultant/codegenr)
-
 In the command line you can :
 
 - `cargo test` to launch all the unit tests
