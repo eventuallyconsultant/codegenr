@@ -67,9 +67,9 @@ csv = "1.4"
 toml = "0.9"
 
 # Templating
-# At least 6.4.2: from 6.0 to 6.4.1, a partial called from an `#each` loses `@key`, `@index`, `@first` and `@last`.
-# Run the `partials_called_from_an_each_see_its_variables` test of render.rs on any bump.
-handlebars = { version = "6.4.4", features = ["script_helper"] }
+# Pinned exactly: most 6.x releases rewrote what a partial sees of its caller (6.0 to 6.4.1 lose `@key` in a partial called from an `#each`),
+# and `cargo install` without `--locked` would take the next one. Run `partials_called_from_an_each_see_its_variables` (render.rs) on any bump.
+handlebars = { version = "=6.4.4", features = ["script_helper"] }
 # Without `http_attohttpc` nor `jsonnet`: a template, not trusted, must not reach the network (`http_get`) nor run jsonnet
 handlebars_misc_helpers = { version = "0.17.0", default-features = false, features = ["string", "json", "regex", "uuid"] }
 # Regex
