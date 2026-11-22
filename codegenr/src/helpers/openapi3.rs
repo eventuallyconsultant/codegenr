@@ -50,11 +50,11 @@ pub struct IsOApi3ParamRequiredHelper;
 impl HelperDef for IsOApi3ParamRequiredHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(1, IS_OAPI3_PARAM_REQUIRED)?;
     let json = h.get_param_as_json_or_fail(0, IS_OAPI3_PARAM_REQUIRED)?;
     let required = json["required"].as_bool().unwrap_or(false);
@@ -98,11 +98,11 @@ pub struct IsOApi3PropRequiredHelper;
 impl HelperDef for IsOApi3PropRequiredHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<handlebars::ScopedJson<'reg, 'rc>, handlebars::RenderError> {
+  ) -> Result<handlebars::ScopedJson<'rc>, handlebars::RenderError> {
     h.ensure_arguments_count(2, IS_OAPI3_PROP_REQUIRED)?;
     let name = h.get_param_as_json_or_fail(0, IS_OAPI3_PROP_REQUIRED)?;
     let required = h

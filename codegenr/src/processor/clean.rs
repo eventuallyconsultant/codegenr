@@ -1,6 +1,5 @@
 use super::*;
 use glob::glob;
-use std::path::Path;
 
 pub const CLEAN: &str = "CLEAN";
 
@@ -19,9 +18,11 @@ impl Instruction for CleanInstruction {
     CLEAN
   }
   fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, ProcessorError> {
-    let pattern = params.get(0).ok_or(ProcessorError::InstructionParameterMissing(CLEAN, "pattern"))?;
+    let pattern = params
+      .first()
+      .ok_or(ProcessorError::InstructionParameterMissing(CLEAN, "pattern"))?;
 
-    let full_path_pattern = Path::new(&self.output_folder).join(pattern);
+    let full_path_pattern = path_in_output(&self.output_folder, pattern)?;
     let str_pattern = full_path_pattern.to_str().ok_or(ProcessorError::PathBufToStrConvert)?;
     for path in glob(str_pattern)?.flatten() {
       if path.is_dir() {
@@ -35,10 +36,10 @@ impl Instruction for CleanInstruction {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
   use crate::filesystem::{create_dir, create_file};
-  use tempdir::TempDir;
+  use tempfile::TempDir;
 
   #[test]
   pub fn clean_not_existing_path_should_not_fail() -> anyhow::Result<()> {
@@ -49,7 +50,7 @@ mod test {
 
   #[test]
   pub fn clean_a_single_file() -> anyhow::Result<()> {
-    let tmp = TempDir::new("CLEAN_tests")?;
+    let tmp = TempDir::with_prefix("CLEAN_tests")?;
     let instruction = CleanInstruction::new(tmp.path().to_string_lossy().into());
     let (_, file_path) = create_file(tmp.path(), "plop.rs")?;
     assert!(file_path.exists());
@@ -60,7 +61,7 @@ mod test {
 
   #[test]
   pub fn clean_a_pattern() -> anyhow::Result<()> {
-    let tmp = TempDir::new("CLEAN_tests")?;
+    let tmp = TempDir::with_prefix("CLEAN_tests")?;
     let instruction = CleanInstruction::new(tmp.path().to_string_lossy().into());
     let (_, file_path1) = create_file(tmp.path(), "plop.rs")?;
     let (_, file_path2) = create_file(tmp.path(), "sub/plop.rs")?;
@@ -74,7 +75,7 @@ mod test {
 
   #[test]
   pub fn clean_a_directory() -> anyhow::Result<()> {
-    let tmp = TempDir::new("CLEAN_tests")?;
+    let tmp = TempDir::with_prefix("CLEAN_tests")?;
     let instruction = CleanInstruction::new(tmp.path().to_string_lossy().into());
     let dir_path = create_dir(tmp.path(), "directory")?;
     assert!(dir_path.exists() && dir_path.is_dir());

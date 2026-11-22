@@ -27,6 +27,7 @@ pub struct TemplateCollection {
 }
 
 impl TemplateCollection {
+  #[allow(clippy::result_large_err)]
   pub fn from_list(templates: impl IntoIterator<Item = Template>) -> Result<TemplateCollection, RenderError> {
     let mut main: Option<Template> = None;
     let mut partials = HashMap::<String, Template>::new();
@@ -56,9 +57,10 @@ impl TemplateCollection {
     Ok(Self { main, partials })
   }
 
+  #[allow(clippy::result_large_err)]
   pub fn setup_handlebars(&self, handlebars: &mut Handlebars) -> Result<(), RenderError> {
     handlebars.register_template_file(self.main.template_name(), self.main.file_path())?;
-    for (_, value) in self.partials.iter() {
+    for value in self.partials.values() {
       handlebars.register_template_file(value.template_name(), value.file_path())?
     }
     Ok(())
@@ -104,9 +106,16 @@ impl Template {
   }
 }
 
+#[allow(clippy::result_large_err)]
+/// A file or folder of an editor or a tool, like the `.#main.hbs` lock of Emacs or a `.history` folder: never a template.
+/// The folder given itself may be `.`.
+fn is_hidden(entry: &walkdir::DirEntry) -> bool {
+  entry.depth() > 0 && entry.file_name().to_str().is_some_and(|name| name.starts_with('.'))
+}
+
 pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, RenderError> {
   let mut result = vec![];
-  for entry in WalkDir::new(dir_path) {
+  for entry in WalkDir::new(dir_path).into_iter().filter_entry(|entry| !is_hidden(entry)) {
     let entry = entry?;
 
     let file_path = entry.path().to_str();
@@ -132,18 +141,69 @@ pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, Ren
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
-  use crate::helpers::handlebars_setup;
+  use crate::helpers::*;
+  use serde_json::json;
+  use test_case::test_case;
+
+  /// Editors and tools leave hidden files in the template folders, like the `.#main.hbs` lock of Emacs or a `.history` folder.
+  #[test]
+  fn hidden_files_and_folders_are_not_templates() -> anyhow::Result<()> {
+    let tmp = tempfile::TempDir::with_prefix("RENDER_tests")?;
+    for path in ["main.hbs", "_part.hbs", ".#main.hbs", ".history/main_20261122.hbs"] {
+      crate::filesystem::create_file(tmp.path(), path)?;
+    }
+    let templates = get_templates_from_directory(&tmp.path().display().to_string())?;
+    let mut names: Vec<&str> = templates.iter().map(Template::template_name).collect();
+    names.sort();
+    assert_eq!(names, ["main", "part"]);
+    Ok(())
+  }
+
+  /// Guards any handlebars bump.
+  /// From 6.0 to 6.4.1, handlebars loses the `@key`, `@index`, `@first` and `@last` of an `#each` in the partials it calls,
+  /// fixed upstream by 6.4.2 (https://github.com/sunng87/handlebars-rust/pull/758).
+  /// Since 6.0, a partial cannot read the context of its caller through `../`, as in handlebars.js (5.1.2 could):
+  /// the caller gives it what it needs as a hash parameter.
+  #[test_case("{{#each object}}{{> part}}{{/each}}", "{{@key}}={{this}};", "a=1;b=2;" ; "key of an object")]
+  #[test_case("{{#each array}}{{> part}}{{/each}}", "{{@index}}:{{this}};", "0:x;1:y;" ; "index of an array")]
+  #[test_case("{{#each array}}{{> part}}{{/each}}", "{{#if @first}}first {{/if}}{{this}}{{#if @last}} last{{/if}};", "first x;y last;" ; "first and last")]
+  #[test_case("{{#each object}}{{> part name=@key}}{{/each}}", "{{name}};", "a;b;" ; "key passed as a hash parameter")]
+  #[test_case("{{#each object}}{{> part}}{{/each}}", "{{> sub}}", "a;b;" ; "key read in a partial of a partial")]
+  #[test_case("{{#each object}}{{#with_set \"name\" @key}}{{> part}}{{/with_set}}{{/each}}", "{{get \"name\"}};", "a;b;" ; "key stored by with_set")]
+  #[test_case("{{#each object}}{{> part}}{{/each}}", "{{@key}}:{{../flag}};", "a:;b:;" ; "parent read with dot dot is empty")]
+  #[test_case("{{#each object}}{{> part flag=../flag}}{{/each}}", "{{@key}}:{{flag}};", "a:yes;b:yes;" ; "parent passed as a hash parameter")]
+  #[test_case(
+    "{{#each object}}{{> part required=../required}}{{/each}}",
+    "{{#if (is_oapi3_property_required @key required)}}{{@key}} is required;{{/if}}",
+    "a is required;" ;
+    "parent passed as a hash parameter to a helper"
+  )]
+  fn partials_called_from_an_each_see_its_variables(main: &str, partial: &str, expected: &str) -> anyhow::Result<()> {
+    let mut h = Handlebars::new();
+    handlebars_misc_setup(&mut h);
+    handlebars_stateless_setup(&mut h);
+    handlebars_statefull_setup(&mut h, Default::default());
+    h.register_template_string("main", main)?;
+    h.register_template_string("part", partial)?;
+    h.register_template_string("sub", "{{@key}};")?;
+    let rendered = h.render(
+      "main",
+      &json!({ "object": { "a": 1, "b": 2 }, "array": ["x", "y"], "flag": "yes", "required": ["a"] }),
+    )?;
+    assert_eq!(rendered, expected);
+    Ok(())
+  }
 
   #[test]
   fn handlebars_loading_test() -> Result<(), anyhow::Error> {
     let list = get_templates_from_directory("_samples/render/test_denis")?;
     let collection = TemplateCollection::from_list(list)?;
     let mut h = Handlebars::new();
-    handlebars_setup(&mut h, Default::default());
-    let result = collection.setup_handlebars(&mut h)?;
-    dbg!(result);
+    handlebars_stateless_setup(&mut h);
+    handlebars_statefull_setup(&mut h, Default::default());
+    collection.setup_handlebars(&mut h)?;
     Ok(())
   }
 
@@ -151,9 +211,8 @@ mod test {
   fn get_templates_from_directory_test() -> Result<(), anyhow::Error> {
     let mut templates = get_templates_from_directory("./_samples/render/templates")?;
     templates.sort_by_key(|t| t.file_path.clone());
-    let expected: Vec<Template>;
-    if cfg!(windows) {
-      expected = vec![
+    let expected = if cfg!(windows) {
+      vec![
         Template::new(
           TemplateType::Partial,
           "_other_partial.hbs",
@@ -163,9 +222,9 @@ mod test {
         Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates\\sub\\_plop.hbs"),
         Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates\\sub\\plop.hbs"),
         Template::new(TemplateType::Main, "test.hbs", "./_samples/render/templates\\test.hbs"),
-      ];
+      ]
     } else {
-      expected = vec![
+      vec![
         Template::new(
           TemplateType::Partial,
           "_other_partial.hbs",
@@ -175,13 +234,13 @@ mod test {
         Template::new(TemplateType::Partial, "_plop.hbs", "./_samples/render/templates/sub/_plop.hbs"),
         Template::new(TemplateType::Main, "plop.hbs", "./_samples/render/templates/sub/plop.hbs"),
         Template::new(TemplateType::Main, "test.hbs", "./_samples/render/templates/test.hbs"),
-      ];
-    }
+      ]
+    };
 
     // dbg!(&templates, &expected);
     assert_eq!(templates, expected);
 
-    let first = templates.get(0).expect("?");
+    let first = templates.first().expect("?");
     assert_eq!(first.template_name(), "other_partial");
     Ok(())
   }

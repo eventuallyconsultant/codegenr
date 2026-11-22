@@ -1,6 +1,6 @@
 use super::*;
-use crate::filesystem::create_file;
-use std::{cell::RefCell, fs::File, io::Write};
+use crate::filesystem::create_file_from_path;
+use std::{cell::RefCell, fmt::Write, path::PathBuf};
 
 pub const FILE: &str = "FILE";
 
@@ -20,7 +20,7 @@ impl Instruction for FileInstruction {
   }
   fn start(&self, params: Vec<String>) -> Result<Box<dyn InstructionLineHandler>, ProcessorError> {
     let file_path = params
-      .get(0)
+      .first()
       .ok_or(ProcessorError::InstructionParameterMissing(FILE, "file_name"))?;
     Ok(Box::new(FileLineHandler::new(&self.output_folder, file_path)?) as Box<dyn InstructionLineHandler>)
   }
@@ -30,45 +30,70 @@ impl Instruction for FileInstruction {
 }
 
 pub struct FileLineHandler {
-  file: RefCell<File>,
+  file_path: PathBuf,
+  buffer: RefCell<String>,
 }
 
 impl FileLineHandler {
   fn new(output_folder: &str, write_file_path: &str) -> Result<Self, ProcessorError> {
-    let (file, _) = create_file(output_folder, write_file_path)?;
-    Ok(Self { file: RefCell::new(file) })
+    let file_path = path_in_output(output_folder, write_file_path)?;
+    Ok(Self {
+      file_path,
+      buffer: RefCell::new(Default::default()),
+    })
   }
 }
 
 impl InstructionLineHandler for FileLineHandler {
   fn handle_line(&self, line: &str) -> Result<(), ProcessorError> {
-    let mut f = self.file.borrow_mut();
-    f.write_all(line.as_bytes())?;
-    f.write_all("\n".as_bytes())?;
-    Ok(())
+    let f = &mut *self.buffer.borrow_mut();
+    Ok(writeln!(f, "{line}")?)
+  }
+
+  fn finish(&self) -> Result<Finished, ProcessorError> {
+    let buffer = self.buffer.borrow();
+    if std::fs::read_to_string(&self.file_path).is_ok_and(|content| content == *buffer) {
+      tracing::debug!("File content is the same, not writing it again: {}", self.file_path.display());
+      return Ok(Finished::FileUnchanged);
+    }
+    create_file_from_path(&self.file_path)
+      .and_then(|mut file| std::io::Write::write_all(&mut file, buffer.as_bytes()))
+      .map_err(|e| ProcessorError::Write(self.file_path.clone(), e))?;
+    Ok(Finished::FileWritten)
   }
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
   use super::*;
-  use crate::filesystem::make_path_from_root;
-  use std::io::Read;
-  use tempdir::TempDir;
+  use crate::filesystem::{create_dir, create_file};
+  use tempfile::TempDir;
 
   #[test]
   pub fn start_not_existing_file_should_create_file() -> anyhow::Result<()> {
-    let tmp = TempDir::new("FILE_tests")?;
+    let tmp = TempDir::with_prefix("FILE_tests")?;
     let instruction = FileInstruction::new(tmp.path().to_string_lossy().into());
     let handler = instruction.start(vec!["sub/plop.txt".into()])?;
-    let should_exists_path = make_path_from_root(tmp.path(), "sub/plop.txt");
+    let (_file, should_exists_path) = create_file(tmp.path(), "sub/plop.txt")?;
     assert!(should_exists_path.exists());
     handler.handle_line("hello ...")?;
     assert!(should_exists_path.exists());
-    drop(handler);
-    let mut content = String::new();
-    File::open(should_exists_path)?.read_to_string(&mut content)?;
+    handler.finish()?;
+    let content = std::fs::read_to_string(should_exists_path)?;
     assert_eq!(content, "hello ...\n");
+    Ok(())
+  }
+
+  #[test]
+  pub fn finish_fails_on_a_file_it_cannot_write() -> anyhow::Result<()> {
+    let tmp = TempDir::with_prefix("FILE_tests")?;
+    // A folder where the file should be: `File::create` fails on every OS, a read-only folder does not on Windows.
+    create_dir(tmp.path(), "taken.txt")?;
+    let instruction = FileInstruction::new(tmp.path().to_string_lossy().into());
+    let handler = instruction.start(vec!["taken.txt".into()])?;
+    handler.handle_line("hello ...")?;
+    let error = handler.finish().expect_err("A folder is in the way.");
+    assert!(matches!(error, ProcessorError::Write(path, _) if path == tmp.path().join("taken.txt")));
     Ok(())
   }
 }

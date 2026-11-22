@@ -1,0 +1,21 @@
+[settings]
+experimental = true
+npm.package_manager = "bun"
+cargo.binstall_native = true
+http_retries = 10
+fetch_remote_versions_timeout = "60s"
+
+[env]
+
+
+[tools]
+# COMMON TOOLS
+just = "latest"
+jq = "latest"
+
+# JS/TS/Front
+bun = "latest"
+node = "latest" # So many tools need it, but we prefer bun in this project
+
+"cargo:cargo-nextest" = { version = "latest", locked = true }
+"cargo:cargo-deny" = "latest"

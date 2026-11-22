@@ -1,0 +1,20 @@
+### FILE output.yaml
+
+data:
+  name: {{name}}
+  age: {{age}}
+  cars: 
+  {{#each cars}}
+    - {{this}}
+  {{/each}}
+
+
+# test yaml output helper
+# ==============================
+{{ json_str_query "foo" "foo:\n bar:\n  baz: true\n" format="yaml"}}
+
+# test yaml output of current context
+# ==============================
+{{ json_str_query "@" (json_to_str this) format="yaml"}}
+
+### /FILE

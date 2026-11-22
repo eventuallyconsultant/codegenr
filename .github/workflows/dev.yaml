@@ -29,12 +29,38 @@ jobs:
       - name: Show rustup toolchain version
         run: rustup show
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
 
       - name: Unit tests
         run: |
           cargo test --workspace
 
+      - name: Library without the binary features
+        run: |
+          cargo check -p codegenr --lib --no-default-features
+
       - name: Build
         run: |
           cargo build --workspace
+
+  # Advisories, licenses, duplicates and sources of the dependencies, rules in deny.toml
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  # Formatting and clippy: any warning fails
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Format
+        run: |
+          cargo fmt --all --check
+
+      - name: Clippy
+        run: |
+          cargo clippy --workspace --all-targets -- -D warnings

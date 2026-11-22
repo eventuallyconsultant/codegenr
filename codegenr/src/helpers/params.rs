@@ -1,5 +1,5 @@
 use super::handlebars_ext::HandlebarsExt;
-use handlebars::{HelperDef, RenderError, ScopedJson};
+use handlebars::{HelperDef, RenderError, RenderErrorReason, ScopedJson};
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -43,11 +43,11 @@ impl GlobalParameterHelper {
 impl HelperDef for GlobalParameterHelper {
   fn call_inner<'reg: 'rc, 'rc>(
     &self,
-    h: &handlebars::Helper<'reg, 'rc>,
+    h: &handlebars::Helper<'rc>,
     _: &'reg handlebars::Handlebars<'reg>,
     _: &'rc handlebars::Context,
     _: &mut handlebars::RenderContext<'reg, 'rc>,
-  ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+  ) -> Result<ScopedJson<'rc>, RenderError> {
     h.ensure_arguments_count_min(1, GLOBAL_PARAMETERS_HELPER)?;
     h.ensure_arguments_count_max(2, GLOBAL_PARAMETERS_HELPER)?;
     let key = h.get_param_as_str_or_fail(0, GLOBAL_PARAMETERS_HELPER)?.to_string();
@@ -57,10 +57,13 @@ impl HelperDef for GlobalParameterHelper {
       None => {
         let strict_mode = h.get_param_as_bool(1).unwrap_or(false);
         if strict_mode {
-          Err(RenderError::new(format!(
-            "`{}`, error: Cannot find a value for key `{}`",
-            GLOBAL_PARAMETERS_HELPER, key
-          )))
+          Err(
+            RenderErrorReason::Other(format!(
+              "`{}`, error: Cannot find a value for key `{}`",
+              GLOBAL_PARAMETERS_HELPER, key
+            ))
+            .into(),
+          )
         } else {
           Ok(ScopedJson::Derived(Default::default()))
         }

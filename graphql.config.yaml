@@ -1,0 +1,8 @@
+schema: [
+  "./codegenr/_samples/graphql/schema.graphql",
+  "./codegenr/_samples/graphql/*_generated.graphql"
+  ]
+documents: [
+  # "./codegenr/_samples/graphql/schema_part.graphql"
+]
+

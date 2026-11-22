@@ -1,6 +1,6 @@
 use crate::{
-  custom::CustomError, helpers::HelpersError, loader::LoaderError, processor::ProcessorError, render::RenderError, resolver::ResolverError,
-  SaverError,
+  SaverError, custom::CustomError, helpers::HelpersError, loaders::LoaderError, processor::ProcessorError, render::RenderError,
+  resolver::ResolverError,
 };
 use thiserror::Error;
 
@@ -22,4 +22,6 @@ pub enum CodegenrError {
   Processing(#[from] ProcessorError),
   #[error("TemplateRender error: `{0}`.")]
   RenderTemp(#[from] handlebars::RenderError),
+  #[error("Codegen batch error: `{0}`.")]
+  Batch(String),
 }

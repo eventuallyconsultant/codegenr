@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE catalog>
+<!-- Every shape the xml loader turns into json, the expected result in xml_shapes.json -->
+<catalog version="2" lang="fr" xmlns="urn:default" xmlns:x="urn:x">
+  <title>Plants &amp; trees</title>
+  <apart>first</apart>
+  <empty/>
+  <empty_with_attr id="7"/>
+  <price currency="EUR">12.50</price>
+  <count>42</count>
+  <negative>-3</negative>
+  <zip>007</zip>
+  <decimal_zip>01.5</decimal_zip>
+  <ratio>0.25</ratio>
+  <flag>true</flag>
+  <item>one</item>
+  <item>two</item>
+  <item><name>three</name></item>
+  <mixed>text <b>bold</b> tail</mixed>
+  <cdata><![CDATA[a < b]]></cdata>
+  <nested><level><leaf>deep</leaf></level></nested>
+  <x:prefixed x:attr="1" plain="p">v</x:prefixed>
+  <apart>second</apart>
+  <last>end</last>
+</catalog>

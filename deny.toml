@@ -1,0 +1,47 @@
+# `cargo deny check`: advisories, licenses, duplicate crates and sources of the dependency graph.
+# https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+# The platforms of the CI matrix (.github/workflows), so the crates of other platforms are not checked.
+targets = [
+  "x86_64-unknown-linux-gnu",
+  "x86_64-apple-darwin",
+  "aarch64-apple-darwin",
+  "x86_64-pc-windows-msvc",
+]
+
+[advisories]
+# A vulnerability always fails; an unmaintained crate fails too, unless ignored below with its reason.
+unmaintained = "all"
+yanked = "deny"
+ignore = [
+  { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml, under serde_yaml 0.9, its last version, used by codegenr and handlebars_misc_helpers" },
+  { id = "RUSTSEC-2026-0249", reason = "smartstring, under rhai, still there in its latest version" },
+]
+
+[licenses]
+# codegenr is GPL-3.0-or-later: every license below is compatible with it.
+allow = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "BSL-1.0",
+  "CC0-1.0",
+  "GPL-3.0-or-later",
+  "ISC",
+  "MIT",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "Unlicense",
+  "Zlib",
+]
+
+[bans]
+# Many crates come twice (thiserror 1 and 2, toml 0.8 and 0.9…): worth a look, not a failure.
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
