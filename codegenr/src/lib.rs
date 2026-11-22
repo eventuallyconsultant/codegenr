@@ -17,6 +17,8 @@ pub mod opt;
 pub mod processor;
 pub mod render;
 pub mod resolver;
+#[cfg(feature = "bin")]
+pub mod watch;
 
 use filesystem::save_file_content;
 use handlebars::Handlebars;
@@ -55,9 +57,7 @@ pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), CodegenrError> {
   let mut errors_count = 0;
   for (name, options) in options_map {
     info!("Running code generation section `{}`", name);
-    // A resolved document holds what its `$ref` lead to, read under the `allowed_sources` of its section: no other section reuses it.
-    let mut resolved_cache = Default::default();
-    if let Err(e) = run_codegenr(options, &mut original_cache, &mut resolved_cache) {
+    if let Err(e) = resolve_section(&options, &mut original_cache).and_then(|json| render_section(&options, &json)) {
       error!("Error while executing the `{}` section: `{}`.", name, e);
       errors_count += 1;
     }
@@ -74,26 +74,29 @@ pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), CodegenrError> {
 #[::tracing::instrument(level = "trace")]
 #[allow(clippy::result_large_err)]
 pub fn run_one_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
-  let mut original_cache = Default::default();
-  let mut resolved_cache = Default::default();
-  run_codegenr(options, &mut original_cache, &mut resolved_cache)
+  let json = resolve_section(&options, &mut Default::default())?;
+  render_section(&options, &json)
 }
 
+/// Loads the source of a section and resolves its `$ref`, the documents read staying in `original_cache` for the next sections.
 #[allow(clippy::result_large_err)]
-#[::tracing::instrument(level = "trace")]
-fn run_codegenr(
-  options: Options,
-  original_cache: &mut OriginalDocumentsHash,
-  resolved_cache: &mut ResolvedDocumentsHash,
-) -> Result<(), errors::CodegenrError> {
+#[::tracing::instrument(level = "trace", skip(original_cache))]
+fn resolve_section(options: &Options, original_cache: &mut OriginalDocumentsHash) -> Result<Rc<Value>, errors::CodegenrError> {
   let document = loaders::DocumentPath::parse(&options.source)?;
   let allowed = resolver::AllowedSources::new(&document, &options.allowed_sources)?;
-  let json = resolver::resolve_refs(document, &allowed, original_cache, resolved_cache)?;
+  // A resolved document holds what its `$ref` lead to, read under the `allowed_sources` of its section: no other section reuses it.
+  let json = resolver::resolve_refs(document, &allowed, original_cache, &mut Default::default())?;
 
   if options.intermediate.is_some() {
     save_intermediate(&options.intermediate, "resolved.json", &format!("{:#}", json))?;
   }
+  Ok(json)
+}
 
+/// Renders the templates of a section with its resolved source, and writes the files: `--watch` does it again on each change.
+#[allow(clippy::result_large_err)]
+#[::tracing::instrument(level = "trace", skip(json))]
+fn render_section(options: &Options, json: &Value) -> Result<(), errors::CodegenrError> {
   let mut all_templates = vec![];
   for t in options.templates.iter() {
     let templates = render::get_templates_from_directory(t)?;
@@ -103,7 +106,7 @@ fn run_codegenr(
   let mut handlebars = Handlebars::new();
   helpers::handlebars_misc_setup(&mut handlebars);
   helpers::handlebars_stateless_setup(&mut handlebars);
-  helpers::handlebars_statefull_setup(&mut handlebars, options.global_parameters);
+  helpers::handlebars_statefull_setup(&mut handlebars, options.global_parameters.clone());
   custom::handlebars_setup(&mut handlebars, &options.custom_helpers)?;
 
   let templates = render::TemplateCollection::from_list(all_templates)?;
@@ -111,7 +114,7 @@ fn run_codegenr(
 
   let main_template_name = templates.main_template_name().to_owned();
 
-  let rendered = handlebars.render(&main_template_name, &(*json))?;
+  let rendered = handlebars.render(&main_template_name, json)?;
 
   save_intermediate(&options.intermediate, "rendered.txt", &rendered)?;
 
@@ -145,6 +148,39 @@ mod tests {
       .ok_or_else(|| anyhow::anyhow!("The `api` section is missing."))?;
     assert!(api.custom_helpers.is_empty());
     assert!(api.global_parameters.is_empty());
+    Ok(())
+  }
+
+  /// What `--watch` does on a change: a section renders again from its source resolved once, which is not read again.
+  #[test]
+  fn a_section_renders_again_from_its_resolved_source() -> anyhow::Result<()> {
+    let tmp = TempDir::with_prefix("LIB_tests")?;
+    let root = tmp.path();
+    let write = |path: &str, content: &str| -> anyhow::Result<()> {
+      let (mut file, _) = filesystem::create_file(root, path)?;
+      file.write_all(content.as_bytes())?;
+      Ok(())
+    };
+    write("api.yaml", "name: World\n")?;
+    write("templates/main.hbs", "### FILE hello.txt\nHello {{name}}\n### /FILE\n")?;
+    let options = Options {
+      source: root.join("api.yaml").display().to_string(),
+      output: root.join("out").display().to_string(),
+      templates: vec![root.join("templates").display().to_string()],
+      intermediate: None,
+      custom_helpers: vec![],
+      global_parameters: Default::default(),
+      allowed_sources: vec![],
+    };
+    let json = resolve_section(&options, &mut Default::default())?;
+    render_section(&options, &json)?;
+    assert_eq!(std::fs::read_to_string(root.join("out").join("hello.txt"))?, "Hello World\n");
+
+    std::fs::remove_file(root.join("api.yaml"))?;
+    write("templates/main.hbs", "### FILE hello.txt\nBonjour {{name}}\n### /FILE\n")?;
+    render_section(&options, &json)?;
+
+    assert_eq!(std::fs::read_to_string(root.join("out").join("hello.txt"))?, "Bonjour World\n");
     Ok(())
   }
 

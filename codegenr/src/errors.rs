@@ -24,4 +24,10 @@ pub enum CodegenrError {
   RenderTemp(#[from] handlebars::RenderError),
   #[error("Codegen batch error: `{0}`.")]
   Batch(String),
+  #[cfg(feature = "bin")]
+  #[error("Error while watching the templates: `{0}`.")]
+  Watch(#[from] notify::Error),
+  #[cfg(feature = "bin")]
+  #[error("The watch stopped: the file watcher is gone.")]
+  WatchStopped,
 }

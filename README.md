@@ -19,6 +19,8 @@ cargo install --git https://github.com/eventuallyconsultant/codegenr --branch de
 
 `codegenr` runs every section of the `codegenr.toml` of the current folder, `codegenr --help` lists the other commands.
 `-v` shows the debug logs, `-vv` the trace ones, and `-q` only the warnings and the errors.
+While you write templates, `codegenr -w` keeps running, and renders a section again as soon as one of its templates or custom helpers changes.
+The sources are read once: run it again to take a change of a source, or of `codegenr.toml`, into account.
 
 ## Documentation
 
@@ -577,7 +579,7 @@ This tool is based on the design of a precedent one written in `C#` : [CodegenUP
 - [ ] Be able to relate all sections in the same flowchart ... some target files can be source for other steps !!
 - [ ] Better examples
 - [ ] Smol strings optimisation ?
-- [ ] Watch mode for the file changes
+- [x] Watch mode for the template and custom helper changes
 - [ ] Make a VSCode extension about all of this to make it live / super user friendly for `everyone`
 
 - [ ] Allow multiple swagger2 documents merging

@@ -103,11 +103,17 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
 
 ## Plus tard
 
-13. 🟠 `codegenr/src/bin/main.rs:5` — pas de réglage de verbosité (le « Verbose/Tracing mode » de la roadmap), édition 2024, mode watch.
+13. 🟢 `codegenr/src/bin/main.rs:5` — pas de réglage de verbosité (le « Verbose/Tracing mode » de la roadmap), édition 2024, mode watch.
    Édition 2024 faite (choix de l'humain) : `cargo fix --edition` ne change aucune ligne, ses deux avertissements d'ordre de `drop` (`lib.rs:56`, `processor/mod.rs:172`) sont sans effet, codegenr n'a aucun `impl Drop` ;
    rustfmt 2024 retrie les imports de 5 fichiers, le workspace passe au `resolver = "3"` (sans changer le `Cargo.lock`), les doctests tournent en un seul binaire (5 s → 0,1 s) ; il faut Rust 1.85 pour compiler.
    Restent : la verbosité (`fmt::init()` sans la feature `env-filter` ignore `RUST_LOG`, le `RUST_LOG: debug` de la CI ne sert à rien) et le mode watch (nouvelle dépendance `notify`).
    Verbosité faite (choix de l'humain) : `-v` (debug), `-vv` (trace, avec les arguments des fonctions `#[instrument]`) et `-q` (warn), globaux, lus avant d'installer `tracing_subscriber` ;
    tests `the_log_level_follows_the_flags` (6 cas), `quiet_and_verbose_together_is_an_error` et `the_command_line_is_well_formed` (`debug_assert` de clap) ; deux lignes dans le README. Reste le mode watch.
-14. 🟠 `codegenr/src/lib.rs:49` — le cache de documents est partagé entre les sections d'un même lancement : si une section prend en source le résultat d'une autre (idée de la roadmap), le fichier régénéré serait relu dans son ancienne version.
+   Mode watch fait (choix de l'humain : pour le développement des templates, donc seulement les templates et les custom helpers) : `codegenr -w`, nouvelle dépendance `notify` 9.0.0 sous la feature `bin` ;
+   `run_codegenr` se coupe en `resolve_section` et `render_section` : les sources sont résolues une fois, une section dont un `.hbs` ou un `.rhai` change est rendue à nouveau ; sans les événements d'accès (le rendu lit les templates), anti-rebond de 200 ms à la main ;
+   un fichier généré, même dans un dossier surveillé, ne relance rien ; une erreur de rendu est affichée et la surveillance continue.
+   Tests `a_change_concerns_the_templates_and_helpers_of_a_section` (8 cas), `a_section_renders_again_from_its_resolved_source` (la source supprimée n'est pas relue), `the_watch_flag_is_read` ;
+   essayé à la main (template, helper, erreur puis correction), puis sur l'autre projet : un partial de `axum-api` rend 11 sections en 0,3 s, un de `rust/common` 66 sections en 1,6 s, contre 2,1 s pour tout relancer.
+14. ⚪ `codegenr/src/lib.rs:49` — le cache de documents est partagé entre les sections d'un même lancement : si une section prend en source le résultat d'une autre (idée de la roadmap), le fichier régénéré serait relu dans son ancienne version.
    Depuis l'item 22, seul le cache des documents originaux reste partagé, celui des documents résolus est propre à chaque section ; le problème reste pour les originaux.
+   Écarté pour l'instant : aucune section ne lit la sortie d'une autre, et le mode watch ne relit pas les sources ; à rouvrir avec l'idée de la roadmap (oublier un fichier réécrit par `### FILE`, ordonner les sections par dépendance).

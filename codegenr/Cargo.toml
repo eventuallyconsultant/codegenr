@@ -23,7 +23,7 @@ required-features = ["bin"]
 
 [features]
 default = ["bin"]
-bin = ["tracing-subscriber", "clap", "anyhow"]
+bin = ["tracing-subscriber", "clap", "anyhow", "notify"]
 
 [dependencies]
 # ========================================================================================
@@ -32,6 +32,8 @@ bin = ["tracing-subscriber", "clap", "anyhow"]
 tracing-subscriber = { version = "0.3", features = [], optional = true }
 clap = { version = "4", features = ["derive"], optional = true }
 anyhow = { version = "1.0", optional = true }
+# `--watch`: the changes of the templates and custom helpers
+notify = { version = "9.0.0", optional = true }
 
 
 # ========================================================================================

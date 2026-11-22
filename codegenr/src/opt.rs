@@ -9,14 +9,14 @@ pub const CODEGENR_CONFIG_FILE: &str = "codegenr.toml";
 #[derive(Parser, Debug)]
 #[command(name = "codegenr", version, about)]
 pub struct Opt {
-  // todo later
-  // #[arg(
-  //   long,
-  //   short,
-  //   help = "If set, codegenr keeps running and watch for all concerned files change. And then re-run the generation.",
-  //   global = true
-  // )]
-  // pub watch: bool,
+  #[arg(
+    long,
+    short,
+    global = true,
+    help = "Keeps running, and renders again a section when one of its templates or custom helpers changes. \
+      The sources are read once: run again to take their changes into account."
+  )]
+  pub watch: bool,
   #[arg(long, short, global = true, action = clap::ArgAction::Count, help = "More logs: `-v` for debug, `-vv` for trace.")]
   pub verbose: u8,
   #[arg(long, short, global = true, conflicts_with = "verbose", help = "Only the warnings and the errors.")]
@@ -172,6 +172,13 @@ mod tests {
   fn the_log_level_follows_the_flags(flags: &[&str], expected: Level) -> anyhow::Result<()> {
     let opt = Opt::try_parse_from(std::iter::once("codegenr").chain(flags.iter().copied()))?;
     assert_eq!(opt.log_level(), expected);
+    Ok(())
+  }
+
+  #[test]
+  fn the_watch_flag_is_read() -> anyhow::Result<()> {
+    assert!(Opt::try_parse_from(["codegenr", "file", "-w"])?.watch);
+    assert!(!Opt::try_parse_from(["codegenr", "file"])?.watch);
     Ok(())
   }
 
