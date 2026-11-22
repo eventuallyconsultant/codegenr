@@ -17,8 +17,24 @@ pub struct Opt {
   //   global = true
   // )]
   // pub watch: bool,
+  #[arg(long, short, global = true, action = clap::ArgAction::Count, help = "More logs: `-v` for debug, `-vv` for trace.")]
+  pub verbose: u8,
+  #[arg(long, short, global = true, conflicts_with = "verbose", help = "Only the warnings and the errors.")]
+  pub quiet: bool,
   #[command(subcommand)]
   pub cmd: Option<Command>,
+}
+
+impl Opt {
+  /// The most detailed logs shown, info by default.
+  pub fn log_level(&self) -> tracing::Level {
+    match (self.quiet, self.verbose) {
+      (true, _) => tracing::Level::WARN,
+      (false, 0) => tracing::Level::INFO,
+      (false, 1) => tracing::Level::DEBUG,
+      (false, _) => tracing::Level::TRACE,
+    }
+  }
 }
 
 #[derive(Subcommand, Debug)]
@@ -132,5 +148,35 @@ impl TryFrom<Command> for OptionsMap {
         Ok(map)
       }
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::CommandFactory;
+  use test_case::test_case;
+  use tracing::Level;
+
+  #[test]
+  fn the_command_line_is_well_formed() {
+    Opt::command().debug_assert();
+  }
+
+  #[test_case(&[], Level::INFO ; "info by default")]
+  #[test_case(&["-v"], Level::DEBUG ; "debug")]
+  #[test_case(&["-vv"], Level::TRACE ; "trace")]
+  #[test_case(&["-v", "-v", "-v"], Level::TRACE ; "trace at most")]
+  #[test_case(&["--quiet"], Level::WARN ; "quiet")]
+  #[test_case(&["file", "-q"], Level::WARN ; "after the subcommand")]
+  fn the_log_level_follows_the_flags(flags: &[&str], expected: Level) -> anyhow::Result<()> {
+    let opt = Opt::try_parse_from(std::iter::once("codegenr").chain(flags.iter().copied()))?;
+    assert_eq!(opt.log_level(), expected);
+    Ok(())
+  }
+
+  #[test]
+  fn quiet_and_verbose_together_is_an_error() {
+    assert!(Opt::try_parse_from(["codegenr", "-q", "-v"]).is_err());
   }
 }

@@ -107,5 +107,7 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
    Édition 2024 faite (choix de l'humain) : `cargo fix --edition` ne change aucune ligne, ses deux avertissements d'ordre de `drop` (`lib.rs:56`, `processor/mod.rs:172`) sont sans effet, codegenr n'a aucun `impl Drop` ;
    rustfmt 2024 retrie les imports de 5 fichiers, le workspace passe au `resolver = "3"` (sans changer le `Cargo.lock`), les doctests tournent en un seul binaire (5 s → 0,1 s) ; il faut Rust 1.85 pour compiler.
    Restent : la verbosité (`fmt::init()` sans la feature `env-filter` ignore `RUST_LOG`, le `RUST_LOG: debug` de la CI ne sert à rien) et le mode watch (nouvelle dépendance `notify`).
+   Verbosité faite (choix de l'humain) : `-v` (debug), `-vv` (trace, avec les arguments des fonctions `#[instrument]`) et `-q` (warn), globaux, lus avant d'installer `tracing_subscriber` ;
+   tests `the_log_level_follows_the_flags` (6 cas), `quiet_and_verbose_together_is_an_error` et `the_command_line_is_well_formed` (`debug_assert` de clap) ; deux lignes dans le README. Reste le mode watch.
 14. 🟠 `codegenr/src/lib.rs:49` — le cache de documents est partagé entre les sections d'un même lancement : si une section prend en source le résultat d'une autre (idée de la roadmap), le fichier régénéré serait relu dans son ancienne version.
    Depuis l'item 22, seul le cache des documents originaux reste partagé, celui des documents résolus est propre à chaque section ; le problème reste pour les originaux.

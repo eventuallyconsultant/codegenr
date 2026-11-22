@@ -17,6 +17,9 @@ or install the development version
 cargo install --git https://github.com/eventuallyconsultant/codegenr --branch dev
 ```
 
+`codegenr` runs every section of the `codegenr.toml` of the current folder, `codegenr --help` lists the other commands.
+`-v` shows the debug logs, `-vv` the trace ones, and `-q` only the warnings and the errors.
+
 ## Documentation
 
 [codegenr documentation on docs.rs](https://docs.rs/codegenr/latest)
@@ -569,7 +572,7 @@ This tool is based on the design of a precedent one written in `C#` : [CodegenUP
 - [x] Better Errors (typed ones)
 - [x] Resolved Json Cache optimisation
 - [x] all tests passing on windows too
-- [ ] Verbose/Tracing? mode
+- [x] Verbose/Tracing? mode
 - [ ] Be able to output some flowchart (mermaid?) of the codegenr section (source.yaml + templates + helpers => files in folders)
 - [ ] Be able to relate all sections in the same flowchart ... some target files can be source for other steps !!
 - [ ] Better examples
