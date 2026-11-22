@@ -1,11 +1,12 @@
 [package]
 name = "codegenr"
-version = "0.0.7"
-edition = "2021"
+version = "0.0.8"
+edition = "2024"
+# notify, of `--watch`, needs it; the library alone needs 1.85, for the 2024 edition
+rust-version = "1.91"
 authors = ["Jérôme Rx & contributors <jerome@eventuallyconsultant.com>"]
 description = "Fast json/yaml/openapi code generator based on handlebars templating."
 readme = "../README.md"
-homepage = "https://github.com/eventuallyconsultant/codegenr/"
 repository = "https://github.com/eventuallyconsultant/codegenr/"
 keywords = ["codegen", "openapi", "api-first", "contract-first", "api"]
 categories = ["development-tools"]
@@ -24,16 +25,17 @@ required-features = ["bin"]
 
 [features]
 default = ["bin"]
-bin = ["tracing-subscriber", "structopt", "anyhow", "toml"]
+bin = ["tracing-subscriber", "clap", "anyhow", "notify"]
 
 [dependencies]
 # ========================================================================================
 #                         Binary dependencies
 # ========================================================================================
 tracing-subscriber = { version = "0.3", features = [], optional = true }
-structopt = { version = "0.3", optional = true }
+clap = { version = "4", features = ["derive"], optional = true }
 anyhow = { version = "1.0", optional = true }
-toml = { version = "0.9", optional = true }
+# `--watch`: the changes of the templates and custom helpers
+notify = { version = "9.0.0", optional = true }
 
 
 # ========================================================================================
@@ -46,31 +48,43 @@ thiserror = "2.0"
 # File loading & path manipulations
 url = "2.4"
 path-dedot = "3.1"
-reqwest = { version = "0.12", features = ["blocking"] }
+# rustls rather than native-tls, which is openssl on Linux; the native roots keep trusting the certificates of the OS store, as native-tls did
+reqwest = { version = "0.12", default-features = false, features = [
+  "blocking",
+  "charset",
+  "http2",
+  "macos-system-configuration",
+  "rustls-tls-native-roots",
+] }
 walkdir = "2"
 glob = "0.3"
 
 # file formats manipulation
 serde_json = { version = "1.0", features = ["preserve_order"] }
-serde_yaml = "0.8"                                              # 0.9 failing with deserializing from YAML containing more than one document is not supported on most files
+# 0.9.34 is the last version, deprecated upstream: a fork (serde_yaml_ng, serde_norway) would be a new dependency.
+# libyaml takes a UTF-8 BOM for a second document: `json_from_string` strips it first.
+serde_yaml = "0.9.34"
 serde = "1.0"
 graphql-parser = "0.4"
-quick-xml = { version = "0.38", features = ["serialize"] }
-quickxml_to_serde = "0.6"
-minidom = "0.12"
+roxmltree = "0.21"
 csv = "1.4"
+toml = "0.9"
 
 # Templating
-# DO NOT UPGRADE, version 6 have problems at passing vars to sub-templates (proof, foreach and try accessing @key in sub-template)
-handlebars = { version = "5.1.2", features = ["script_helper"] }
-handlebars_misc_helpers = { version = "0.16.3", features = ["default"] }
+# Pinned exactly: most 6.x releases rewrote what a partial sees of its caller (6.0 to 6.4.1 lose `@key` in a partial called from an `#each`),
+# and `cargo install` without `--locked` would take the next one. Run `partials_called_from_an_each_see_its_variables` (render.rs) on any bump.
+handlebars = { version = "=6.4.4", features = ["script_helper"] }
+# Without `http_attohttpc` nor `jsonnet`: a template, not trusted, must not reach the network (`http_get`) nor run jsonnet
+handlebars_misc_helpers = { version = "0.17.0", default-features = false, features = ["string", "json", "regex", "uuid"] }
 # Regex
 regex = "1"
+# Transliteration to ascii, the `to_ascii` helper
+deunicode = "1"
 once_cell = "1"
 # Custom scripting
 rhai = "1"
 
 [dev-dependencies]
 test-case = "3.1"
-tempdir = "0.3"
+tempfile = "3"
 anyhow = "1.0"

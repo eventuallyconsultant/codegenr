@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::path::Path;
 use url::Url;
 
-use super::{json_from_string, FormatHint, LoaderError};
+use super::{FormatHint, LoaderError, json_from_string};
 
 #[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum DocumentPath {
@@ -70,27 +70,28 @@ impl DocumentPath {
     })
   }
 
-  pub(crate) fn guess_format(&self) -> FormatHint {
+  /// The format told by the extension, `None` when there is none or it is unknown.
+  pub(crate) fn guess_format(&self) -> Option<FormatHint> {
     let s = match self {
       DocumentPath::Url(url) => url.as_str(),
       DocumentPath::FileName(s) => s,
-      DocumentPath::None => return FormatHint::NoIdea,
+      DocumentPath::None => return None,
     };
     let s = s.to_lowercase();
     if s.ends_with(".json") {
-      FormatHint::Json
+      Some(FormatHint::Json)
     } else if s.ends_with(".yaml") || s.ends_with(".yml") {
-      FormatHint::Yaml
+      Some(FormatHint::Yaml)
     } else if s.ends_with(".toml") {
-      FormatHint::Toml
+      Some(FormatHint::Toml)
     } else if s.ends_with(".graphql") || s.ends_with(".gql") {
-      FormatHint::Graphql
+      Some(FormatHint::Graphql)
     } else if s.ends_with(".xml") || s.ends_with(".xaml") || s.ends_with(".wsdl") || s.ends_with(".xsd") || s.ends_with(".xul") {
-      FormatHint::Xml
+      Some(FormatHint::Xml)
     } else if s.ends_with(".csv") {
-      FormatHint::Csv
+      Some(FormatHint::Csv)
     } else {
-      FormatHint::NoIdea
+      None
     }
   }
 
@@ -103,13 +104,13 @@ impl DocumentPath {
           .map_err(|e| LoaderError::DownloadError(url.as_str().to_string(), e))?
           .text()
           .map_err(|e| LoaderError::DownloadError(url.as_str().to_string(), e))?;
-        json_from_string(&body, hint)
+        json_from_string(&body, hint, url.as_str())
       }
       DocumentPath::FileName(file_name) => {
         let content = std::fs::read_to_string(file_name).map_err(|e| LoaderError::Read(file_name.clone(), e))?;
-        json_from_string(&content, hint)
+        json_from_string(&content, hint, file_name)
       }
-      DocumentPath::None => unreachable!("This is a non sense to try loading a 'None' document path."),
+      DocumentPath::None => Err(LoaderError::EmptyPath),
     }
   }
 }

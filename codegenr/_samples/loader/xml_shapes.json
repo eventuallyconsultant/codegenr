@@ -1,0 +1,45 @@
+{
+  "catalog": {
+    "@lang": "fr",
+    "@version": 2,
+    "title": "Plants & trees",
+    "prefixed": {
+      "@plain": "p",
+      "@x:attr": 1,
+      "#text": "v"
+    },
+    "empty": {},
+    "empty_with_attr": {
+      "@id": 7
+    },
+    "price": {
+      "@currency": "EUR",
+      "#text": 12.5
+    },
+    "count": 42,
+    "negative": -3.0,
+    "zip": 7,
+    "decimal_zip": "01.5",
+    "ratio": 0.25,
+    "flag": true,
+    "item": [
+      "one",
+      "two",
+      {
+        "name": "three"
+      }
+    ],
+    "mixed": "text  tail",
+    "cdata": "a < b",
+    "nested": {
+      "level": {
+        "leaf": "deep"
+      }
+    },
+    "apart": [
+      "first",
+      "second"
+    ],
+    "last": "end"
+  }
+}

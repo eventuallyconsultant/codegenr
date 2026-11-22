@@ -4,7 +4,7 @@
 
 ## Installation
 
-Install Rust : https://www.rust-lang.org/tools/install.
+Install Rust, 1.91 or later : https://www.rust-lang.org/tools/install.
 And then install `codegenr`
 
 ```
@@ -16,6 +16,12 @@ or install the development version
 ```
 cargo install --git https://github.com/eventuallyconsultant/codegenr --branch dev
 ```
+
+`codegenr` runs every section of the `codegenr.toml` of the current folder, `codegenr --help` lists the other commands.
+`-v` shows the debug logs, `-vv` the trace ones, and `-q` only the warnings and the errors.
+While you write templates (*gabarits*), `codegenr -w` keeps running, and renders a section again as soon as a file of its template or custom helper folders changes.
+It reads the source again first when the source changes, or a file one of its `$ref` leads to; a source or a `$ref` given as an url is not watched.
+A change of `codegenr.toml` starts everything again, as a new run.
 
 ## Documentation
 
@@ -55,10 +61,14 @@ To generate your files, you need to define these parameters :
 - `[section_name]` : A unique name representing each section
 - `source` : The file.yaml with the data you want to use for the generation
 - `templates` : the folders containing handlebar templates (`.hbs`) you're using. Only one file in those folders must not be prefixed by `_` and then is considered as the `main` template. The other ones are prefixed like `_partial.hbs` are considered `partial` templates.
+  A partial template (*gabarit partiel*) cannot read the context of its caller through `../`, as in handlebars.js: the caller gives it what it needs as a hash parameter, `{{> property required=../required}}`.
 - `output` : The `root folder` where the files will be generated. All files output path write will be computed from this root.
-- `custom_helpers` : A place you can put `.rhai` file, each file is loaded as a custom helper, usable from the `.hbs` templates
+- `custom_helpers` : (Optional) A place you can put `.rhai` file, each file is loaded as a custom helper, usable from the `.hbs` templates
 - `intermediate` : (Optional) if set, `codegenr` will output intermediate files for debug purpose
 - `global_parameters` : (Optional) Some values you want to use with the `global_parameter` helper.
+- `allowed_sources` : (Optional) Where the `source` and its `$ref` may be read from, besides the current folder and the folder of `source`: folders, and urls.
+  No url is downloaded unless it is under one of them, the `source` included: downloading is always your decision.
+  When a document is refused, the error tells what to add, e.g. `allowed_sources = ['https://petstore3.swagger.io/api/v3/', '../shared_specs']`.
 
 ##### Here is an example of a section in the `codegenr.toml`.
 
@@ -375,9 +385,11 @@ get http://{{host}}:{{port}}{{api_root}}/user HTTP/1.1
 Handlebars is a pretty limited language, but it's extended with `helpers` :
 - it has some standard helpers (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `and`, `or`, `not` ...), provided by the rust handlebars implementation : https://docs.rs/handlebars/latest/handlebars/#built-in-helpers
 - `codegenr` bundles the `handlebars_misc_helpers` to have more helpers : https://github.com/davidB/handlebars_misc_helpers
+  Without `http_get`, `gitignore_io` and `jsonnet`: a template cannot reach the network, nor run another template language.
+  It can still read files and environment variables (`read_to_str`, `env_var`), and it writes code you will run: only use templates you trust.
 - `codegenr` also provides some more home backed helpers : https://docs.rs/codegenr/latest/codegenr/helpers/index.html
 - **Finally** `you` can add your own helpers using the [rhai embedded scripting language](https://rhai.rs/)
-  - any `__myhelper__.rhai` file in the custom_helpers folder will be available as a `myhelper` handlebars inline helper, usable from the .hbs templates.
+  - any `myhelper.rhai` file in the `custom_helpers` folders, or their subfolders, will be available as a `myhelper` handlebars inline helper, usable from the .hbs templates: the helper is named after the file, without `.rhai`.
 
 Here is a simple example and what it is used for:
 
@@ -444,6 +456,37 @@ if optional {
 
 ```
 
+A text on several lines in a code comment is another case for a codegenr helper: `/// {{description}}` would leave the second line out of the comment.
+`prefix_lines` puts its prefix in front of each line of the text.
+Put the helper at the start of the line and the indentation of the comment in the prefix, so that every line gets it:
+
+```yaml
+description: |
+  Searches the users,
+
+  by name or email.
+```
+
+```handlebars
+impl Api {
+{{prefix_lines description "  /// "}}
+  fn search() {}
+}
+```
+
+will output
+
+```rust
+impl Api {
+  /// Searches the users,
+  ///
+  /// by name or email.
+  fn search() {}
+}
+```
+
+The line break that ends a yaml `|` block is dropped, and the empty line gets `///` without a trailing space.
+
 
 
 
@@ -477,10 +520,26 @@ World !
 Hello
 ```
 
-## Contribute
+`### CLEAN <glob>` deletes the files and folders of the `output` folder that match the glob, and has no closing tag.
+It runs where it stands in the rendered text, so it goes before the `### FILE` instructions whose files it must not delete:
 
-You can also open the repository in GitPod with this button
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/eventuallyconsultant/codegenr)
+```handlebars
+### CLEAN **/*.generated.rs
+{{#each paths}}
+### FILE {{@key}}.generated.rs
+...
+### /FILE
+{{/each}}
+```
+
+A file that a previous run generated and this one does not, for an endpoint removed from the api for example, is then deleted.
+
+The paths of `FILE` and `CLEAN` must stay in the `output` folder: an absolute path, or one holding `..`, is an error.
+A template or a source document, downloaded from an url for instance, cannot write or delete files anywhere else.
+Likewise, the `source` and its `$ref` are read only from the current folder, the folder of `source`, and the `allowed_sources`:
+a document received from someone else cannot read your other files, nor download what you did not allow.
+
+## Contribute
 
 In the command line you can :
 
@@ -516,12 +575,12 @@ This tool is based on the design of a precedent one written in `C#` : [CodegenUP
 - [x] Better Errors (typed ones)
 - [x] Resolved Json Cache optimisation
 - [x] all tests passing on windows too
-- [ ] Verbose/Tracing? mode
+- [x] Verbose/Tracing? mode
 - [ ] Be able to output some flowchart (mermaid?) of the codegenr section (source.yaml + templates + helpers => files in folders)
 - [ ] Be able to relate all sections in the same flowchart ... some target files can be source for other steps !!
 - [ ] Better examples
 - [ ] Smol strings optimisation ?
-- [ ] Watch mode for the file changes
+- [x] Watch mode for the template and custom helper changes
 - [ ] Make a VSCode extension about all of this to make it live / super user friendly for `everyone`
 
 - [ ] Allow multiple swagger2 documents merging

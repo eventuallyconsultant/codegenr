@@ -41,6 +41,7 @@ pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(TRIM_CHAR_END_HELPER, Box::new(TrimCharEndHelper));
   handlebars.register_helper(UPPERCASE_FIRST_LETTER_HELPER, Box::new(UppercaseFirstLetterHelper));
   handlebars.register_helper(LOWERCASE_FIRST_LETTER_HELPER, Box::new(LowercaseFirstLetterHelper));
+  handlebars.register_helper(TO_ASCII_HELPER, Box::new(ToAsciiHelper));
   handlebars.register_helper(SPLIT_HELPER, Box::new(SplitHelper));
   handlebars.register_helper(START_WITH_HELPER, Box::new(StartWithHelper));
   handlebars.register_helper(END_WITH_HELPER, Box::new(EndWithHelper));
@@ -51,6 +52,7 @@ pub fn handlebars_stateless_setup(handlebars: &mut Handlebars) {
   handlebars.register_helper(TRIM_BLOCK_END_HELPER, Box::new(TrimBlockEndHelper));
   handlebars.register_helper(ONE_LINE_HELPER, Box::new(OneLineHelper));
   handlebars.register_helper(NO_EMPTY_LINES_HELPER, Box::new(NoEmptyLinesHelper));
+  handlebars.register_helper(PREFIX_LINES_HELPER, Box::new(PrefixLinesHelper));
   handlebars.register_helper(REGEX_EXTRACT_HELPER, Box::new(RegexExtractHelper));
   handlebars.register_helper(REGEX_TRANSFORM_HELPER, Box::new(RegexTransformHelper));
   //handlebars.register_helper(EACH_WITH_SORT_HELPER, Box::new(EachWithSortHelper));
@@ -94,4 +96,29 @@ pub fn exec_template_with_global_params(json: serde_json::Value, template: &str,
   handlebars_statefull_setup(&mut h, global_params);
   h.register_template_string("test", template).expect("Could not register template.");
   h.render("test", &json).expect("Template render returned an error.")
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use handlebars::RenderErrorReason;
+  use test_case::test_case;
+
+  /// The templates are not trusted: none reaches the network, nor runs jsonnet, a template language of its own.
+  /// The `http_attohttpc` and `jsonnet` features of `handlebars_misc_helpers` stay off (`codegenr/Cargo.toml`).
+  #[test_case("{{http_get \"http://127.0.0.1:9\"}}", "http_get" ; "http get")]
+  #[test_case("{{gitignore_io \"rust\"}}", "gitignore_io" ; "gitignore io")]
+  #[test_case("{{#jsonnet}}{\"a\": 1}{{/jsonnet}}", "jsonnet" ; "jsonnet")]
+  fn a_template_cannot_reach_the_network_nor_run_jsonnet(template: &str, helper: &str) -> anyhow::Result<()> {
+    let mut h = Handlebars::new();
+    handlebars_misc_setup(&mut h);
+    let error = h
+      .render_template(template, &Value::Null)
+      .expect_err("The helper is not registered.");
+    assert!(
+      matches!(error.reason(), RenderErrorReason::HelperNotFound(name) if name == helper),
+      "{error}"
+    );
+    Ok(())
+  }
 }

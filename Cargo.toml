@@ -1,7 +1,7 @@
 # https://doc.rust-lang.org/cargo/reference/workspaces.html
 
 [workspace]
-resolver = "2"
+resolver = "3"
 
 default-members = ["codegenr"]
 

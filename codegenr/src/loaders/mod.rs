@@ -36,6 +36,8 @@ pub enum LoaderError {
   UnableToAppendPath { to: String, from: String },
   #[error("The origin path should be a file and have parent.")]
   OriginPathShouldBeAFile { path: String },
+  #[error("No document to load: its path is empty.")]
+  EmptyPath,
   //
   // Deserialisation
   //
@@ -43,27 +45,20 @@ pub enum LoaderError {
   YamlToJsonError(&'static str),
   #[error("Couldn't transpile graphql to json : `{0}`.")]
   GraphqlToJsonError(&'static str),
-  #[error(
-    "Could not read file content as json:\n-json_error: `{json_error}`\n-yaml_error:`{yaml_error}`\n-graphql_error:`{graphql_error}`."
-  )]
+  #[error("Could not read `{document}`, every format tried failed:\n{errors}")]
   DeserialisationError {
-    json_error: serde_json::Error,
-    yaml_error: serde_yaml::Error,
-    toml_error: ::toml::de::Error,
-    xml_error: minidom::Error,
-    csv_error: ::csv::Error,
-    graphql_error: graphql_parser::schema::ParseError,
+    document: String,
+    /// One `- <format>: <error>` line per format tried.
+    errors: String,
   },
   #[error("Yaml error: `{0}`.")]
   YamlError(#[from] serde_yaml::Error),
   #[error("Json error: `{0}`.")]
   JsonError(#[from] serde_json::Error),
   #[error("Xml error: `{0}`.")]
-  XmlError(#[from] minidom::Error),
+  XmlError(#[from] roxmltree::Error),
   #[error("Graphql error: `{0}`.")]
   GraphqlError(#[from] graphql_parser::schema::ParseError),
-  #[error("Did not try all the file loaders.")]
-  DidNotTryAllFormats,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
@@ -80,85 +75,46 @@ pub(crate) enum FormatHint {
   Csv,
   /// The content should be a graphql schema
   Graphql,
-  /// We have no f.....g idea
-  NoIdea,
 }
 
 #[allow(clippy::result_large_err)]
-fn json_from_string(content: &str, hint: FormatHint) -> Result<Value, LoaderError> {
+/// `hint` is `None` when the path says nothing of the format.
+fn json_from_string(content: &str, hint: Option<FormatHint>, document: &str) -> Result<Value, LoaderError> {
   use FormatHint::*;
-  match hint {
-    FormatHint::Json | FormatHint::NoIdea => try_loaders(content, &[Json, Yaml, Toml, Graphql]),
-    FormatHint::Yaml => try_loaders(content, &[Yaml, Json]),
-    FormatHint::Toml => try_loaders(content, &[Toml]),
-    FormatHint::Xml => try_loaders(content, &[Xml]),
-    FormatHint::Csv => try_loaders(content, &[Csv]),
-    FormatHint::Graphql => try_loaders(content, &[Graphql, Json, Yaml, Toml, Xml]),
-  }
+  // A UTF-8 BOM, which editors and Windows tools often write: json refuses it, yaml keeps it in the first key.
+  let content = content.strip_prefix('\u{feff}').unwrap_or(content);
+  let formats: &[FormatHint] = match hint {
+    Some(Json) | None => &[Json, Yaml, Toml, Graphql],
+    Some(Yaml) => &[Yaml, Json],
+    Some(Toml) => &[Toml],
+    Some(Xml) => &[Xml],
+    Some(Csv) => &[Csv],
+    Some(Graphql) => &[Graphql, Json, Yaml, Toml, Xml],
+  };
+  try_loaders(content, formats).map_err(|errors| LoaderError::DeserialisationError {
+    document: document.into(),
+    errors,
+  })
 }
 
-#[allow(clippy::result_large_err)]
-fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, LoaderError> {
-  let mut json_error: Option<serde_json::Error> = None;
-  let mut yaml_error: Option<serde_yaml::Error> = None;
-  let mut toml_error: Option<::toml::de::Error> = None;
-  let mut xml_error: Option<::minidom::Error> = None;
-  let mut csv_error: Option<::csv::Error> = None;
-  let mut graphql_error: Option<graphql_parser::schema::ParseError> = None;
-
-  for hint in formats {
-    match *hint {
-      FormatHint::Json => {
-        json_error = Some(match json::JsonLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Yaml => {
-        yaml_error = Some(match yaml::YamlLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Toml => {
-        toml_error = Some(match toml::TomlLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Xml => {
-        xml_error = Some(match xml::XmlLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Csv => {
-        csv_error = Some(match csv::CsvLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => e,
-        });
-      }
-      FormatHint::Graphql => {
-        graphql_error = Some(match graphql::GraphqlLoader::json_from_str(content) {
-          Ok(json) => return Ok(json),
-          Err(e) => match e {
-            LoaderError::GraphqlError(e) => e,
-            _ => return Err(e), // this one should not happen
-          },
-        })
-      }
-      FormatHint::NoIdea => todo!(),
+/// The json of the first format that reads the content, or the error of each format tried.
+fn try_loaders(content: &str, formats: &[FormatHint]) -> Result<Value, String> {
+  let mut errors = Vec::with_capacity(formats.len());
+  for format in formats {
+    let loaded = match format {
+      FormatHint::Json => json::JsonLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Yaml => yaml::YamlLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Toml => toml::TomlLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Xml => xml::XmlLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Csv => csv::CsvLoader::json_from_str(content).map_err(|e| e.to_string()),
+      FormatHint::Graphql => graphql::GraphqlLoader::json_from_str(content).map_err(|e| e.to_string()),
+    };
+    match loaded {
+      Ok(json) => return Ok(json),
+      Err(error) => errors.push(format!("- {format:?}: {error}")),
     }
   }
-
-  Err(LoaderError::DeserialisationError {
-    json_error: json_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    yaml_error: yaml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    toml_error: toml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    xml_error: xml_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    csv_error: csv_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-    graphql_error: graphql_error.ok_or(LoaderError::DidNotTryAllFormats)?,
-  })
+  Err(errors.join("\n"))
 }
 
 #[cfg(test)]
@@ -226,11 +182,14 @@ mod tests {
     Ok(())
   }
 
+  /// Golden master: the json of each xml sample is committed next to it, order of the keys and formatting of the numbers included.
   #[allow(clippy::result_large_err)]
-  #[test]
-  fn read_xml_file_test() -> Result<(), LoaderError> {
-    let _result = DocumentPath::parse("./_samples/resolver/plant_catalog.xml")?.load_raw()?;
-    dbg!(_result);
+  #[test_case("./_samples/resolver/plant_catalog.xml", "./_samples/resolver/plant_catalog.json")]
+  #[test_case("./_samples/loader/xml_shapes.xml", "./_samples/loader/xml_shapes.json")]
+  fn read_xml_file_test(xml_file: &str, expected_json_file: &str) -> Result<(), LoaderError> {
+    let loaded = DocumentPath::parse(xml_file)?.load_raw()?;
+    let expected = std::fs::read_to_string(expected_json_file)?;
+    assert_eq!(format!("{loaded:#}"), expected.trim_end());
     Ok(())
   }
 
@@ -239,6 +198,35 @@ mod tests {
   fn read_csv_file_test() -> Result<(), LoaderError> {
     let _result = DocumentPath::parse("./_samples/username.csv")?.load_raw()?;
     dbg!(_result);
+    Ok(())
+  }
+
+  #[test]
+  fn unreadable_content_gives_the_error_of_each_format_tried() {
+    let error = json_from_string("a: [1, 2\nb: c\n", Some(FormatHint::Yaml), "bad.yaml").expect_err("The yaml is malformed.");
+    assert_eq!(
+      error.to_string(),
+      "Could not read `bad.yaml`, every format tried failed:\n\
+       - Yaml: did not find expected ',' or ']' at line 2 column 2, while parsing a flow sequence at line 1 column 4\n\
+       - Json: expected value at line 1 column 1"
+    );
+  }
+
+  /// Editors and Windows tools often start a file with a UTF-8 BOM, which used to fail the json loader.
+  #[test_case("\u{feff}{\"a\": 1}", Some(FormatHint::Json) ; "json")]
+  #[test_case("\u{feff}{\"a\": 1}", None ; "json without extension")]
+  #[test_case("\u{feff}a: 1", Some(FormatHint::Yaml) ; "yaml")]
+  #[test_case("\u{feff}a = 1", Some(FormatHint::Toml) ; "toml")]
+  fn a_source_starting_with_a_bom_is_read(content: &str, hint: Option<FormatHint>) -> anyhow::Result<()> {
+    assert_eq!(json_from_string(content, hint, "bom")?, serde_json::json!({ "a": 1 }));
+    Ok(())
+  }
+
+  /// An empty `source` in `codegenr.toml` used to panic.
+  #[test]
+  fn loading_an_empty_path_is_an_error() -> anyhow::Result<()> {
+    let error = DocumentPath::parse("")?.load_raw().expect_err("There is no document to load.");
+    assert_eq!(error.to_string(), "No document to load: its path is empty.");
     Ok(())
   }
 

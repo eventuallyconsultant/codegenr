@@ -1,66 +1,91 @@
 use crate::{Options, OptionsMap};
+use clap::{Parser, Subcommand};
 use serde_json::Value;
 use std::fs::read_to_string;
-use structopt::StructOpt;
 
 pub const CODEGENR_CONFIG_FILE: &str = "codegenr.toml";
 
-//https://docs.rs/structopt/latest/structopt/#specifying-argument-types
-#[derive(StructOpt, Debug)]
-#[structopt(name = "codegenr")]
+// https://docs.rs/clap/latest/clap/_derive/index.html
+#[derive(Parser, Debug)]
+#[command(name = "codegenr", version, about)]
 pub struct Opt {
-  // todo later
-  // #[structopt(
-  //   long,
-  //   short,
-  //   help = "If set, codegenr keeps running and watch for all concerned files change. And then re-run the generation.",
-  //   global = true
-  // )]
-  // pub watch: bool,
-  #[structopt(subcommand)]
+  #[arg(
+    long,
+    short,
+    global = true,
+    help = "Keeps running: renders a section again when a file of its template or custom helper folders changes, \
+      and reads its source again first when the source, or a file one of its `$ref` leads to, changes; \
+      a change of `codegenr.toml` starts everything again."
+  )]
+  pub watch: bool,
+  #[arg(long, short, global = true, action = clap::ArgAction::Count, help = "More logs: `-v` for debug, `-vv` for trace.")]
+  pub verbose: u8,
+  #[arg(long, short, global = true, conflicts_with = "verbose", help = "Only the warnings and the errors.")]
+  pub quiet: bool,
+  #[command(subcommand)]
   pub cmd: Option<Command>,
 }
 
-#[derive(StructOpt, Debug)]
-#[structopt(about = "Commands")]
+impl Opt {
+  /// The most detailed logs shown, info by default.
+  pub fn log_level(&self) -> tracing::Level {
+    match (self.quiet, self.verbose) {
+      (true, _) => tracing::Level::WARN,
+      (false, 0) => tracing::Level::INFO,
+      (false, 1) => tracing::Level::DEBUG,
+      (false, _) => tracing::Level::TRACE,
+    }
+  }
+}
+
+#[derive(Subcommand, Debug, Clone)]
 pub enum Command {
-  #[structopt(name = "file", help = "Executes all generations from a config file.")]
+  #[command(name = "file", about = "Executes all generations from a config file.")]
   FromFile {
-    #[structopt(
-        long,
-        help = "Path to a full codegenr configuration file. If existing, all other command line parameters are ignored",
-        default_value = CODEGENR_CONFIG_FILE
-      )]
+    #[arg(
+      long,
+      help = "Path to a full codegenr configuration file. If existing, all other command line parameters are ignored",
+      default_value = CODEGENR_CONFIG_FILE
+    )]
     file: String,
   },
-  #[structopt(name = "gen", help = "Executes one generation from command line parameters.")]
+  #[command(name = "gen", about = "Executes one generation from command line parameters.")]
   FromLine {
-    #[structopt(long, short, help = "Source json/yaml/openapi file.")]
+    #[arg(long, short, help = "Source json/yaml/openapi file.")]
     source: String,
-    #[structopt(long, short, help = "Output folder.")]
+    #[arg(long, short, help = "Output folder.")]
     output: String,
-    #[structopt(
+    #[arg(
       long,
       short,
+      num_args = 1..,
       help = "Templates folder(s), in which only one .hbs file should have no `_` as prefix (Underscored templates are partial templates)."
     )]
     templates: Vec<String>,
-    #[structopt(
+    #[arg(
       long,
       short,
-      help = "Optional path to a file where the intermediate json representation of resolved source(s) will be output. 
+      help = "Optional path to a file where the intermediate json representation of resolved source(s) will be output. \
         The resolved json will be output as <file>.resolved.json, the full text rendered result will be output as <file>.rendered.txt."
     )]
     intermediate: Option<String>,
-    #[structopt(long, short, help = "Path to custom helper files.")]
+    #[arg(long, short, num_args = 1.., help = "Path to custom helper files.")]
     custom_helpers: Vec<String>,
-    #[structopt(
-        long,
-        short,
-        help = "Global parameters values formatted `key=value`. Values will be parsed as json or strings if the json parsing fails.",
-        parse(try_from_str = parse_key_val)
-      )]
+    #[arg(
+      long,
+      short,
+      num_args = 1..,
+      help = "Global parameters values formatted `key=value`. Values will be parsed as json or strings if the json parsing fails.",
+      value_parser = parse_key_val
+    )]
     global_parameters: Vec<(String, serde_json::Value)>,
+    #[arg(
+      long,
+      short,
+      num_args = 1..,
+      help = "Urls, and folders out of the current one and the one of the source, the documents may be read from: no url is downloaded without it."
+    )]
+    allowed_sources: Vec<String>,
   },
 }
 
@@ -109,6 +134,7 @@ impl TryFrom<Command> for OptionsMap {
         intermediate,
         custom_helpers,
         global_parameters,
+        allowed_sources,
       } => {
         let options = Options {
           source,
@@ -117,10 +143,48 @@ impl TryFrom<Command> for OptionsMap {
           intermediate,
           custom_helpers,
           global_parameters: global_parameters.into_iter().collect(),
+          allowed_sources,
         };
         let map = OptionsMap::from_iter(std::iter::once(("command_line".into(), options)));
         Ok(map)
       }
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::CommandFactory;
+  use test_case::test_case;
+  use tracing::Level;
+
+  #[test]
+  fn the_command_line_is_well_formed() {
+    Opt::command().debug_assert();
+  }
+
+  #[test_case(&[], Level::INFO ; "info by default")]
+  #[test_case(&["-v"], Level::DEBUG ; "debug")]
+  #[test_case(&["-vv"], Level::TRACE ; "trace")]
+  #[test_case(&["-v", "-v", "-v"], Level::TRACE ; "trace at most")]
+  #[test_case(&["--quiet"], Level::WARN ; "quiet")]
+  #[test_case(&["file", "-q"], Level::WARN ; "after the subcommand")]
+  fn the_log_level_follows_the_flags(flags: &[&str], expected: Level) -> anyhow::Result<()> {
+    let opt = Opt::try_parse_from(std::iter::once("codegenr").chain(flags.iter().copied()))?;
+    assert_eq!(opt.log_level(), expected);
+    Ok(())
+  }
+
+  #[test]
+  fn the_watch_flag_is_read() -> anyhow::Result<()> {
+    assert!(Opt::try_parse_from(["codegenr", "file", "-w"])?.watch);
+    assert!(!Opt::try_parse_from(["codegenr", "file"])?.watch);
+    Ok(())
+  }
+
+  #[test]
+  fn quiet_and_verbose_together_is_an_error() {
+    assert!(Opt::try_parse_from(["codegenr", "-q", "-v"]).is_err());
   }
 }

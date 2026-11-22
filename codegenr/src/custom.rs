@@ -25,7 +25,12 @@ pub fn handlebars_setup(handlebars: &mut Handlebars, custom_helpers_folders: &[S
     } else if p.is_dir() {
       let pattern = p.join("**/*.rhai");
       let str_pattern = pattern.to_str().ok_or(CustomError::PathBufToStrConvert)?;
-      for f in glob::glob(str_pattern)?.flatten() {
+      // Not the hidden files and folders of editors and tools, like the `.#shout.rhai` lock of Emacs.
+      let options = glob::MatchOptions {
+        require_literal_leading_dot: true,
+        ..Default::default()
+      };
+      for f in glob::glob_with(str_pattern, options)?.flatten() {
         handlebars_add_script(handlebars, f.as_path())?;
       }
     }
@@ -52,6 +57,25 @@ pub fn handlebars_add_script(handlebars: &mut Handlebars, script_file: impl AsRe
 mod tests {
   use super::*;
   use serde_json::json;
+  use std::io::Write;
+
+  /// Editors and tools leave hidden files in the helper folders, like the `.#shout.rhai` lock of Emacs or a `.history` folder.
+  #[test]
+  fn hidden_helper_files_are_not_loaded() -> anyhow::Result<()> {
+    let tmp = tempfile::TempDir::with_prefix("CUSTOM_tests")?;
+    for (path, content) in [
+      ("shout.rhai", "let s = params[0]; s.to_upper()"),
+      (".#shout.rhai", "not a script ((("),
+      (".history/shout_20261122.rhai", "not a script ((("),
+    ] {
+      let (mut file, _) = crate::filesystem::create_file(tmp.path(), path)?;
+      file.write_all(content.as_bytes())?;
+    }
+    let mut h = Handlebars::new();
+    handlebars_setup(&mut h, &[tmp.path().display().to_string()])?;
+    assert_eq!(h.render_template("{{shout \"a\"}}", &json!({}))?, "A");
+    Ok(())
+  }
 
   pub fn exec_template(json: serde_json::Value, template: &str) -> String {
     let mut h = Handlebars::new();
