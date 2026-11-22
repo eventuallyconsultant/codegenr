@@ -107,9 +107,15 @@ impl Template {
 }
 
 #[allow(clippy::result_large_err)]
+/// A file or folder of an editor or a tool, like the `.#main.hbs` lock of Emacs or a `.history` folder: never a template.
+/// The folder given itself may be `.`.
+fn is_hidden(entry: &walkdir::DirEntry) -> bool {
+  entry.depth() > 0 && entry.file_name().to_str().is_some_and(|name| name.starts_with('.'))
+}
+
 pub fn get_templates_from_directory(dir_path: &str) -> Result<Vec<Template>, RenderError> {
   let mut result = vec![];
-  for entry in WalkDir::new(dir_path) {
+  for entry in WalkDir::new(dir_path).into_iter().filter_entry(|entry| !is_hidden(entry)) {
     let entry = entry?;
 
     let file_path = entry.path().to_str();
@@ -140,6 +146,20 @@ mod tests {
   use crate::helpers::*;
   use serde_json::json;
   use test_case::test_case;
+
+  /// Editors and tools leave hidden files in the template folders, like the `.#main.hbs` lock of Emacs or a `.history` folder.
+  #[test]
+  fn hidden_files_and_folders_are_not_templates() -> anyhow::Result<()> {
+    let tmp = tempfile::TempDir::with_prefix("RENDER_tests")?;
+    for path in ["main.hbs", "_part.hbs", ".#main.hbs", ".history/main_20261122.hbs"] {
+      crate::filesystem::create_file(tmp.path(), path)?;
+    }
+    let templates = get_templates_from_directory(&tmp.path().display().to_string())?;
+    let mut names: Vec<&str> = templates.iter().map(Template::template_name).collect();
+    names.sort();
+    assert_eq!(names, ["main", "part"]);
+    Ok(())
+  }
 
   /// Guards any handlebars bump.
   /// From 6.0 to 6.4.1, handlebars loses the `@key`, `@index`, `@first` and `@last` of an `#each` in the partials it calls,

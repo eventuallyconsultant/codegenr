@@ -2,6 +2,8 @@
 name = "codegenr"
 version = "0.0.8"
 edition = "2024"
+# notify, of `--watch`, needs it; the library alone needs 1.85, for the 2024 edition
+rust-version = "1.91"
 authors = ["Jérôme Rx & contributors <jerome@eventuallyconsultant.com>"]
 description = "Fast json/yaml/openapi code generator based on handlebars templating."
 readme = "../README.md"

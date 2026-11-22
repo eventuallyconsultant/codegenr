@@ -4,7 +4,7 @@
 
 ## Installation
 
-Install Rust : https://www.rust-lang.org/tools/install.
+Install Rust, 1.91 or later : https://www.rust-lang.org/tools/install.
 And then install `codegenr`
 
 ```
@@ -19,7 +19,7 @@ cargo install --git https://github.com/eventuallyconsultant/codegenr --branch de
 
 `codegenr` runs every section of the `codegenr.toml` of the current folder, `codegenr --help` lists the other commands.
 `-v` shows the debug logs, `-vv` the trace ones, and `-q` only the warnings and the errors.
-While you write templates, `codegenr -w` keeps running, and renders a section again as soon as one of its templates or custom helpers changes.
+While you write templates (*gabarits*), `codegenr -w` keeps running, and renders a section again as soon as one of its templates or custom helpers changes.
 The sources are read once: run it again to take a change of a source, or of `codegenr.toml`, into account.
 
 ## Documentation

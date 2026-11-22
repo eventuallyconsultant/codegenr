@@ -84,7 +84,7 @@ A `codegenr.toml` holds one section per generation (`source`, `templates`, `outp
 
 ### Pipeline: Load → Resolve → Render → Process
 
-`run_codegenr` (`lib.rs`) runs one section through four steps, each its own module with its own `thiserror` enum, all gathered in `errors::CodegenrError` with `#[from]`.
+`resolve_section` then `render_section` (`lib.rs`) run one section through four steps, each its own module with its own `thiserror` enum, all gathered in `errors::CodegenrError` with `#[from]`.
 Those enums are large, hence the `#[allow(clippy::result_large_err)]` on the functions returning them.
 
 1. **Load** (`loaders/`): `DocumentPath` is a file or a URL (downloaded with blocking `reqwest`), turned into a `serde_json::Value`.

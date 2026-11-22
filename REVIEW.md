@@ -117,3 +117,39 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
 14. ⚪ `codegenr/src/lib.rs:49` — le cache de documents est partagé entre les sections d'un même lancement : si une section prend en source le résultat d'une autre (idée de la roadmap), le fichier régénéré serait relu dans son ancienne version.
    Depuis l'item 22, seul le cache des documents originaux reste partagé, celui des documents résolus est propre à chaque section ; le problème reste pour les originaux.
    Écarté pour l'instant : aucune section ne lit la sortie d'une autre, et le mode watch ne relit pas les sources ; à rouvrir avec l'idée de la roadmap (oublier un fichier réécrit par `### FILE`, ordonner les sections par dépendance).
+
+## Revue du mode watch (`8633114`, `/code-review`)
+
+Classée par gravité ; les 🔴 sont de petites corrections, les 🟠 demandent un choix.
+
+23. 🟢 `codegenr/src/render.rs:123` — un fichier caché qui finit par `.hbs`, comme le verrou d'Emacs `.#_partial.hbs`, est pris pour un template principal : `TwoMainTemp` tant qu'un buffer n'est pas enregistré, et le watch rend justement à ce moment-là ; une génération normale casse aussi s'il en traîne un. Ignorer les fichiers qui commencent par `.`.
+   Corrigé : `get_templates_from_directory` saute les fichiers et dossiers cachés (sauf le dossier donné, qui peut être `.`), `custom::handlebars_setup` aussi (`require_literal_leading_dot`) ; tests `hidden_files_and_folders_are_not_templates` et `hidden_helper_files_are_not_loaded`, qui échouaient avant ; essayé : un `.#main.hbs` laissé dans le dossier ne casse plus le rendu.
+24. 🟢 `codegenr/src/watch.rs:120` — une resynchronisation de notify (`EventKind::Other` avec `Flag::Rescan`, quand des événements sont perdus : file inotify pleine, `MustScanSubDirs`, tampon Windows) est jetée sans un mot, par exemple après un `git checkout` ; il faudrait tout rendre à nouveau, avec un avertissement.
+   Corrigé : `need_rescan` met `lost` dans les changements, toutes les sections sont rendues à nouveau avec un avertissement ; test `lost_events_render_every_section`.
+25. 🟢 `codegenr/src/watch.rs:130` — déplacer un dossier de partials dans un dossier surveillé, ou l'en sortir, donne un seul événement sur le dossier, sans extension : rien n'est rendu à nouveau.
+   Sous Linux, un dossier de templates supprimé puis recréé perd aussi sa surveillance, qui n'est jamais remise.
+   Corrigé : un chemin sans extension sous un dossier surveillé (un dossier créé, déplacé ou supprimé) relance la section ; essayé sur macOS, `Create(Folder)` puis rendu 210 ms après. Reste, pour l'item 37 : sous Linux, un dossier racine supprimé puis recréé perd sa surveillance.
+26. 🟢 `codegenr/src/watch.rs:105` — n'importe quel événement relance l'attente de 200 ms, même sur un fichier qui n'est pas un template : une activité continue dans un dossier surveillé (`templates = ["."]` avec un `target/`) repousse le rendu sans fin. Seuls les `.hbs` et `.rhai` devraient ouvrir ou prolonger l'attente.
+   Corrigé : seuls les chemins d'une section ouvrent l'attente, qui a une échéance fixe ; tests `only_the_relevant_files_make_a_change` et `other_files_do_not_delay_the_rendering` (un autre fichier écrit toutes les 20 ms pendant 3 s ne retarde plus le rendu).
+27. 🟢 `codegenr/src/watch.rs:56` — la surveillance commence après la première génération complète (2 s pour l'autre projet) : un template enregistré pendant ce temps n'est jamais vu. Créer le watcher avant le premier rendu.
+   Corrigé : le watcher est créé avant le premier rendu, un événement arrivé pendant ce rendu attend dans le canal.
+28. 🟢 `codegenr/src/watch.rs:41` — un dossier de templates ou un helper introuvable au démarrage (faute de frappe, dossier pas encore créé) est ignoré sans avertissement, donc jamais surveillé.
+   Corrigé : un avertissement nomme le chemin et la section.
+29. 🟢 `codegenr/src/watch.rs:61` — sans aucune section à surveiller (toutes les sources en erreur, ou aucune section), le watch annonce « 0 section(s) » et attend indéfiniment, au lieu de sortir en erreur.
+   Corrigé : `WatchError::NothingToWatch`, test `nothing_to_watch_is_an_error` (aucune section, ou une source introuvable).
+30. 🟢 `codegenr/src/errors.rs:29` — `Watch` et `WatchStopped` n'existent dans `CodegenrError` que sous la feature `bin` : un `match` exhaustif d'un utilisateur de la bibliothèque casse dès qu'une autre crate du même build active `bin`, et `notify` apparaît dans l'API de la bibliothèque. Garder ces erreurs dans `watch.rs`, ou côté binaire.
+   Corrigé : `WatchError` dans `watch.rs`, `CodegenrError` ne change plus avec la feature `bin`.
+31. 🟢 `codegenr/Cargo.toml:36` — `notify` 9.0.0 demande Rust 1.91, contre 1.85 pour l'édition 2024 : `cargo install codegenr` casse sur un Rust 1.85 à 1.90 sans prévenir. Le déclarer dans `rust-version`.
+   Corrigé : `rust-version = "1.91"` dans `codegenr/Cargo.toml`, et le README le dit à l'installation.
+32. 🟢 `codegenr/src/watch.rs:30` — le cache des documents originaux reste en mémoire pendant toute la surveillance alors que plus rien ne s'en sert : le libérer après la première génération.
+   Corrigé : `resolve_sections` garde le cache pour lui, il est libéré avant la surveillance.
+33. 🟢 `AGENTS.md:87` — la description du pipeline cite encore `run_codegenr`, qui n'existe plus (`resolve_section` puis `render_section`).
+   Corrigé.
+34. 🟢 `README.md:22` — première occurrence de « templates » dans le README, sans sa traduction (*gabarit*) demandée par AGENTS.md.
+   Corrigé : templates (*gabarits*).
+35. ⚪ `codegenr/src/watch.rs:128` — le commentaire promet qu'un fichier généré ne relance jamais de rendu, mais un `.hbs` ou un `.rhai` généré dans un dossier surveillé le fait, et avec `### CLEAN` il boucle sans fin. Corriger seulement le commentaire, ou ignorer les fichiers que codegenr vient lui-même d'écrire ?
+   Écarté (choix de l'humain) : un cas limite, celui qui génère des templates dans un dossier surveillé verra bien que ça ne s'arrête pas ; seul le commentaire de `concerns` est corrigé, il dit maintenant cette limite.
+36. ⚪ `codegenr/src/filesystem.rs:22` — un Ctrl-C pendant un rendu peut laisser un fichier généré tronqué (`File::create` vide le fichier, puis `write_all`), ce qui devient plus probable avec le watch. Écrire dans un fichier temporaire puis le renommer servirait aussi aux générations normales.
+   Écarté (choix de l'humain) : un Ctrl-C pendant l'écriture est peu probable.
+37. 🟠 `codegenr/src/watch.rs:130` — le watch devine par l'extension les fichiers dont dépend une section, sans passer par ce que lit vraiment `render_section` : un helper listé avec une autre extension (`custom_helpers = ["upper.script"]`) n'est jamais surveillé. Faire renvoyer à `get_templates_from_directory` et `custom::handlebars_setup` les fichiers qu'ils lisent, et surveiller ceux-là.
+   Décision de l'humain : le watch surveille les mêmes fichiers que la génération, sources comprises ; idée : relever pendant le premier passage les fichiers réellement lus (sources, fichiers des `$ref`, templates, helpers) et ne surveiller que ceux-là. À concevoir ensemble.
