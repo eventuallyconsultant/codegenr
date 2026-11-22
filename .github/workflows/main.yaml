@@ -27,7 +27,7 @@ jobs:
       - name: Show rustup toolchain version
         run: rustup show
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
 
       - name: Unit tests
         run: |
@@ -45,12 +45,26 @@ jobs:
   deny:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
 
       - uses: EmbarkStudios/cargo-deny-action@v2
 
+  # Formatting and clippy: any warning fails
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Format
+        run: |
+          cargo fmt --all --check
+
+      - name: Clippy
+        run: |
+          cargo clippy --workspace --all-targets -- -D warnings
+
   publish:
-    needs: [tests, deny]
+    needs: [tests, deny, lint]
     runs-on: ubuntu-latest
     env:
       RUST_LOG: debug
@@ -59,7 +73,7 @@ jobs:
       - name: Show rustup toolchain version
         run: rustup show
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
 
       - name: PublishTool
         run: |

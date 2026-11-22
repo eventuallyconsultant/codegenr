@@ -60,7 +60,7 @@ impl TemplateCollection {
   #[allow(clippy::result_large_err)]
   pub fn setup_handlebars(&self, handlebars: &mut Handlebars) -> Result<(), RenderError> {
     handlebars.register_template_file(self.main.template_name(), self.main.file_path())?;
-    for (_, value) in self.partials.iter() {
+    for value in self.partials.values() {
       handlebars.register_template_file(value.template_name(), value.file_path())?
     }
     Ok(())

@@ -56,7 +56,7 @@ A [semantic anchor](https://llm-coding.github.io/Semantic-Anchors/) is the estab
 | **Run single test**  | `cargo test -p codegenr --lib -- <module>::tests::<test_name> --exact --nocapture` |
 | **Run one doctest**  | `cargo test -p codegenr --doc -- helpers::strings::TrimCharHelper`             |
 | **nextest**          | `cargo nextest run` skips the doctests, where most helpers are tested: follow it with `cargo test --doc` |
-| **Lint**             | `cargo clippy --workspace --all-targets` (the editor runs clippy on save, all features) |
+| **Lint**             | `cargo clippy --workspace --all-targets` (the editor runs clippy on save, all features; the CI fails on any warning, `-- -D warnings`) |
 | **Format**           | `cargo fmt`                                                                   |
 | **Dependencies**     | `cargo deny check` (advisories, licenses, duplicates, sources; rules and accepted advisories in `deny.toml`) |
 | **Docs**             | `just doc` (`cargo doc --open`)                                               |
