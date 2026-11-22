@@ -65,6 +65,8 @@ Read the breaking changes before upgrading: each one says what to change in your
 ### Fixed
 
 - A source starting with a UTF-8 BOM is read: json refused it, and yaml silently kept it in the first key.
+- An absolute Windows path, like `C:\specs\api.yaml`, as a `source` or a `$ref`, is read as a file: its drive was taken for the scheme of an url.
+  Only `http` and `https` are urls now.
 
 ### Under the hood
 
