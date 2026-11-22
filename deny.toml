@@ -15,8 +15,7 @@ targets = [
 unmaintained = "all"
 yanked = "deny"
 ignore = [
-  { id = "RUSTSEC-2024-0320", reason = "yaml-rust, under serde_yaml 0.8, pinned on purpose: 0.9 refuses most files holding several YAML documents" },
-  { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml, under the serde_yaml 0.9 of handlebars_misc_helpers 0.17, still there in its latest version" },
+  { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml, under serde_yaml 0.9, its last version, used by codegenr and handlebars_misc_helpers" },
   { id = "RUSTSEC-2026-0249", reason = "smartstring, under rhai, still there in its latest version" },
 ]
 
@@ -39,7 +38,7 @@ allow = [
 ]
 
 [bans]
-# Many crates come twice (syn 1 and 2, serde_yaml 0.8 and 0.9…): worth a look, not a failure.
+# Many crates come twice (thiserror 1 and 2, toml 0.8 and 0.9…): worth a look, not a failure.
 multiple-versions = "warn"
 wildcards = "deny"
 

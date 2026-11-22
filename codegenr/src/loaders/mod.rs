@@ -207,7 +207,7 @@ mod tests {
     assert_eq!(
       error.to_string(),
       "Could not read `bad.yaml`, every format tried failed:\n\
-       - Yaml: while parsing a flow sequence, expected ',' or ']' at line 2 column 2\n\
+       - Yaml: did not find expected ',' or ']' at line 2 column 2, while parsing a flow sequence at line 1 column 4\n\
        - Json: expected value at line 1 column 1"
     );
   }

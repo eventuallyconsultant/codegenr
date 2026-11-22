@@ -57,7 +57,9 @@ glob = "0.3"
 
 # file formats manipulation
 serde_json = { version = "1.0", features = ["preserve_order"] }
-serde_yaml = "0.8"                                              # 0.9 failing with deserializing from YAML containing more than one document is not supported on most files
+# 0.9.34 is the last version, deprecated upstream: a fork (serde_yaml_ng, serde_norway) would be a new dependency.
+# libyaml takes a UTF-8 BOM for a second document: `json_from_string` strips it first.
+serde_yaml = "0.9.34"
 serde = "1.0"
 graphql-parser = "0.4"
 roxmltree = "0.21"

@@ -74,7 +74,11 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
    Puis : ce `../` perdu n'est pas un bug, handlebars.js 4.7.8 fait pareil (seul son mode `compat` remonte au contexte de l'appelant), c'est la 5.1.2 qui s'en écartait.
    Monté en 6.4.4, avec `handlebars_misc_helpers` 0.17.0 : les cas `dot dot` disent maintenant que `../` est vide dans le partial, et deux cas montrent le paramètre de partial qui le remplace (`{{> part required=../required}}`).
    L'autre projet passe désormais les valeurs du parent en paramètres de partial (8 templates) : ses 74 sections génèrent les mêmes fichiers en 5.1.2 et en 6.4.4.
-9. 🟠 `codegenr/Cargo.toml:54` — `serde_yaml` 0.8 n'est plus maintenu (yaml-rust) : la 0.9 avec `Deserializer::from_str` (itération des documents) ou un fork maintenu, à évaluer avec un test.
+9. 🟢 `codegenr/Cargo.toml:62` — `serde_yaml` 0.8 n'est plus maintenu (yaml-rust) : la 0.9 avec `Deserializer::from_str` (itération des documents) ou un fork maintenu, à évaluer avec un test.
+   Mesuré : le « more than one document » de la 0.9 venait du BOM UTF-8, que libyaml prend pour un second document ; les 6 samples refusés en ont un, aucun n'a de `---`, et la 0.8 refuse aussi un vrai fichier à deux documents.
+   BOM retiré (item 21), la 0.9 lit les 13 samples comme la 0.8, et 38 des 39 yaml de l'autre projet ; le dernier écrit `False`, booléen en 0.9 (YAML 1.2) au lieu d'une chaîne, et n'est la source d'aucune section.
+   Passé en 0.9.34 (choix de l'humain : sa dernière version, dépréciée en amont mais déjà compilée pour `handlebars_misc_helpers`, quand un fork serait une nouvelle dépendance) ;
+   `yaml-rust` et son advisory ignorée sortent, avec les doublons `serde_yaml`, `indexmap` et `hashbrown` ; seul le texte d'une erreur yaml change dans `unreadable_content_gives_the_error_of_each_format_tried` ; l'autre projet génère les mêmes fichiers.
 
 ## CI et qualité
 
