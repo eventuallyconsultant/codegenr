@@ -62,6 +62,13 @@ pub enum Command {
       value_parser = parse_key_val
     )]
     global_parameters: Vec<(String, serde_json::Value)>,
+    #[arg(
+      long,
+      short,
+      num_args = 1..,
+      help = "Urls, and folders out of the current one and the one of the source, the documents may be read from: no url is downloaded without it."
+    )]
+    allowed_sources: Vec<String>,
   },
 }
 
@@ -110,6 +117,7 @@ impl TryFrom<Command> for OptionsMap {
         intermediate,
         custom_helpers,
         global_parameters,
+        allowed_sources,
       } => {
         let options = Options {
           source,
@@ -118,6 +126,7 @@ impl TryFrom<Command> for OptionsMap {
           intermediate,
           custom_helpers,
           global_parameters: global_parameters.into_iter().collect(),
+          allowed_sources,
         };
         let map = OptionsMap::from_iter(std::iter::once(("command_line".into(), options)));
         Ok(map)

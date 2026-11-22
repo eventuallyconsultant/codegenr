@@ -90,7 +90,8 @@ Those enums are large, hence the `#[allow(clippy::result_large_err)]` on the fun
    The format is guessed from the extension, then `json_from_string` tries a fallback chain of loaders; graphql SDL, xml, csv and toml are all reshaped into JSON.
 2. **Resolve** (`resolver.rs`): every `$ref` (`file.yaml#/path/to/obj`, `#/…` in the same document) is replaced by the object it points to, recursively and across files, the paths related with `DocumentPath::relate_from`.
    The merged object gets `x-fromRef` (the original reference) and `x-refName` (its last segment); a `$ref` must point to an object.
-   Two caches, original and resolved documents (`Rc<Value>`), are shared by all the sections of one `run_all_codegenr`.
+   Every document read goes through `AllowedSources::check`, before the caches: a file under the current folder, the folder of `source` or an `allowed_sources` folder, an url only under an `allowed_sources` url.
+   Two caches of `Rc<Value>`: the original documents, shared by all the sections of one `run_all_codegenr`, and the resolved ones, one per section, as they hold what the `allowed_sources` of their section let them read.
 3. **Render** (`render.rs`, `helpers/`, `custom.rs`): every `.hbs` of the template folders is collected; exactly one main template (no `_` prefix) across all the folders, partials `_name.hbs` registered as `name`, unique names.
    A fresh `Handlebars` per section, never reused between sections.
    Registration order matters: `handlebars_misc_setup` first, so codegenr helpers override the `handlebars_misc_helpers` ones of the same name; then the stateless helpers, the stateful ones (the shared `get`/`set` store, `global_parameter`), then the `.rhai` custom helpers (file stem = helper name).

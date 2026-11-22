@@ -17,10 +17,17 @@ Classée par gravité, la plus grave d'abord. Rien n'est corrigé tant que l'hum
    Corrigé pour les deux, contre un template ou un document source malveillant (choix de l'humain) : `path_in_output` refuse un chemin absolu ou un `..` (`PathOutsideOutput`), tests `a_path_out_of_the_output_folder_is_refused` (3 cas), `an_absolute_path_is_refused` et `a_path_in_the_output_folder_is_accepted`, qui échouent sans la correction.
    Un template qui écrivait dans un dossier voisin doit maintenant prendre pour `output` leur dossier parent.
    Reste un `TO_HUMAN:` : un lien symbolique déjà présent dans `output` peut encore mener dehors, sa cible n'est pas vérifiée.
-22. 🔴 `codegenr/src/loaders/document_path.rs:32` — les `$ref` d'un document source sont suivis partout : un chemin absolu lit n'importe quel fichier local (`Path::join` le garde tel quel), une URL est téléchargée, même depuis une spec distante.
+22. 🟢 `codegenr/src/loaders/document_path.rs:32` — les `$ref` d'un document source sont suivis partout : un chemin absolu lit n'importe quel fichier local (`Path::join` le garde tel quel), une URL est téléchargée, même depuis une spec distante.
    Une spec reçue d'un tiers peut ainsi faire entrer un fichier JSON ou YAML local (un kubeconfig…) dans le document résolu, puis dans le dump `intermediate` et les fichiers générés, ou faire appeler une adresse interne en CI (les métadonnées cloud).
    Les `..` ne peuvent pas être refusés comme à l'item 20 : l'autre projet en a 579 dans ses `$ref`, et certains remontent au-dessus de `_specs`.
    Décision de l'humain : refuser un `$ref` absolu (aucun dans l'autre projet), garder les relatifs sous le dossier courant (celui du `codegenr.toml`), et peut-être refuser un `$ref` URL depuis un fichier local (une spec locale peut référencer exprès une spec publique).
+   Décision de l'humain : une configuration, chaque téléchargement doit être autorisé par l'utilisateur, toujours, et l'erreur doit le guider.
+   Corrigé : `allowed_sources` dans une section (`--allowed-sources` pour `gen`), des urls et des dossiers ; `AllowedSources::check` passe avant chaque lecture, cache compris :
+   un fichier sous le dossier courant, celui de `source` ou un dossier autorisé, une url seulement sous une url autorisée (même schéma, hôte et port, chemin par segments), la `source` comprise ;
+   l'erreur donne le dossier ou l'url parente à ajouter, `allowed_sources = ['https://example.invalid/api/']`.
+   Trouvé en route : le cache des documents résolus était partagé entre les sections, une section recevait ce qu'une autre avait autorisé ; il devient propre à chaque section (74 sections de l'autre projet : 1,86 s → 2,10 s).
+   Tests : `an_url_is_allowed_only_under_an_allowed_url` (12 cas, dont `..` et `%2e%2e`), `an_url_not_allowed_is_not_downloaded`, `a_ref_to_a_file_out_of_the_allowed_folders_is_refused` (relatif et absolu), `a_section_does_not_get_what_another_section_allowed` ; les 4 derniers échouent sans la vérification.
+   L'autre projet n'a aucune source en url et génère les mêmes fichiers ; reste le même `TO_HUMAN:` qu'à l'item 20 sur les liens symboliques.
 3. 🟢 `codegenr/src/lib.rs:42` — `custom_helpers` et `global_parameters` sont obligatoires dans `codegenr.toml` (`missing field custom_helpers`), alors que le README dit `global_parameters` optionnel : il manque `#[serde(default)]`.
    Corrigé : les deux en `#[serde(default)]`, `custom_helpers` aussi dit « (Optional) » dans le README, test `custom_helpers_and_global_parameters_are_optional`.
 4. 🟢 `codegenr/Cargo.toml:26` — la lib ne compile pas sans la feature `bin` (`default-features = false`) : `toml` n'est activé que par `bin`, le loader toml en a besoin.
@@ -101,3 +108,4 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
    rustfmt 2024 retrie les imports de 5 fichiers, le workspace passe au `resolver = "3"` (sans changer le `Cargo.lock`), les doctests tournent en un seul binaire (5 s → 0,1 s) ; il faut Rust 1.85 pour compiler.
    Restent : la verbosité (`fmt::init()` sans la feature `env-filter` ignore `RUST_LOG`, le `RUST_LOG: debug` de la CI ne sert à rien) et le mode watch (nouvelle dépendance `notify`).
 14. 🟠 `codegenr/src/lib.rs:49` — le cache de documents est partagé entre les sections d'un même lancement : si une section prend en source le résultat d'une autre (idée de la roadmap), le fichier régénéré serait relu dans son ancienne version.
+   Depuis l'item 22, seul le cache des documents originaux reste partagé, celui des documents résolus est propre à chaque section ; le problème reste pour les originaux.

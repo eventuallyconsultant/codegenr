@@ -60,6 +60,9 @@ To generate your files, you need to define these parameters :
 - `custom_helpers` : (Optional) A place you can put `.rhai` file, each file is loaded as a custom helper, usable from the `.hbs` templates
 - `intermediate` : (Optional) if set, `codegenr` will output intermediate files for debug purpose
 - `global_parameters` : (Optional) Some values you want to use with the `global_parameter` helper.
+- `allowed_sources` : (Optional) Where the `source` and its `$ref` may be read from, besides the current folder and the folder of `source`: folders, and urls.
+  No url is downloaded unless it is under one of them, the `source` included: downloading is always your decision.
+  When a document is refused, the error tells what to add, e.g. `allowed_sources = ['https://petstore3.swagger.io/api/v3/', '../shared_specs']`.
 
 ##### Here is an example of a section in the `codegenr.toml`.
 
@@ -527,6 +530,8 @@ A file that a previous run generated and this one does not, for an endpoint remo
 
 The paths of `FILE` and `CLEAN` must stay in the `output` folder: an absolute path, or one holding `..`, is an error.
 A template or a source document, downloaded from an url for instance, cannot write or delete files anywhere else.
+Likewise, the `source` and its `$ref` are read only from the current folder, the folder of `source`, and the `allowed_sources`:
+a document received from someone else cannot read your other files, nor download what you did not allow.
 
 ## Contribute
 
