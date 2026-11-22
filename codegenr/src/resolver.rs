@@ -743,7 +743,9 @@ mod tests {
           _ => None,
         })
         .collect();
+      // On Windows, `simple4.json` comes back to `_samples/resolver\simple1.yaml`, another spelling of the source `_samples/resolver/simple1.yaml`.
       names.sort();
+      names.dedup();
       names
     };
     let document = DocumentPath::parse("_samples/resolver/simple1.yaml")?;
@@ -803,17 +805,11 @@ mod tests {
     let mut refusing = AllowedSources::new(&document, &[])?;
     let error = resolve_refs(document.clone(), &mut refusing, &mut Default::default(), &mut Default::default())
       .expect_err("The secret folder is not allowed.");
-    // On Windows, the drive letter of an absolute path reads as the scheme of an url.
-    assert!(
-      matches!(error, ResolverError::FileNotAllowed { .. } | ResolverError::UrlNotAllowed { .. }),
-      "{error}"
-    );
+    assert!(matches!(error, ResolverError::FileNotAllowed { .. }), "{error}");
 
     let mut allowing = AllowedSources::new(&document, &[secret.display().to_string()])?;
-    if !(cfg!(windows) && absolute_ref) {
-      let json = resolve_refs(document, &mut allowing, &mut Default::default(), &mut Default::default())?;
-      assert_eq!(json["a"]["token"], json!("abc"));
-    }
+    let json = resolve_refs(document, &mut allowing, &mut Default::default(), &mut Default::default())?;
+    assert_eq!(json["a"]["token"], json!("abc"));
     Ok(())
   }
 }

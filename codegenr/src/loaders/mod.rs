@@ -124,13 +124,18 @@ mod tests {
   use super::*;
   use test_case::test_case;
 
-  #[test_case("h://f", "h://f", "h://f", "h://f")]
-  #[test_case("h://w.com/api.yaml", "components.yaml", "h://w.com/components.yaml", "h://w.com/components.yaml")]
+  #[test_case("https://f", "https://f", "https://f", "https://f")]
   #[test_case(
-    "h://w.com/v1/api.yaml",
+    "https://w.com/api.yaml",
+    "components.yaml",
+    "https://w.com/components.yaml",
+    "https://w.com/components.yaml"
+  )]
+  #[test_case(
+    "https://w.com/v1/api.yaml",
     "../v2/components.yaml",
-    "h://w.com/v2/components.yaml",
-    "h://w.com/\\v2\\components.yaml"
+    "https://w.com/v2/components.yaml",
+    "https://w.com/v2/components.yaml"
   )]
   #[test_case("file.yaml", "other.json", "other.json", "other.json")]
   #[test_case("test/file.yaml", "other.json", "test/other.json", "test\\other.json")]
@@ -140,7 +145,7 @@ mod tests {
   #[test_case("file.yaml", "http://w.com/other.json", "http://w.com/other.json", "http://w.com/other.json")]
   #[test_case("file.json", "", "file.json", "file.json")]
   #[test_case("", "f", "f", "f")]
-  #[test_case("", "h://f", "h://f", "h://f")]
+  #[test_case("", "https://f", "https://f", "https://f")]
   #[test_case(
     "_samples/petshop_with_external.yaml",
     "petshop_externals.yaml",
@@ -183,12 +188,25 @@ mod tests {
   }
 
   /// Golden master: the json of each xml sample is committed next to it, order of the keys and formatting of the numbers included.
+  /// Only http and https are downloaded: anything else is a file, like a Windows path, whose drive reads as the scheme of an url.
+  #[test_case("https://host/api.yaml", true ; "https")]
+  #[test_case("http://host/api.yaml", true ; "http")]
+  #[test_case("C:\\specs\\api.yaml", false ; "windows path")]
+  #[test_case("c:/specs/api.yaml", false ; "windows path with slashes")]
+  #[test_case("file:///specs/api.yaml", false ; "file url")]
+  #[test_case("specs/api.yaml", false ; "relative path")]
+  fn only_http_and_https_are_urls(path: &str, is_url: bool) -> Result<(), LoaderError> {
+    assert_eq!(matches!(DocumentPath::parse(path)?, DocumentPath::Url(_)), is_url);
+    Ok(())
+  }
+
   #[allow(clippy::result_large_err)]
   #[test_case("./_samples/resolver/plant_catalog.xml", "./_samples/resolver/plant_catalog.json")]
   #[test_case("./_samples/loader/xml_shapes.xml", "./_samples/loader/xml_shapes.json")]
   fn read_xml_file_test(xml_file: &str, expected_json_file: &str) -> Result<(), LoaderError> {
     let loaded = DocumentPath::parse(xml_file)?.load_raw()?;
-    let expected = std::fs::read_to_string(expected_json_file)?;
+    // On Windows, git may check the expected file out with `\r\n` line ends.
+    let expected = std::fs::read_to_string(expected_json_file)?.replace("\r\n", "\n");
     assert_eq!(format!("{loaded:#}"), expected.trim_end());
     Ok(())
   }

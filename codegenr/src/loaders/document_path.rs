@@ -22,8 +22,9 @@ impl DocumentPath {
       Self::None
     } else {
       match Url::parse(ref_path) {
-        Ok(url) => DocumentPath::Url(url),
-        Err(_) => DocumentPath::FileName(ref_path.into()),
+        // Only http and https are downloaded: anything else is a file, like `C:\specs\api.yaml`, whose drive reads as the scheme of an url.
+        Ok(url) if matches!(url.scheme(), "http" | "https") => DocumentPath::Url(url),
+        _ => DocumentPath::FileName(ref_path.into()),
       }
     })
   }
