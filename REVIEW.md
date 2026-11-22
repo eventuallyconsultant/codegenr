@@ -78,7 +78,9 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
 
 ## CI et qualité
 
-10. 🔴 `.github/workflows/dev.yaml:32` — 1 warning clippy à corriger (8 avant les items 1 et 2), puis `clippy -D warnings` et `fmt --check` en CI ; `actions/checkout` v2 → v7.
+10. 🟢 `.github/workflows/dev.yaml:32` — 1 warning clippy à corriger (8 avant les items 1 et 2), puis `clippy -D warnings` et `fmt --check` en CI ; `actions/checkout` v2 → v7.
+   Corrigé : le warning `for_kv_map` de `render.rs:63` (`partials.values()`) ; un job `lint` dans les deux workflows (`cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`), dont dépend maintenant `publish` ; `actions/checkout` en v7 (sa seule rupture touche `pull_request_target`, qu'on n'utilise pas).
+   Vérifié en local : les deux commandes passent, avec et sans `--all-features`, et les deux YAML se lisent ; la CI elle-même ne tournera qu'au prochain push sur `dev` ou `main`.
 11. 🟢 `codegenr/src/processor/mod.rs:262` — `process_test` est `#[ignore]` : il écrit dans le dossier courant, un `tempfile` le rendrait exécutable.
    Corrigé : renommé `instructions_are_read_whatever_their_case_and_spaces`, il écrit dans un `TempDir` et vérifie ses deux fichiers (`###/ console` et `### / FILE` ferment bien) ; la ligne `####` passe dans un `FILE`, pour vérifier qu'elle y reste du contenu.
 
@@ -91,4 +93,7 @@ Mesurés sur ses 74 sections : la branche `new` génère exactement les mêmes f
 ## Plus tard
 
 13. 🟠 `codegenr/src/bin/main.rs:5` — pas de réglage de verbosité (le « Verbose/Tracing mode » de la roadmap), édition 2024, mode watch.
+   Édition 2024 faite (choix de l'humain) : `cargo fix --edition` ne change aucune ligne, ses deux avertissements d'ordre de `drop` (`lib.rs:56`, `processor/mod.rs:172`) sont sans effet, codegenr n'a aucun `impl Drop` ;
+   rustfmt 2024 retrie les imports de 5 fichiers, le workspace passe au `resolver = "3"` (sans changer le `Cargo.lock`), les doctests tournent en un seul binaire (5 s → 0,1 s) ; il faut Rust 1.85 pour compiler.
+   Restent : la verbosité (`fmt::init()` sans la feature `env-filter` ignore `RUST_LOG`, le `RUST_LOG: debug` de la CI ne sert à rien) et le mode watch (nouvelle dépendance `notify`).
 14. 🟠 `codegenr/src/lib.rs:49` — le cache de documents est partagé entre les sections d'un même lancement : si une section prend en source le résultat d'une autre (idée de la roadmap), le fichier régénéré serait relu dans son ancienne version.

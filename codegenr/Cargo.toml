@@ -1,7 +1,7 @@
 [package]
 name = "codegenr"
 version = "0.0.8"
-edition = "2021"
+edition = "2024"
 authors = ["Jérôme Rx & contributors <jerome@eventuallyconsultant.com>"]
 description = "Fast json/yaml/openapi code generator based on handlebars templating."
 readme = "../README.md"

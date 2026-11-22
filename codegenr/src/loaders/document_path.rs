@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::path::Path;
 use url::Url;
 
-use super::{json_from_string, FormatHint, LoaderError};
+use super::{FormatHint, LoaderError, json_from_string};
 
 #[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum DocumentPath {

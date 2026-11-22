@@ -117,7 +117,7 @@ The xml loader has its own golden master (`read_xml_file_test`): each `.xml` sam
 
 ## Code Style
 
-- **rustfmt**: `max_width = 140`, `tab_spaces = 2`, edition 2021.
+- **rustfmt**: `max_width = 140`, `tab_spaces = 2`, edition 2024.
 - **Merged `use`**: one `use` per crate, its modules and items merged in braces (`use std::{fs, io::{self, Read}};`), never several lines repeating the same crate or module.
   The stable rustfmt cannot merge them (`imports_granularity = "Crate"` is nightly only): they are merged by hand.
 - **Line breaks follow the meaning, not the width**, in comments, doc comments and markdown: break after a full clause or sentence, never in the middle of one to fill the line. `max_width` is a ceiling, not a target.

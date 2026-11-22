@@ -1,6 +1,6 @@
 use crate::{
-  loaders::{DocumentPath, LoaderError},
   OriginalDocumentsHash, ResolvedDocumentsHash,
+  loaders::{DocumentPath, LoaderError},
 };
 use serde_json::Value;
 use std::rc::Rc;

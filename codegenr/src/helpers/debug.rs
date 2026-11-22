@@ -1,5 +1,5 @@
 use handlebars::HelperDef;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 pub const DEBUG: &str = "debug";
 pub const DEBUG_CTX: &str = "debug_ctx";
