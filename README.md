@@ -19,8 +19,9 @@ cargo install --git https://github.com/eventuallyconsultant/codegenr --branch de
 
 `codegenr` runs every section of the `codegenr.toml` of the current folder, `codegenr --help` lists the other commands.
 `-v` shows the debug logs, `-vv` the trace ones, and `-q` only the warnings and the errors.
-While you write templates (*gabarits*), `codegenr -w` keeps running, and renders a section again as soon as one of its templates or custom helpers changes.
-The sources are read once: run it again to take a change of a source, or of `codegenr.toml`, into account.
+While you write templates (*gabarits*), `codegenr -w` keeps running, and renders a section again as soon as a file of its template or custom helper folders changes.
+It reads the source again first when the source changes, or a file one of its `$ref` leads to; a source or a `$ref` given as an url is not watched.
+A change of `codegenr.toml` starts everything again, as a new run.
 
 ## Documentation
 

@@ -78,7 +78,8 @@ A plain non-interactive shell may pick system tools instead of the mise ones.
 
 A Cargo workspace with one crate, `codegenr/`: the library `codegenr_lib` (`src/lib.rs`) and the `codegenr` binary (`src/bin/main.rs`).
 The binary, the CLI parsing (`opt.rs`, clap derive) and `--watch` (`watch.rs`) sit behind the default `bin` feature, which also pulls `anyhow`, `tracing-subscriber` and `notify`.
-`run_all_codegenr` runs each section in two steps, `resolve_section` then `render_section`: `--watch` resolves the sources once, then renders again a section whose `.hbs` or `.rhai` files change.
+`run_all_codegenr` runs each section in two steps, `resolve_section` then `render_section`: `--watch` renders again a section when a `.hbs` or `.rhai` of its folders changes,
+and resolves it again first when a file its source read changes (`AllowedSources` records them, even when the resolution fails); a change of `codegenr.toml` restarts it all.
 
 A `codegenr.toml` holds one section per generation (`source`, `templates`, `output`, `custom_helpers`, `intermediate`, `global_parameters`, `allowed_sources`, the `Options` struct of `lib.rs`); the `gen` subcommand builds a single section from the command line.
 

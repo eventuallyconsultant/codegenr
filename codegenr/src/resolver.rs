@@ -5,6 +5,7 @@ use crate::{
 use path_dedot::ParseDot;
 use serde_json::Value;
 use std::{
+  collections::HashSet,
   path::{Path, PathBuf},
   rc::Rc,
 };
@@ -46,12 +47,14 @@ pub enum ResolverError {
 /// Where a section reads its documents from, the source and every file or url its `$ref` lead to: they are not trusted.
 /// A file must be under the current folder, the folder of the section `source`, or a folder of `allowed_sources`;
 /// an url must be under an url of `allowed_sources`: downloading is always the decision of the user.
+/// It also records the documents the section read, which `--watch` watches.
 // TO_HUMAN: the check is lexical, a symbolic link under an allowed folder can still lead out of it, its target is not checked.
 #[derive(Debug)]
 pub struct AllowedSources {
   current_folder: PathBuf,
   folders: Vec<PathBuf>,
   urls: Vec<Url>,
+  read: HashSet<DocumentPath>,
 }
 
 impl AllowedSources {
@@ -74,28 +77,38 @@ impl AllowedSources {
       current_folder,
       folders,
       urls,
+      read: HashSet::new(),
     })
   }
 
+  /// The documents read, or about to be: one that fails to load is among them, so that `--watch` sees when it is fixed.
+  pub fn documents_read(&self) -> impl Iterator<Item = &DocumentPath> {
+    self.read.iter()
+  }
+
+  /// Refuses a document out of the allowed ones, and records the others.
   #[allow(clippy::result_large_err)]
-  fn check(&self, document: &DocumentPath) -> Result<(), ResolverError> {
+  fn check(&mut self, document: &DocumentPath) -> Result<(), ResolverError> {
     match document {
-      DocumentPath::Url(url) if !self.urls.iter().any(|allowed| is_under_url(url, allowed)) => Err(ResolverError::UrlNotAllowed {
-        url: url.to_string(),
-        parent: url.join("./").map_or_else(|_| url.to_string(), |parent| parent.to_string()),
-      }),
+      DocumentPath::Url(url) if !self.urls.iter().any(|allowed| is_under_url(url, allowed)) => {
+        return Err(ResolverError::UrlNotAllowed {
+          url: url.to_string(),
+          parent: url.join("./").map_or_else(|_| url.to_string(), |parent| parent.to_string()),
+        });
+      }
       DocumentPath::FileName(path) => {
         let path = absolute(&self.current_folder, path)?;
-        match self.folders.iter().any(|folder| path.starts_with(folder)) {
-          true => Ok(()),
-          false => Err(ResolverError::FileNotAllowed {
+        if !self.folders.iter().any(|folder| path.starts_with(folder)) {
+          return Err(ResolverError::FileNotAllowed {
             path: path.display().to_string(),
             parent: path.parent().unwrap_or(&path).display().to_string(),
-          }),
+          });
         }
       }
-      _ => Ok(()),
+      _ => {}
     }
+    self.read.insert(document.clone());
+    Ok(())
   }
 }
 
@@ -144,7 +157,7 @@ fn get_resolved_json(doc_path: &DocumentPath, resolved_cache: &mut ResolvedDocum
 #[allow(clippy::result_large_err)]
 fn get_resolved_or_original(
   doc_path: &DocumentPath,
-  allowed: &AllowedSources,
+  allowed: &mut AllowedSources,
   original_cache: &mut OriginalDocumentsHash,
   resolved_cache: &mut ResolvedDocumentsHash,
 ) -> Result<Json, ResolverError> {
@@ -160,12 +173,12 @@ fn get_resolved_or_original(
 #[::tracing::instrument(level = "trace")]
 pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
   let mut resolving = json.clone();
-  let allowed = AllowedSources::new(&DocumentPath::None, &[])?;
+  let mut allowed = AllowedSources::new(&DocumentPath::None, &[])?;
   resolve_refs_recurse(
     &DocumentPath::None,
     &mut resolving,
     &json,
-    &allowed,
+    &mut allowed,
     &mut Default::default(),
     &mut Default::default(),
   )?;
@@ -176,7 +189,7 @@ pub fn resolve_refs_raw(json: Value) -> Result<Value, ResolverError> {
 #[::tracing::instrument(level = "trace")]
 pub fn resolve_refs(
   document: DocumentPath,
-  allowed: &AllowedSources,
+  allowed: &mut AllowedSources,
   original_cache: &mut OriginalDocumentsHash,
   resolved_cache: &mut ResolvedDocumentsHash,
 ) -> Result<Rc<Value>, ResolverError> {
@@ -198,7 +211,7 @@ fn resolve_refs_recurse(
   current_doc: &DocumentPath,
   json: &mut Value,
   original: &Value,
-  allowed: &AllowedSources,
+  allowed: &mut AllowedSources,
   original_cache: &mut OriginalDocumentsHash,
   resolved_cache: &mut ResolvedDocumentsHash,
 ) -> Result<(), ResolverError> {
@@ -617,8 +630,8 @@ mod tests {
   #[test]
   fn should_resolve_external_references() -> Result<(), anyhow::Error> {
     let document = DocumentPath::parse("_samples/resolver/petshop_with_external.yaml")?;
-    let allowed = AllowedSources::new(&document, &[])?;
-    let json = resolve_refs(document, &allowed, &mut Default::default(), &mut Default::default())?;
+    let mut allowed = AllowedSources::new(&document, &[])?;
+    let json = resolve_refs(document, &mut allowed, &mut Default::default(), &mut Default::default())?;
     let string = json.to_string();
     assert!(!string.contains(REF));
     Ok(())
@@ -674,8 +687,8 @@ mod tests {
   #[test]
   fn very_tricky_test() -> Result<(), anyhow::Error> {
     let document = DocumentPath::parse("_samples/resolver/simple1.yaml")?;
-    let allowed = AllowedSources::new(&document, &[])?;
-    let json = resolve_refs(document, &allowed, &mut Default::default(), &mut Default::default())?;
+    let mut allowed = AllowedSources::new(&document, &[])?;
+    let json = resolve_refs(document, &mut allowed, &mut Default::default(), &mut Default::default())?;
     let string = json.to_string();
     assert!(!string.contains(REF));
 
@@ -714,8 +727,39 @@ mod tests {
   #[test_case("https://host/api/", "https://host:8443/api/spec.yaml", false ; "other port")]
   #[test_case("https://host/api/", "https://other.host/api/spec.yaml", false ; "other host")]
   fn an_url_is_allowed_only_under_an_allowed_url(allowed: &str, url: &str, expected: bool) -> anyhow::Result<()> {
-    let allowed = AllowedSources::new(&DocumentPath::None, &[allowed.into()])?;
+    let mut allowed = AllowedSources::new(&DocumentPath::None, &[allowed.into()])?;
     assert_eq!(allowed.check(&DocumentPath::parse(url)?).is_ok(), expected);
+    Ok(())
+  }
+
+  /// What `--watch` watches for a section: every file its source and `$ref` lead to, one that fails to load included.
+  #[test]
+  fn the_documents_read_are_recorded() -> anyhow::Result<()> {
+    let file_names = |allowed: &AllowedSources| -> Vec<String> {
+      let mut names: Vec<String> = allowed
+        .documents_read()
+        .filter_map(|document| match document {
+          DocumentPath::FileName(path) => Path::new(path).file_name().map(|name| name.to_string_lossy().into_owned()),
+          _ => None,
+        })
+        .collect();
+      names.sort();
+      names
+    };
+    let document = DocumentPath::parse("_samples/resolver/simple1.yaml")?;
+    let mut allowed = AllowedSources::new(&document, &[])?;
+    resolve_refs(document, &mut allowed, &mut Default::default(), &mut Default::default())?;
+    assert_eq!(
+      file_names(&allowed),
+      ["simple1.yaml", "simple2.json", "simple3.yaml", "simple4.json"]
+    );
+
+    let tmp = TempDir::with_prefix("RESOLVER_tests")?;
+    write_file(tmp.path(), "api.yaml", "a:\n  $ref: 'missing.yaml'\n")?;
+    let document = DocumentPath::parse(&tmp.path().join("api.yaml").display().to_string())?;
+    let mut allowed = AllowedSources::new(&document, &[])?;
+    resolve_refs(document, &mut allowed, &mut Default::default(), &mut Default::default()).expect_err("`missing.yaml` does not exist.");
+    assert_eq!(file_names(&allowed), ["api.yaml", "missing.yaml"]);
     Ok(())
   }
 
@@ -723,9 +767,9 @@ mod tests {
   #[test]
   fn an_url_not_allowed_is_not_downloaded() -> anyhow::Result<()> {
     let document = DocumentPath::parse("https://example.invalid/api/spec.yaml?v=2")?;
-    let allowed = AllowedSources::new(&document, &[])?;
+    let mut allowed = AllowedSources::new(&document, &[])?;
 
-    let error = resolve_refs(document, &allowed, &mut Default::default(), &mut Default::default()).expect_err("No url is allowed.");
+    let error = resolve_refs(document, &mut allowed, &mut Default::default(), &mut Default::default()).expect_err("No url is allowed.");
 
     assert_eq!(
       error.to_string(),
@@ -756,8 +800,8 @@ mod tests {
     write_file(tmp.path(), "secret/token.yaml", "token: abc\n")?;
     let document = DocumentPath::parse(&tmp.path().join("specs/api.yaml").display().to_string())?;
 
-    let refusing = AllowedSources::new(&document, &[])?;
-    let error = resolve_refs(document.clone(), &refusing, &mut Default::default(), &mut Default::default())
+    let mut refusing = AllowedSources::new(&document, &[])?;
+    let error = resolve_refs(document.clone(), &mut refusing, &mut Default::default(), &mut Default::default())
       .expect_err("The secret folder is not allowed.");
     // On Windows, the drive letter of an absolute path reads as the scheme of an url.
     assert!(
@@ -765,9 +809,9 @@ mod tests {
       "{error}"
     );
 
-    let allowing = AllowedSources::new(&document, &[secret.display().to_string()])?;
+    let mut allowing = AllowedSources::new(&document, &[secret.display().to_string()])?;
     if !(cfg!(windows) && absolute_ref) {
-      let json = resolve_refs(document, &allowing, &mut Default::default(), &mut Default::default())?;
+      let json = resolve_refs(document, &mut allowing, &mut Default::default(), &mut Default::default())?;
       assert_eq!(json["a"]["token"], json!("abc"));
     }
     Ok(())

@@ -57,7 +57,7 @@ pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), CodegenrError> {
   let mut errors_count = 0;
   for (name, options) in options_map {
     info!("Running code generation section `{}`", name);
-    if let Err(e) = resolve_section(&options, &mut original_cache).and_then(|json| render_section(&options, &json)) {
+    if let Err(e) = resolve_section(&options, &mut original_cache, &mut Vec::new()).and_then(|json| render_section(&options, &json)) {
       error!("Error while executing the `{}` section: `{}`.", name, e);
       errors_count += 1;
     }
@@ -74,18 +74,25 @@ pub fn run_all_codegenr(options_map: OptionsMap) -> Result<(), CodegenrError> {
 #[::tracing::instrument(level = "trace")]
 #[allow(clippy::result_large_err)]
 pub fn run_one_codegenr(options: Options) -> Result<(), errors::CodegenrError> {
-  let json = resolve_section(&options, &mut Default::default())?;
+  let json = resolve_section(&options, &mut Default::default(), &mut Vec::new())?;
   render_section(&options, &json)
 }
 
 /// Loads the source of a section and resolves its `$ref`, the documents read staying in `original_cache` for the next sections.
+/// `read` gets these documents, even when the resolution fails: `--watch` watches them.
 #[allow(clippy::result_large_err)]
-#[::tracing::instrument(level = "trace", skip(original_cache))]
-fn resolve_section(options: &Options, original_cache: &mut OriginalDocumentsHash) -> Result<Rc<Value>, errors::CodegenrError> {
+#[::tracing::instrument(level = "trace", skip(original_cache, read))]
+fn resolve_section(
+  options: &Options,
+  original_cache: &mut OriginalDocumentsHash,
+  read: &mut Vec<loaders::DocumentPath>,
+) -> Result<Rc<Value>, errors::CodegenrError> {
   let document = loaders::DocumentPath::parse(&options.source)?;
-  let allowed = resolver::AllowedSources::new(&document, &options.allowed_sources)?;
+  let mut allowed = resolver::AllowedSources::new(&document, &options.allowed_sources)?;
   // A resolved document holds what its `$ref` lead to, read under the `allowed_sources` of its section: no other section reuses it.
-  let json = resolver::resolve_refs(document, &allowed, original_cache, &mut Default::default())?;
+  let resolved = resolver::resolve_refs(document, &mut allowed, original_cache, &mut Default::default());
+  read.extend(allowed.documents_read().cloned());
+  let json = resolved?;
 
   if options.intermediate.is_some() {
     save_intermediate(&options.intermediate, "resolved.json", &format!("{:#}", json))?;
@@ -172,7 +179,7 @@ mod tests {
       global_parameters: Default::default(),
       allowed_sources: vec![],
     };
-    let json = resolve_section(&options, &mut Default::default())?;
+    let json = resolve_section(&options, &mut Default::default(), &mut Vec::new())?;
     render_section(&options, &json)?;
     assert_eq!(std::fs::read_to_string(root.join("out").join("hello.txt"))?, "Hello World\n");
 

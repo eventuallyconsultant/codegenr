@@ -13,8 +13,9 @@ pub struct Opt {
     long,
     short,
     global = true,
-    help = "Keeps running, and renders again a section when one of its templates or custom helpers changes. \
-      The sources are read once: run again to take their changes into account."
+    help = "Keeps running: renders a section again when a file of its template or custom helper folders changes, \
+      and reads its source again first when the source, or a file one of its `$ref` leads to, changes; \
+      a change of `codegenr.toml` starts everything again."
   )]
   pub watch: bool,
   #[arg(long, short, global = true, action = clap::ArgAction::Count, help = "More logs: `-v` for debug, `-vv` for trace.")]
@@ -37,7 +38,7 @@ impl Opt {
   }
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum Command {
   #[command(name = "file", about = "Executes all generations from a config file.")]
   FromFile {
